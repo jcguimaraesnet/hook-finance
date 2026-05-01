@@ -26,7 +26,8 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "sheet_not_found" });
     }
 
-    sheet.appendRow([new Date().toISOString(), title, text]);
+    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
+    sheet.appendRow([today, title, text]);
     return jsonResponse_({ ok: true });
   } catch (err) {
     return jsonResponse_({
