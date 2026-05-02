@@ -82,6 +82,10 @@ Constantes que controlam o comportamento estão no topo do [src/Code.gs](src/Cod
 - `ORIGEM` — texto fixo da coluna Origem (default `Cartão`).
 - `PURCHASE_RE` — regex que extrai cartão, valor, data, hora e descrição do texto.
 
+### Despesas fixas mensais
+
+Quando chega a **primeira compra de cartão** de uma nova fatura (i.e., não existe nenhuma linha com `Data` = data de fechamento atual e `Origem` = `Cartão`), o webhook insere automaticamente uma lista de despesas fixas (diarista, plano de saúde, contas, condomínio, etc.) antes de gravar a compra. A lista está em [src/FixedExpenses.gs](src/FixedExpenses.gs) — edite ali para adicionar/remover/alterar valores.
+
 ### Formato esperado do `text`
 
 ```

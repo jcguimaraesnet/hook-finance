@@ -38,8 +38,10 @@ function doPost(e) {
         ? parsed.refDate + " " + parsed.refTime
         : parsed.refDate
       : "";
+    const invoiceClosing = nextInvoiceClosingDate_();
+    appendMonthlyFixedIfNeeded_(sheet, invoiceClosing);
     sheet.appendRow([
-      nextInvoiceClosingDate_(), // Data (fechamento da fatura)
+      invoiceClosing, // Data (fechamento da fatura)
       refDateTime, // Data Referência
       parsed.description, // Descrição
       parsed.value, // Valor
@@ -83,6 +85,38 @@ function normalizeDate_(d) {
   const parts = d.split("/");
   if (parts.length === 3 && parts[2].length === 2) parts[2] = "20" + parts[2];
   return parts.join("/");
+}
+
+function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    const exists = rows.some(
+      (r) =>
+        formatBrDate_(r[0]) === invoiceClosing && String(r[4]).trim() === ORIGEM,
+    );
+    if (exists) return;
+  }
+  const [, mm, yyyy] = invoiceClosing.split("/");
+  for (const e of FIXED_EXPENSES) {
+    const dd = ("0" + e.refDay).slice(-2);
+    sheet.appendRow([
+      invoiceClosing,
+      dd + "/" + mm + "/" + yyyy,
+      e.description,
+      e.value,
+      e.origem,
+      e.categoria,
+      e.rateio,
+    ]);
+  }
+}
+
+function formatBrDate_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), "dd/MM/yyyy");
+  }
+  return String(v).trim();
 }
 
 function nextInvoiceClosingDate_() {
