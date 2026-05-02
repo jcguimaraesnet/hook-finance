@@ -1,13 +1,11 @@
 const SHEET_ID = "1IbxnOnBuhLIj5i8nqepk-Bva1IhmKalyuLXIyN56V8k";
 const SHEET_NAME = "sheet-teste";
 
-const CARDS = {
-  "1018": "Eu",
-  "4750": "Esposa",
-};
-
 const PURCHASE_RE =
   /Compra no cart[ãa]o final (\d+), de R\$\s*([\d.,]+), em (\d{2}\/\d{2}\/\d{2,4}), [àa]s (\d{2}:\d{2}), em (.+?), aprovada/i;
+
+const INVOICE_CLOSING_DAY = 6;
+const ORIGEM = "Cartão";
 
 function doPost(e) {
   try {
@@ -34,18 +32,20 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: "sheet_not_found" });
     }
 
-    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
     const parsed = parsePurchase_(text);
+    const refDateTime = parsed.refDate
+      ? parsed.refTime
+        ? parsed.refDate + " " + parsed.refTime
+        : parsed.refDate
+      : "";
     sheet.appendRow([
-      today,
-      parsed.refDate,
-      parsed.refTime,
-      parsed.cardOwner,
-      parsed.cardLast4,
-      parsed.description,
-      parsed.value,
-      title,
-      text,
+      nextInvoiceClosingDate_(), // Data (fechamento da fatura)
+      refDateTime, // Data Referência
+      parsed.description, // Descrição
+      parsed.value, // Valor
+      ORIGEM, // Origem
+      "", // Categoria (regras virão depois)
+      "", // Rateio (regras virão depois)
     ]);
     return jsonResponse_({ ok: true });
   } catch (err) {
@@ -63,22 +63,12 @@ function jsonResponse_(obj) {
 }
 
 function parsePurchase_(text) {
-  const empty = {
-    refDate: "",
-    refTime: "",
-    cardOwner: "",
-    cardLast4: "",
-    description: "",
-    value: "",
-  };
+  const empty = { refDate: "", refTime: "", description: "", value: "" };
   const m = text.match(PURCHASE_RE);
   if (!m) return empty;
-  const cardLast4 = m[1];
   return {
     refDate: normalizeDate_(m[3]),
     refTime: m[4],
-    cardOwner: CARDS[cardLast4] || "",
-    cardLast4: cardLast4,
     description: m[5].trim(),
     value: parseBrazilNumber_(m[2]),
   };
@@ -93,6 +83,22 @@ function normalizeDate_(d) {
   const parts = d.split("/");
   if (parts.length === 3 && parts[2].length === 2) parts[2] = "20" + parts[2];
   return parts.join("/");
+}
+
+function nextInvoiceClosingDate_() {
+  const tz = Session.getScriptTimeZone();
+  const now = new Date();
+  const year = parseInt(Utilities.formatDate(now, tz, "yyyy"), 10);
+  const month = parseInt(Utilities.formatDate(now, tz, "MM"), 10);
+  let nextMonth = month + 1;
+  let nextYear = year;
+  if (nextMonth > 12) {
+    nextMonth = 1;
+    nextYear += 1;
+  }
+  const dd = ("0" + INVOICE_CLOSING_DAY).slice(-2);
+  const mm = ("0" + nextMonth).slice(-2);
+  return dd + "/" + mm + "/" + nextYear;
 }
 
 // Rode esta função UMA VEZ no editor do Apps Script para definir o token.

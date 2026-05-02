@@ -1,6 +1,6 @@
 # hook-finance
 
-Webhook em Google Apps Script que recebe `POST` com `title` e `text` no body e grava uma nova linha em uma Google Sheet. Deploy automatizado via GitHub Actions com [`clasp`](https://github.com/google/clasp).
+Webhook em Google Apps Script que recebe `POST` com notificações de compra no cartão (campos `title` e `text` no body), faz parse do texto, e grava uma nova linha estruturada em uma Google Sheet. Deploy automatizado via GitHub Actions com [`clasp`](https://github.com/google/clasp).
 
 **Projeto Apps Script**: https://script.google.com/home/projects/1HvwjDc_t-XIi1SmZnq5gxrZoTBEw7GlDx98d-UolqRAQBk0BBvGwz9E1/edit
 
@@ -32,7 +32,7 @@ src/
    ```
    Isso preenche o `scriptId` em `.clasp.json`. Se já tem um projeto, edite manualmente.
 4. Criar a planilha Google Sheets que vai receber os dados. Pegue o `SHEET_ID` da URL (`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`) e cole em `src/Code.gs`. Ajuste `SHEET_NAME` se a aba não for `Sheet1`.
-5. Sugerido: adicione cabeçalho na linha 1 da planilha — `timestamp | title | text`.
+5. Adicione o cabeçalho na linha 1 da planilha (ver [Esquema da planilha](#esquema-da-planilha) abaixo).
 
 ## Configurar o token do webhook
 
@@ -62,12 +62,40 @@ O Apps Script exige autorização interativa antes do primeiro request:
      ```
 3. A partir daí, todo push em `main` que altere `src/**` aciona `clasp push` + `clasp deploy`.
 
+## Esquema da planilha
+
+A linha 1 da planilha deve ter os seguintes cabeçalhos, na ordem:
+
+| # | Coluna | Conteúdo |
+|---|---|---|
+| 1 | Data | Data de fechamento da fatura (regra: dia 06 do mês seguinte ao mês atual). |
+| 2 | Data Referência | Data e hora da compra extraídas do texto (`DD/MM/YYYY HH:MM`). |
+| 3 | Descrição | Estabelecimento extraído do texto (ex.: `SUPERMERCADOS V`). |
+| 4 | Valor | Valor numérico da compra (ex.: `32,78`). |
+| 5 | Origem | Sempre `Cartão` (constante). |
+| 6 | Categoria | Vazio — regras de categorização serão definidas depois. |
+| 7 | Rateio | Vazio — regras serão definidas depois. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. |
+
+Constantes que controlam o comportamento estão no topo do [src/Code.gs](src/Code.gs):
+
+- `INVOICE_CLOSING_DAY` — dia do fechamento da fatura (default `6`).
+- `ORIGEM` — texto fixo da coluna Origem (default `Cartão`).
+- `PURCHASE_RE` — regex que extrai cartão, valor, data, hora e descrição do texto.
+
+### Formato esperado do `text`
+
+```
+Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada.
+```
+
+Se o texto não casar com `PURCHASE_RE`, a linha ainda é gravada, mas as colunas 2-4 ficam vazias.
+
 ## Testar o webhook
 
 ```bash
 curl -X POST "<WEB_APP_URL>" \
   -H "Content-Type: application/json" \
-  -d '{"token":"<WEBHOOK_TOKEN>","title":"Teste","text":"Conteudo"}'
+  -d '{"token":"<WEBHOOK_TOKEN>","title":"Compra aprovada","text":"Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada."}'
 ```
 
 Resposta esperada:
@@ -75,7 +103,7 @@ Resposta esperada:
 {"ok":true}
 ```
 
-E uma nova linha aparece na planilha com `timestamp`, `title`, `text`.
+E uma nova linha aparece na planilha com as 7 colunas preenchidas conforme o esquema acima.
 
 ### Erros possíveis
 
