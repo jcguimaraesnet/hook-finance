@@ -2,7 +2,7 @@ const SHEET_ID = "1IbxnOnBuhLIj5i8nqepk-Bva1IhmKalyuLXIyN56V8k";
 const SHEET_NAME = "sheet-teste";
 
 const PURCHASE_RE =
-  /Compra no cart[ãa]o final (\d+), de R\$\s*([\d.,]+), em (\d{2}\/\d{2}\/\d{2,4}), [àa]s (\d{2}:\d{2}), em (.+?), aprovada/i;
+  /Compra.+?final\s+(\d+),.+?R\$\s*([\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
 const INVOICE_CLOSING_DAY = 6;
 const ORIGEM = "Cartão";
