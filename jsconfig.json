@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "none",
+    "lib": ["ES2019"],
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true,
+    "types": ["google-apps-script"]
+  },
+  "include": ["src/**/*.gs", "src/**/*.js"]
+}

@@ -11,6 +11,7 @@
     "deploy": "clasp deploy --description \"manual deploy\""
   },
   "devDependencies": {
-    "@google/clasp": "^2.4.2"
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^2.0.8"
   }
 }
