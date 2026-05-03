@@ -1,0 +1,434 @@
+<script>
+  const Money = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const Pct = new Intl.NumberFormat("pt-BR", {
+    style: "percent",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const TOKEN_KEY = "hook-finance-token";
+  let allRows = [];
+  const charts = {};
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function dateKey(brDate) {
+    if (!brDate) return "";
+    const parts = brDate.split("/");
+    if (parts.length !== 3) return brDate;
+    return parts[2] + "-" + parts[1] + "-" + parts[0];
+  }
+
+  function showLogin(error) {
+    $("loading").hidden = true;
+    $("login").hidden = false;
+    $("dashboard").hidden = true;
+    if (error) {
+      $("login-error").textContent = error;
+      $("login-error").hidden = false;
+    } else {
+      $("login-error").hidden = true;
+    }
+  }
+
+  function showDashboard() {
+    $("loading").hidden = true;
+    $("login").hidden = true;
+    $("dashboard").hidden = false;
+  }
+
+  function showLoading() {
+    $("loading").hidden = false;
+    $("login").hidden = true;
+    $("dashboard").hidden = true;
+  }
+
+  function init() {
+    $("token-submit").addEventListener("click", () => {
+      const v = $("token-input").value.trim();
+      if (!v) return;
+      showLoading();
+      loadData(v);
+    });
+    $("token-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") $("token-submit").click();
+    });
+
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (stored) {
+      showLoading();
+      loadData(stored);
+    } else {
+      showLogin();
+    }
+  }
+
+  function loadData(token) {
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (!res || !res.ok) {
+          localStorage.removeItem(TOKEN_KEY);
+          showLogin(
+            res && res.error === "unauthorized"
+              ? "Token inválido"
+              : "Erro: " + (res && res.error)
+          );
+          return;
+        }
+        localStorage.setItem(TOKEN_KEY, token);
+        allRows = res.rows || [];
+        bootDashboard();
+      })
+      .withFailureHandler((err) => {
+        showLogin("Falha: " + (err && err.message ? err.message : err));
+      })
+      .getDataForDashboard(token);
+  }
+
+  function bootDashboard() {
+    showDashboard();
+    const dates = [...new Set(allRows.map((r) => r.data).filter(Boolean))].sort(
+      (a, b) => dateKey(b).localeCompare(dateKey(a))
+    );
+    const sel = $("filter-data");
+    sel.innerHTML = dates
+      .map((d) => '<option value="' + d + '">' + d + "</option>")
+      .join("");
+    if (dates.length) sel.value = dates[0];
+    sel.addEventListener("change", () => render(sel.value));
+    render(dates[0] || "");
+  }
+
+  function splitForPerson(row, person) {
+    if (row.rateio === person) return row.valor;
+    if (
+      row.rateio === "Metade" &&
+      (person === "Julio" || person === "Dani")
+    ) {
+      return row.valor / 2;
+    }
+    return 0;
+  }
+
+  function render(fatura) {
+    const inFatura = allRows.filter((r) => r.data === fatura);
+    renderTotals(inFatura);
+    renderPerson("Julio", inFatura);
+    renderPerson("Dani", inFatura);
+    renderCategoria(inFatura);
+    renderRateioChart(inFatura);
+    renderHistorico();
+  }
+
+  function renderTotals(rows) {
+    const totalGeral = rows.reduce((s, r) => s + r.valor, 0);
+    const totalCartao = rows
+      .filter((r) => r.origem === "Cartão")
+      .reduce((s, r) => s + r.valor, 0);
+    $("kpi-total-geral").textContent = Money.format(totalGeral);
+    $("kpi-total-cartao").textContent = Money.format(totalCartao);
+    // Total parcelado: placeholder (sem coluna de parcelas hoje).
+    $("kpi-total-parcelado").textContent = Money.format(0);
+  }
+
+  function bucketKey_(row) {
+    if (row.origem === "Cartão") {
+      return row.categoria === "Pessoal"
+        ? "Cartão (pessoal)"
+        : "Cartão (sem pessoal)";
+    }
+    return row.origem;
+  }
+
+  function renderPerson(person, rows) {
+    const byOrigem = {};
+    for (const r of rows) {
+      const v = splitForPerson(r, person);
+      if (v === 0) continue;
+      const k = bucketKey_(r);
+      byOrigem[k] = (byOrigem[k] || 0) + v;
+    }
+    const total = Object.values(byOrigem).reduce((s, v) => s + v, 0);
+
+    const ordered = [
+      "Cartão (sem pessoal)",
+      "Cartão (pessoal)",
+      "Pix",
+      "Pessoal",
+      "Empregados",
+    ];
+    const seen = new Set(ordered);
+    const allKeys = ordered.concat(
+      Object.keys(byOrigem).filter((k) => !seen.has(k))
+    );
+
+    const tableId = person === "Julio" ? "table-julio" : "table-dani";
+    const t = $(tableId);
+    let html =
+      '<thead><tr><th>Subtotal</th><th class="num">Valor (R$)</th><th class="num">%</th></tr></thead><tbody>';
+    for (const k of allKeys) {
+      if (!byOrigem[k]) continue;
+      const v = byOrigem[k];
+      const pct = total ? v / total : 0;
+      html +=
+        "<tr><td>" +
+        k +
+        '</td><td class="num">' +
+        Money.format(v) +
+        '</td><td class="num">' +
+        Pct.format(pct) +
+        "</td></tr>";
+    }
+    html +=
+      '<tr class="total"><td>Total geral</td><td class="num">' +
+      Money.format(total) +
+      '</td><td class="num">' +
+      (total ? Pct.format(1) : "—") +
+      "</td></tr></tbody>";
+    t.innerHTML = html;
+
+    const cartaoContas =
+      (byOrigem["Cartão (sem pessoal)"] || 0) +
+      (byOrigem["Pix"] || 0) +
+      (byOrigem["Empregados"] || 0) +
+      (byOrigem["Contas"] || 0);
+    const cartaoContasPessoal =
+      (byOrigem["Cartão (sem pessoal)"] || 0) +
+      (byOrigem["Cartão (pessoal)"] || 0) +
+      (byOrigem["Pix"] || 0) +
+      (byOrigem["Contas"] || 0) +
+      (byOrigem["Empregados"] || 0);
+
+    const otherPerson = person === "Julio" ? "Dani" : "Julio";
+    const otherByOrigem = {};
+    for (const r of rows) {
+      const v = splitForPerson(r, otherPerson);
+      if (v === 0) continue;
+      const k = bucketKey_(r);
+      otherByOrigem[k] = (otherByOrigem[k] || 0) + v;
+    }
+    // Diff: usa Pix se existir no mês; senão cai pra Contas + Empregados.
+    const monthHasPix = rows.some((r) => r.origem === "Pix");
+    const meuValor = monthHasPix
+      ? byOrigem["Pix"] || 0
+      : (byOrigem["Contas"] || 0) + (byOrigem["Empregados"] || 0);
+    const outroValor = monthHasPix
+      ? otherByOrigem["Pix"] || 0
+      : (otherByOrigem["Contas"] || 0) + (otherByOrigem["Empregados"] || 0);
+    const diff = meuValor - outroValor;
+    const diffSign = diff >= 0 ? "diff-pos" : "diff-neg";
+
+    const kpisId = person === "Julio" ? "kpis-julio" : "kpis-dani";
+    $(kpisId).innerHTML =
+      '<div class="mini-kpi"><small>Cartão/Pix/Pessoal</small><b>' +
+      Money.format(cartaoContasPessoal) +
+      "</b></div>" +
+      '<div class="mini-kpi"><small>Cartão/Pix</small><b>' +
+      Money.format(cartaoContas) +
+      "</b></div>" +
+      '<div class="mini-kpi ' +
+      diffSign +
+      '"><small>Diff ' +
+      person +
+      "</small><b>" +
+      Money.format(diff) +
+      "</b></div>";
+  }
+
+  function renderCategoria(rows) {
+    const cartao = rows.filter((r) => r.origem === "Cartão");
+    const byCat = {};
+    for (const r of cartao) {
+      const k = r.categoria || "(sem categoria)";
+      byCat[k] = (byCat[k] || 0) + r.valor;
+    }
+    const totalCheio = Object.values(byCat).reduce((s, v) => s + v, 0);
+    const list = Object.entries(byCat)
+      .map(([cat, cheio]) => ({
+        cat: cat,
+        cheio: cheio,
+        metade: cheio / 2,
+        pct: totalCheio ? cheio / totalCheio : 0,
+      }))
+      .sort((a, b) => b.cheio - a.cheio);
+
+    const t = $("categoria-table");
+    let html =
+      '<thead><tr><th>Categoria</th><th class="num">Valor (R$)</th><th class="num">Metade (R$)</th><th class="num">%</th></tr></thead><tbody>';
+    for (const r of list) {
+      html +=
+        "<tr><td>" +
+        r.cat +
+        '</td><td class="num">' +
+        Money.format(r.cheio) +
+        '</td><td class="num">' +
+        Money.format(r.metade) +
+        '</td><td class="num">' +
+        Pct.format(r.pct) +
+        "</td></tr>";
+    }
+    html +=
+      '<tr class="total"><td>Total geral</td><td class="num">' +
+      Money.format(totalCheio) +
+      '</td><td class="num">' +
+      Money.format(totalCheio / 2) +
+      '</td><td class="num">' +
+      (totalCheio ? Pct.format(1) : "—") +
+      "</td></tr></tbody>";
+    t.innerHTML = html;
+  }
+
+  function renderRateioChart(rows) {
+    const cartao = rows.filter((r) => r.origem === "Cartão");
+    const byRateio = {};
+    for (const r of cartao) {
+      const k = r.rateio || "(sem rateio)";
+      byRateio[k] = (byRateio[k] || 0) + r.valor;
+    }
+    const data = Object.entries(byRateio)
+      .map(([rateio, valor]) => ({ rateio: rateio, valor: valor }))
+      .sort((a, b) => b.valor - a.valor);
+
+    const ctx = $("chart-rateio").getContext("2d");
+    if (charts.rateio) charts.rateio.destroy();
+    charts.rateio = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: data.map((d) => d.rateio),
+        datasets: [
+          {
+            data: data.map((d) => d.valor),
+            backgroundColor: "#a07b5e",
+          },
+        ],
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { right: 80 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => Money.format(ctx.parsed.x),
+            },
+          },
+          datalabels: {
+            anchor: "end",
+            align: "end",
+            color: "#262626",
+            font: { weight: 600 },
+            formatter: (v) => Money.format(v),
+          },
+        },
+        scales: {
+          x: { ticks: { callback: (v) => Money.format(v) } },
+        },
+      },
+      plugins: [ChartDataLabels],
+    });
+  }
+
+  function renderHistorico() {
+    const faturas = [...new Set(allRows.map((r) => r.data).filter(Boolean))]
+      .sort((a, b) => dateKey(a).localeCompare(dateKey(b)))
+      .slice(-12);
+
+    const valorCheio = faturas.map((f) =>
+      allRows
+        .filter((r) => r.data === f && r.origem !== "Pessoal")
+        .reduce((s, r) => s + r.valor, 0)
+    );
+    const julioPessoal = faturas.map((f) =>
+      allRows
+        .filter((r) => r.data === f && r.categoria === "Pessoal")
+        .reduce((s, r) => s + splitForPerson(r, "Julio"), 0)
+    );
+    const daniPessoal = faturas.map((f) =>
+      allRows
+        .filter((r) => r.data === f && r.categoria === "Pessoal")
+        .reduce((s, r) => s + splitForPerson(r, "Dani"), 0)
+    );
+
+    drawLineChart_("chart-historico-total", "historicoTotal", faturas, [
+      {
+        label: "Total geral",
+        data: valorCheio,
+        color: "#a07b5e",
+        align: "top",
+      },
+    ]);
+    drawLineChart_("chart-historico-pessoal", "historicoPessoal", faturas, [
+      { label: "Julio", data: julioPessoal, color: "#4a7ab8", align: "top" },
+      { label: "Dani", data: daniPessoal, color: "#c97070", align: "bottom" },
+    ]);
+  }
+
+  function drawLineChart_(canvasId, chartKey, labels, series) {
+    const ctx = $(canvasId).getContext("2d");
+    if (charts[chartKey]) charts[chartKey].destroy();
+    const lineBase = {
+      tension: 0.2,
+      borderWidth: 1.5,
+      pointRadius: 2.5,
+      pointHoverRadius: 5,
+    };
+    charts[chartKey] = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: series.map((s) => ({
+          ...lineBase,
+          label: s.label,
+          data: s.data,
+          borderColor: s.color,
+          backgroundColor: s.color,
+          datalabels: { align: s.align, offset: 6 },
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 24 } },
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                ctx.dataset.label + ": " + Money.format(ctx.parsed.y),
+            },
+          },
+          datalabels: {
+            anchor: "end",
+            align: "top",
+            offset: 4,
+            color: (ctx) => ctx.dataset.borderColor,
+            font: { size: 10, weight: 600 },
+            formatter: (v) => moneyShort_(v),
+          },
+        },
+        scales: {
+          y: { ticks: { callback: (v) => Money.format(v) } },
+        },
+      },
+      plugins: [ChartDataLabels],
+    });
+  }
+
+  function moneyShort_(v) {
+    if (v == null || isNaN(v)) return "";
+    const abs = Math.abs(v);
+    if (abs >= 1000) {
+      return (v / 1000).toFixed(1).replace(".", ",") + " mil";
+    }
+    return Money.format(v);
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>

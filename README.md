@@ -10,11 +10,24 @@ Webhook em Google Apps Script que recebe `POST` com notificações de compra no 
 
 ```
 src/
-  Code.gs           # doPost handler
-  appsscript.json   # manifest (scopes + webapp config)
-.clasp.json         # vincula ao projeto Apps Script remoto
+  appsscript.json              # manifest (scopes + webapp config)
+  shared/
+    Constants.gs               # SHEET_ID, SHEET_NAME, ORIGEM, INVOICE_CLOSING_DAY
+    Helpers.gs                 # jsonResponse_, formatBrDate_, parseBrazilNumber_, ...
+    Setup.gs                   # setupToken (rodar 1x manualmente)
+  webhook/
+    Webhook.gs                 # doPost + parser de notificação
+    FixedExpenses.gs           # despesas fixas inseridas no início da fatura
+  dashboard/
+    Dashboard.gs               # doGet + getDataForDashboard (google.script.run)
+    Index.html                 # markup
+    Stylesheet.html            # CSS responsivo (mobile-first)
+    Script.html                # JS de agregação + Chart.js
+.clasp.json                    # vincula ao projeto Apps Script remoto
 .github/workflows/deploy.yml
 ```
+
+> Todos os `.gs` rodam no mesmo escopo global do Apps Script — chamadas como `jsonResponse_()` em `webhook/Webhook.gs` resolvem para a função em `shared/Helpers.gs` sem `import`.
 
 ## Setup local (uma vez)
 
@@ -31,7 +44,7 @@ src/
    npx clasp create --type standalone --title hook-finance --rootDir src
    ```
    Isso preenche o `scriptId` em `.clasp.json`. Se já tem um projeto, edite manualmente.
-4. Criar a planilha Google Sheets que vai receber os dados. Pegue o `SHEET_ID` da URL (`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`) e cole em `src/Code.gs`. Ajuste `SHEET_NAME` se a aba não for `Sheet1`.
+4. Criar a planilha Google Sheets que vai receber os dados. Pegue o `SHEET_ID` da URL (`https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit`) e cole em [src/shared/Constants.gs](src/shared/Constants.gs). Ajuste `SHEET_NAME` se a aba não for `Sheet1`.
 5. Adicione o cabeçalho na linha 1 da planilha (ver [Esquema da planilha](#esquema-da-planilha) abaixo).
 
 ## Configurar o token do webhook
@@ -39,7 +52,7 @@ src/
 No editor do Apps Script (após o primeiro `clasp push`):
 
 1. Abra o projeto: `npx clasp open`.
-2. Edite a função `setupToken_` em `Code.gs` colocando um token forte e rode-a uma vez (botão Run). Isso grava em **Project Settings → Script Properties** a chave `WEBHOOK_TOKEN`.
+2. Edite a função `setupToken` em [src/shared/Setup.gs](src/shared/Setup.gs) colocando um token forte e rode-a uma vez (botão Run). Isso grava em **Project Settings → Script Properties** a chave `WEBHOOK_TOKEN`.
 3. Alternativa: vá direto em **Project Settings → Script Properties → Add script property** e crie `WEBHOOK_TOKEN` manualmente.
 
 ## Primeiro deploy (manual, para autorizar scopes)
@@ -73,18 +86,32 @@ A linha 1 da planilha deve ter os seguintes cabeçalhos, na ordem:
 | 3 | Descrição | Estabelecimento extraído do texto (ex.: `SUPERMERCADOS V`). |
 | 4 | Valor | Valor numérico da compra (ex.: `32,78`). |
 | 5 | Origem | Sempre `Cartão` (constante). |
-| 6 | Categoria | Vazio — regras de categorização serão definidas depois. |
-| 7 | Rateio | Vazio — regras serão definidas depois. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. |
+| 6 | Categoria | Inferida via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Vazia se não houver match suficiente. |
+| 7 | Rateio | Inferido via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. Vazio se não houver match suficiente. |
+| 8 | Cartão | Últimos 4 dígitos do cartão extraídos do texto. Mapeamento titular em [src/shared/Constants.gs](src/shared/Constants.gs) (`CARDS`): `1018`, `9727` → Julio; `4750`, `0784` → Dani. |
 
-Constantes que controlam o comportamento estão no topo do [src/Code.gs](src/Code.gs):
+Constantes que controlam o comportamento:
 
-- `INVOICE_CLOSING_DAY` — dia do fechamento da fatura (default `6`).
-- `ORIGEM` — texto fixo da coluna Origem (default `Cartão`).
-- `PURCHASE_RE` — regex que extrai cartão, valor, data, hora e descrição do texto.
+- `INVOICE_CLOSING_DAY` em [src/shared/Constants.gs](src/shared/Constants.gs) — dia do fechamento da fatura (default `6`).
+- `ORIGEM` em [src/shared/Constants.gs](src/shared/Constants.gs) — texto fixo da coluna Origem para webhook (default `Cartão`).
+- `PURCHASE_RE` em [src/webhook/Webhook.gs](src/webhook/Webhook.gs) — regex que extrai cartão, valor, data, hora e descrição do texto.
+
+### Classificação automática (Categoria/Rateio)
+
+Quando uma compra de cartão chega, o webhook tenta inferir `Categoria` e `Rateio` olhando o histórico:
+
+- Considera apenas linhas com `Origem = Cartão` que já tenham `Categoria` ou `Rateio` preenchidos.
+- Calcula similaridade Jaccard entre tokens normalizados (uppercase, sem acentos, sem pontuação, sem stop-words tipo `LJ`, `FILIAL`, `BR`, `LTDA`).
+- Score ≥ `CLASSIFY_THRESHOLD` (default `0.4`) → copia `Categoria` e `Rateio` da linha mais similar (empate → mais recente vence).
+- Sem match suficiente → as duas colunas ficam vazias para você preencher manualmente.
+
+Exemplo: se você classificou uma vez `"AMAZON BR"` como `Categoria = Compras / Rateio = Metade`, da próxima vez que vier `"AMAZON.COM.BR LJ 09"` o sistema completa sozinho.
+
+Lógica em [src/webhook/Classifier.gs](src/webhook/Classifier.gs). Para tunar: ajustar `CLASSIFY_THRESHOLD` ou `CLASSIFY_STOP_WORDS`.
 
 ### Despesas fixas mensais
 
-Quando chega a **primeira compra de cartão** de uma nova fatura (i.e., não existe nenhuma linha com `Data` = data de fechamento atual e `Origem` = `Cartão`), o webhook insere automaticamente uma lista de despesas fixas (diarista, plano de saúde, contas, condomínio, etc.) antes de gravar a compra. A lista está em [src/FixedExpenses.gs](src/FixedExpenses.gs) — edite ali para adicionar/remover/alterar valores.
+Quando chega a **primeira compra de cartão** de uma nova fatura (i.e., não existe nenhuma linha com `Data` = data de fechamento atual e `Origem` = `Cartão`), o webhook insere automaticamente uma lista de despesas fixas (diarista, plano de saúde, contas, condomínio, etc.) antes de gravar a compra. A lista está em [src/webhook/FixedExpenses.gs](src/webhook/FixedExpenses.gs) — edite ali para adicionar/remover/alterar valores.
 
 ### Formato esperado do `text`
 
@@ -118,6 +145,25 @@ E uma nova linha aparece na planilha com as 7 colunas preenchidas conforme o esq
 | `{"ok":false,"error":"sheet_not_found"}` | `SHEET_NAME` não existe na planilha. |
 | `{"ok":false,"error":"empty_body"}` | POST sem body JSON. |
 
+## Dashboard
+
+Mesma URL do webhook, sem query params: abrir no navegador serve o HTML do dashboard.
+
+- **Acesso**: [src/dashboard/Index.html](src/dashboard/Index.html) (renderizado via `HtmlService` em [src/dashboard/Dashboard.gs](src/dashboard/Dashboard.gs)).
+- **Auth**: na primeira visita, a página pede o `WEBHOOK_TOKEN` (mesmo do POST). Token válido é salvo em `localStorage` (`hook-finance-token`); token inválido limpa o storage e mostra erro.
+- **Comunicação**: usa `google.script.run` chamando `getDataForDashboard(token)` — sem CORS, sem fetch externo.
+- **Endpoint JSON adicional** (debug ou outras UIs): `GET <WEB_APP_URL>?action=data&token=<TOKEN>` retorna `{ok, rows[]}`.
+- **Para limpar o token salvo**: DevTools → Application → Local Storage → `hook-finance-token` → remover.
+- **Responsivo**: layout mobile-first. Em ≥640px monta grid 2 colunas (Júlio/Dani lado a lado, categoria/rateio lado a lado). Em ≥1024px aumenta paddings/fontes.
+
+Componentes do dashboard (replicam o Looker Studio anterior):
+- Filtro `Data` (escolhe a fatura), KPIs `Total cartão` e `Total parcelado`.
+- Tabela por pessoa (Júlio, Dani) com subtotais por Origem + total geral.
+- Mini KPIs sob cada tabela: `Cartão/Contas`, `Cartão/Contas/Pessoal`, `Diff` (positivo/negativo).
+- `Cartão (por categoria)`: ValorCheio + Valor (somatório das parcelas dos rateios Julio+Dani+Metade) + %.
+- `Cartão (por pessoa)`: bar chart horizontal por Rateio.
+- `Histórico`: line chart somando todas as origens exceto `Pessoal`, agrupado por fatura.
+
 ## Comandos úteis
 
 ```bash
@@ -125,3 +171,14 @@ npm run push     # clasp push -f
 npm run deploy   # clasp deploy
 npm run pull     # baixa do remoto (caso edite via UI)
 ```
+
+### ⚠ `clasp push` / `clasp deploy` local vs. GitHub Action
+
+`clasp push` e `clasp deploy` rodando da sua máquina enviam o conteúdo da pasta `src/` **direto pros servidores do Apps Script**, sem passar por git/GitHub. Use para iterar rápido durante desenvolvimento.
+
+**Risco**: a produção (Apps Script) e o repo (GitHub) ficam fora de sync enquanto você não comita. Se a [GitHub Action](.github/workflows/deploy.yml) rodar a partir do último commit (push em `main`), ela vai sobrescrever a produção com a versão antiga do repo — efetivamente **revertendo** tudo que você empurrou local.
+
+Regra prática:
+1. Itere local com `npm run push` (e `npm run deploy` quando quiser atualizar a versão servida do deployment fixo).
+2. Quando estabilizar, **comite e dê push em `main`** — a Action re-empurra (sem mudanças), produção e repo voltam alinhados.
+3. Antes de qualquer push em `main`, confira `git status` — não pode ter divergência silenciosa entre `src/` no repo e o que tá em produção.

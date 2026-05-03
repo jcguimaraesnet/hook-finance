@@ -18,3 +18,38 @@ const FIXED_EXPENSES = [
   { refDay: 5, description: "Dízimo", value: 500, origem: "Pix", categoria: "Contas", rateio: "Julio" },
   { refDay: 5, description: "Dízimo", value: 500, origem: "Pix", categoria: "Contas", rateio: "Dani" },
 ];
+
+function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    const exists = rows.some(
+      (r) =>
+        formatBrDate_(r[0]) === invoiceClosing && String(r[4]).trim() === ORIGEM,
+    );
+    if (exists) return;
+  }
+  const [, mm, yyyy] = invoiceClosing.split("/");
+  const fixedRows = FIXED_EXPENSES.map((e) => {
+    const dd = ("0" + e.refDay).slice(-2);
+    return [
+      invoiceClosing,
+      dd + "/" + mm + "/" + yyyy,
+      e.description,
+      e.value,
+      e.origem,
+      e.categoria,
+      e.rateio,
+      "", // Final do cartão (n/a para Pix)
+    ];
+  });
+  const blank = ["", "", "", "", "", "", "", ""];
+  // Visual top-down dentro do bloco inserido:
+  // [blank, ...fixed, blank, blue blank, blank]
+  const block = [blank].concat(fixedRows).concat([blank, blank, blank]);
+  sheet.insertRowsBefore(2, block.length);
+  sheet.getRange(2, 1, block.length, 8).setValues(block);
+  // Linha azul = penúltima do bloco. Inserido a partir da linha 2,
+  // então fica na linha (2 + block.length - 2) = block.length.
+  sheet.getRange(block.length, 1, 1, 8).setBackground("#cfe2f3");
+}

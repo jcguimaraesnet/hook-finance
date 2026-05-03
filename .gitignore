@@ -1,5 +1,7 @@
 node_modules/
 .clasprc.json
+.token
 *.log
 .DS_Store
-.claude/
+.claude/*
+!.claude/plans
