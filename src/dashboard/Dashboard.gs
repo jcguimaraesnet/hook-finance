@@ -1,6 +1,6 @@
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === "data") {
-    return getDataJson_(e.parameter.token);
+    return jsonResponse_(readAllForApi_(e.parameter.token));
   }
   return HtmlService.createTemplateFromFile("dashboard/Index")
     .evaluate()
@@ -11,10 +11,6 @@ function doGet(e) {
 // Exposto para google.script.run (sem trailing underscore = público).
 function getDataForDashboard(token) {
   return readData_(token);
-}
-
-function getDataJson_(token) {
-  return jsonResponse_(readData_(token));
 }
 
 function readData_(token) {
@@ -40,6 +36,10 @@ function readData_(token) {
     cardLast4: String(r[7] || ""),
   }));
   return { ok: true, rows: rows };
+}
+
+function readAllForApi_(token) {
+  return readData_(token);
 }
 
 function include_(filename) {

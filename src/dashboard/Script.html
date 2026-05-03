@@ -104,6 +104,16 @@
     render(dates[0] || "");
   }
 
+  function render(fatura) {
+    const inFatura = allRows.filter((r) => r.data === fatura);
+    renderTotals(inFatura);
+    renderPerson("Julio", inFatura);
+    renderPerson("Dani", inFatura);
+    renderCategoria(inFatura);
+    renderRateioChart(inFatura);
+    renderHistorico();
+  }
+
   function splitForPerson(row, person) {
     if (row.rateio === person) return row.valor;
     if (
@@ -113,16 +123,6 @@
       return row.valor / 2;
     }
     return 0;
-  }
-
-  function render(fatura) {
-    const inFatura = allRows.filter((r) => r.data === fatura);
-    renderTotals(inFatura);
-    renderPerson("Julio", inFatura);
-    renderPerson("Dani", inFatura);
-    renderCategoria(inFatura);
-    renderRateioChart(inFatura);
-    renderHistorico();
   }
 
   function renderTotals(rows) {
