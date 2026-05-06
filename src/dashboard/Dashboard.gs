@@ -6,7 +6,6 @@ function doGet(e) {
     .evaluate()
     .setTitle("hook-finance")
     .addMetaTag("viewport", "width=device-width, initial-scale=1")
-    .addMetaTag("color-scheme", "light")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
