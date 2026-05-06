@@ -48,6 +48,10 @@
     $("dashboard").hidden = false;
   }
 
+  function isPCWeb_() {
+    return window.matchMedia("(min-width: 750px)").matches;
+  }
+
   function setActiveTab(tab) {
     if (!VALID_TABS.includes(tab)) tab = "mes";
     activeTab = tab;
@@ -59,8 +63,12 @@
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
     }
     const panels = document.querySelectorAll(".tab-panel");
-    for (const panel of panels) {
-      panel.hidden = panel.id !== "tab-" + tab;
+    if (isPCWeb_()) {
+      for (const panel of panels) panel.hidden = false;
+    } else {
+      for (const panel of panels) {
+        panel.hidden = panel.id !== "tab-" + tab;
+      }
     }
     flushPendingCharts(tab);
   }
@@ -227,7 +235,7 @@
     renderPerson("Julio", rows);
     renderPerson("Dani", rows);
     renderCategoria(rows);
-    if (activeTab === "pessoal") {
+    if (isPCWeb_() || activeTab === "pessoal") {
       revealRateioCanvas_();
       renderRateioChart(rows);
       chartPending.rateio = null;
@@ -563,7 +571,7 @@
       { label: "Dani", data: daniPessoal, color: "#c97070", align: "bottom" },
     ];
 
-    if (activeTab === "historico") {
+    if (isPCWeb_() || activeTab === "historico") {
       revealHistoricoCanvases_();
       const t = sliceHistoryForViewport_(meses, totalSeries);
       const p = sliceHistoryForViewport_(meses, pessoalSeries);

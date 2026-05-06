@@ -383,6 +383,13 @@
     }
   }
 
+  /* PC Web (≥750px) — esconde sub-abas e mostra todos os panels juntos */
+  @media (min-width: 750px) {
+    .tab-strip { display: none; }
+    .tab-panel,
+    .tab-panel[hidden] { display: block !important; }
+  }
+
   /* Desktop (≥1024px) — mantém max-width 880px, ajusta apenas spacing */
   @media (min-width: 1024px) {
     :root { --gap: 1rem; --pad: 1rem; }
