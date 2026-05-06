@@ -54,31 +54,45 @@ const PARCELAS_20260506 = [
 
 function syncParcelas20260506() {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    Logger.log("ERRO: planilha não encontrada.");
-    return;
-  }
+  if (!sheet) { Logger.log("ERRO: planilha não encontrada."); return; }
   const last = sheet.getLastRow();
-  if (last < 2) {
-    Logger.log("Planilha vazia.");
-    return;
-  }
+  if (last < 2) { Logger.log("Planilha vazia."); return; }
 
   const tz = Session.getScriptTimeZone();
-  const dateCache = {};
+
   function fmtDate(v) {
-    if (v instanceof Date) {
-      const t = v.getTime();
-      if (dateCache[t]) return dateCache[t];
-      const s = Utilities.formatDate(v, tz, "dd/MM/yyyy");
-      dateCache[t] = s;
-      return s;
-    }
+    if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy");
     return String(v || "").trim();
   }
   function fmtDateTime(v) {
     if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy HH:mm");
     return String(v || "").trim();
+  }
+  function normalizeCard_(v) {
+    // Aceita número (784) ou string ("0784", "0784 ") e devolve sempre "0784" com 4 dígitos.
+    const digits = String(v || "").replace(/\D/g, "");
+    if (!digits) return "";
+    return digits.length >= 4 ? digits : ("0000" + digits).slice(-4);
+  }
+  function normalizeValor_(v) {
+    if (typeof v === "number") return v;
+    const s = String(v || "").trim().replace(/\./g, "").replace(",", ".");
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  function normalizeDescPart_(s) {
+    // Remove tudo exceto letras/dígitos pra match tolerante a espaços, asteriscos e pontuação.
+    return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+  function dateMatchesDDMM_(dataRef, ddmm) {
+    // ddmm = "08/04". Considera com ou sem zero à esquerda no dia/mês.
+    const s = String(dataRef || "").trim();
+    if (!s) return false;
+    const norm = ddmm; // "08/04"
+    const noZero = ddmm.split("/").map((p) => String(parseInt(p, 10))).join("/"); // "8/4"
+    return s.indexOf(norm + "/") === 0 || s.indexOf(noZero + "/") === 0
+      || s.indexOf(norm + " ") === 0 || s.indexOf(noZero + " ") === 0
+      || s === norm || s === noZero;
   }
 
   // 1) Localiza o range de linhas do ciclo alvo (col A).
@@ -97,29 +111,48 @@ function syncParcelas20260506() {
 
   Logger.log("Range do ciclo " + PARCELAS_TARGET_CYCLE + ": linhas " + minRow + ".." + maxRow);
   Logger.log("Total de linhas no ciclo: " + matchIndexes.length);
-  Logger.log("Total de entries pra casar: " + PARCELAS_20260506.length);
 
-  // 2) Casa cada entry contra as linhas do slab.
+  // 2) Diagnóstico: imprime as primeiras 3 linhas pra ver tipos/formatos reais.
+  Logger.log("=== Sample slab rows (primeiras 3 do ciclo) ===");
+  for (let i = 0; i < Math.min(3, slab.length); i++) {
+    const r = slab[i];
+    Logger.log(
+      "Row " + (minRow + i) +
+      "\n  A data:    typeof=" + typeof r[0] + " val=" + (r[0] instanceof Date ? "Date " + r[0].toISOString() : ("'" + r[0] + "'")) +
+      "\n  B dataRef: typeof=" + typeof r[1] + " val=" + (r[1] instanceof Date ? "Date " + r[1].toISOString() : ("'" + r[1] + "'")) + " | fmtDateTime='" + fmtDateTime(r[1]) + "'" +
+      "\n  C descr:   '" + r[2] + "'" +
+      "\n  D valor:   typeof=" + typeof r[3] + " val=" + r[3] + " | norm=" + normalizeValor_(r[3]) +
+      "\n  H card:    typeof=" + typeof r[7] + " val=" + r[7] + " | norm='" + normalizeCard_(r[7]) + "'"
+    );
+  }
+
+  // 3) Casa cada entry contra as linhas do slab.
   const claimed = new Set();
   const updates = [];
   const unmatched = [];
 
   for (const entry of PARCELAS_20260506) {
-    const descUpper = entry.desc.toUpperCase();
+    const descPart = normalizeDescPart_(entry.desc);
+    const targetCard = normalizeCard_(entry.card);
     let foundRow = -1;
+    let matchTrace = { card: 0, valor: 0, date: 0, desc: 0 };
     for (let i = 0; i < slab.length; i++) {
       const absRow = minRow + i;
       if (claimed.has(absRow)) continue;
       const r = slab[i];
       if (fmtDate(r[0]) !== PARCELAS_TARGET_CYCLE) continue;
-      const card = String(r[7] || "").trim();
-      if (card !== entry.card) continue;
-      const valor = Number(r[3]) || 0;
+      const card = normalizeCard_(r[7]);
+      if (card !== targetCard) continue;
+      matchTrace.card++;
+      const valor = normalizeValor_(r[3]);
       if (Math.abs(valor - entry.valor) > 0.01) continue;
+      matchTrace.valor++;
       const dataRef = fmtDateTime(r[1]);
-      if (dataRef.indexOf(entry.date + "/") !== 0) continue;
-      const desc = String(r[2] || "").trim().toUpperCase();
-      if (desc.indexOf(descUpper) === -1) continue;
+      if (!dateMatchesDDMM_(dataRef, entry.date)) continue;
+      matchTrace.date++;
+      const desc = normalizeDescPart_(r[2]);
+      if (desc.indexOf(descPart) === -1) continue;
+      matchTrace.desc++;
       foundRow = absRow;
       break;
     }
@@ -127,7 +160,7 @@ function syncParcelas20260506() {
       claimed.add(foundRow);
       updates.push({ row: foundRow, parcela: entry.parcela, entry: entry });
     } else {
-      unmatched.push(entry);
+      unmatched.push({ entry: entry, trace: matchTrace });
     }
   }
 
@@ -140,13 +173,15 @@ function syncParcelas20260506() {
   }
 
   Logger.log("=== Não casados: " + unmatched.length + " ===");
-  for (const e of unmatched) {
+  for (const u of unmatched) {
+    const e = u.entry;
     Logger.log(
-      "MISS  [" + e.card + " " + e.date + " " + e.valor + " " + e.desc + "]"
+      "MISS  [" + e.card + " " + e.date + " " + e.valor + " " + e.desc + "] " +
+      "trace card=" + u.trace.card + " valor=" + u.trace.valor + " date=" + u.trace.date
     );
   }
 
-  // 3) Aplica os updates na col 9 (Parcela).
+  // 4) Aplica os updates na col 9 (Parcela).
   for (const u of updates) {
     sheet.getRange(u.row, 9).setValue(u.parcela);
   }
