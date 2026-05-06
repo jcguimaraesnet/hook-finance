@@ -112,46 +112,74 @@ function syncParcelas20260506() {
   Logger.log("Range do ciclo " + PARCELAS_TARGET_CYCLE + ": linhas " + minRow + ".." + maxRow);
   Logger.log("Total de linhas no ciclo: " + matchIndexes.length);
 
-  // 2) Diagnóstico: imprime as primeiras 3 linhas pra ver tipos/formatos reais.
-  Logger.log("=== Sample slab rows (primeiras 3 do ciclo) ===");
-  for (let i = 0; i < Math.min(3, slab.length); i++) {
-    const r = slab[i];
-    Logger.log(
-      "Row " + (minRow + i) +
-      "\n  A data:    typeof=" + typeof r[0] + " val=" + (r[0] instanceof Date ? "Date " + r[0].toISOString() : ("'" + r[0] + "'")) +
-      "\n  B dataRef: typeof=" + typeof r[1] + " val=" + (r[1] instanceof Date ? "Date " + r[1].toISOString() : ("'" + r[1] + "'")) + " | fmtDateTime='" + fmtDateTime(r[1]) + "'" +
-      "\n  C descr:   '" + r[2] + "'" +
-      "\n  D valor:   typeof=" + typeof r[3] + " val=" + r[3] + " | norm=" + normalizeValor_(r[3]) +
-      "\n  H card:    typeof=" + typeof r[7] + " val=" + r[7] + " | norm='" + normalizeCard_(r[7]) + "'"
-    );
+  // 2) Diagnóstico: distribuição de cards distintos no slab.
+  const cardCount = {};
+  for (let i = 0; i < slab.length; i++) {
+    const c = normalizeCard_(slab[i][7]) || "(vazio)";
+    cardCount[c] = (cardCount[c] || 0) + 1;
+  }
+  Logger.log("=== Distribuição de cardLast4 no slab ===");
+  for (const c of Object.keys(cardCount)) {
+    Logger.log("  " + c + " : " + cardCount[c] + " linhas");
   }
 
-  // 3) Casa cada entry contra as linhas do slab.
+  // 3) Diagnóstico: amostras de 5 rows no início, meio e fim.
+  function sampleRows_(label, indexes) {
+    Logger.log("=== Amostra " + label + " ===");
+    for (const i of indexes) {
+      if (i < 0 || i >= slab.length) continue;
+      const r = slab[i];
+      Logger.log(
+        "Row " + (minRow + i) +
+        " | A=" + (r[0] instanceof Date ? "Date " + r[0].toISOString() : ("'" + r[0] + "'")) +
+        " | B='" + fmtDateTime(r[1]) + "'" +
+        " | C='" + r[2] + "'" +
+        " | D=" + normalizeValor_(r[3]) +
+        " | H='" + normalizeCard_(r[7]) + "'"
+      );
+    }
+  }
+  sampleRows_("início", [0, 1, 2, 3, 4]);
+  sampleRows_("meio", [
+    Math.floor(slab.length / 2) - 2,
+    Math.floor(slab.length / 2) - 1,
+    Math.floor(slab.length / 2),
+    Math.floor(slab.length / 2) + 1,
+    Math.floor(slab.length / 2) + 2,
+  ]);
+  sampleRows_("fim", [slab.length - 5, slab.length - 4, slab.length - 3, slab.length - 2, slab.length - 1]);
+
+  // 4) Casa cada entry contra as linhas do slab — IGNORANDO cardLast4
+  //    (muitas linhas têm card vazio; matching usa valor + data + desc).
   const claimed = new Set();
   const updates = [];
   const unmatched = [];
 
   for (const entry of PARCELAS_20260506) {
     const descPart = normalizeDescPart_(entry.desc);
-    const targetCard = normalizeCard_(entry.card);
     let foundRow = -1;
-    let matchTrace = { card: 0, valor: 0, date: 0, desc: 0 };
+    const candidates = []; // Para diag de "MISS" mostrando o que chegou perto.
+    let matchTrace = { valor: 0, date: 0, desc: 0 };
     for (let i = 0; i < slab.length; i++) {
       const absRow = minRow + i;
       if (claimed.has(absRow)) continue;
       const r = slab[i];
       if (fmtDate(r[0]) !== PARCELAS_TARGET_CYCLE) continue;
-      const card = normalizeCard_(r[7]);
-      if (card !== targetCard) continue;
-      matchTrace.card++;
       const valor = normalizeValor_(r[3]);
       if (Math.abs(valor - entry.valor) > 0.01) continue;
       matchTrace.valor++;
       const dataRef = fmtDateTime(r[1]);
-      if (!dateMatchesDDMM_(dataRef, entry.date)) continue;
+      const dateOk = dateMatchesDDMM_(dataRef, entry.date);
+      if (!dateOk) {
+        candidates.push("row " + absRow + " valor=" + valor + " dataRef='" + dataRef + "' desc='" + r[2] + "' (date miss)");
+        continue;
+      }
       matchTrace.date++;
       const desc = normalizeDescPart_(r[2]);
-      if (desc.indexOf(descPart) === -1) continue;
+      if (desc.indexOf(descPart) === -1) {
+        candidates.push("row " + absRow + " valor=" + valor + " dataRef='" + dataRef + "' desc='" + r[2] + "' (desc miss; norm='" + desc + "')");
+        continue;
+      }
       matchTrace.desc++;
       foundRow = absRow;
       break;
@@ -160,7 +188,7 @@ function syncParcelas20260506() {
       claimed.add(foundRow);
       updates.push({ row: foundRow, parcela: entry.parcela, entry: entry });
     } else {
-      unmatched.push({ entry: entry, trace: matchTrace });
+      unmatched.push({ entry: entry, trace: matchTrace, candidates: candidates });
     }
   }
 
@@ -177,8 +205,11 @@ function syncParcelas20260506() {
     const e = u.entry;
     Logger.log(
       "MISS  [" + e.card + " " + e.date + " " + e.valor + " " + e.desc + "] " +
-      "trace card=" + u.trace.card + " valor=" + u.trace.valor + " date=" + u.trace.date
+      "trace valor=" + u.trace.valor + " date=" + u.trace.date + " desc=" + u.trace.desc
     );
+    for (const c of u.candidates.slice(0, 3)) {
+      Logger.log("   ↳ candidate: " + c);
+    }
   }
 
   // 4) Aplica os updates na col 9 (Parcela).
