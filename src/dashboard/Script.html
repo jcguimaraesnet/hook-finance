@@ -324,7 +324,7 @@
     if (row.origem === "Cartão") {
       return row.categoria === "Pessoal"
         ? "Cartão (pessoal)"
-        : "Cartão (sem pessoal)";
+        : "Cartão (compartilhado)";
     }
     return row.origem;
   }
@@ -340,7 +340,7 @@
     const total = Object.values(byOrigem).reduce((s, v) => s + v, 0);
 
     const ordered = [
-      "Cartão (sem pessoal)",
+      "Cartão (compartilhado)",
       "Cartão (pessoal)",
       "Pix",
       "Pessoal",
@@ -377,12 +377,12 @@
     t.innerHTML = html;
 
     const cartaoContas =
-      (byOrigem["Cartão (sem pessoal)"] || 0) +
+      (byOrigem["Cartão (compartilhado)"] || 0) +
       (byOrigem["Pix"] || 0) +
       (byOrigem["Empregados"] || 0) +
       (byOrigem["Contas"] || 0);
     const cartaoContasPessoal =
-      (byOrigem["Cartão (sem pessoal)"] || 0) +
+      (byOrigem["Cartão (compartilhado)"] || 0) +
       (byOrigem["Cartão (pessoal)"] || 0) +
       (byOrigem["Pix"] || 0) +
       (byOrigem["Contas"] || 0) +
