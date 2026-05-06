@@ -808,7 +808,7 @@
 
     const t = $("categoria-table");
     let html =
-      '<thead><tr><th>Categoria</th><th class="num">Valor (R$)</th><th class="num">Compart (R$)</th><th class="num">%</th></tr></thead><tbody>';
+      '<thead><tr><th>Categoria</th><th class="num">Valor (R$)</th><th class="num">Compart. (R$)</th><th class="num">%</th></tr></thead><tbody>';
     for (const r of list) {
       const compartilhado = r.cat === "Pessoal" ? "—" : Money.format(r.metade);
       html +=
