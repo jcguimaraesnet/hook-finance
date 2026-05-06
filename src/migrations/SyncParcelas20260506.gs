@@ -84,6 +84,20 @@ function syncParcelas20260506() {
     // Remove tudo exceto letras/dígitos pra match tolerante a espaços, asteriscos e pontuação.
     return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
+  function stripParcelaSuffix_(s) {
+    // Remove sufixo "(NN/NN)" no final da descrição, se houver.
+    return String(s || "").replace(/\s*\(\s*\d+\s*\/\s*\d+\s*\)\s*$/, "").trim();
+  }
+  function descMatches_(dataDescNorm, entryDescNorm) {
+    if (!dataDescNorm || !entryDescNorm) return false;
+    if (dataDescNorm === entryDescNorm) return true;
+    // Aceita prefixo em qualquer direção (cobre truncamento na planilha e prefixo na entry).
+    if (dataDescNorm.indexOf(entryDescNorm) === 0) return true;
+    if (entryDescNorm.indexOf(dataDescNorm) === 0) return true;
+    // Também aceita se dataDescNorm contém entryDescNorm em qualquer posição (entry curta, data longa com prefixos extras).
+    if (dataDescNorm.indexOf(entryDescNorm) !== -1) return true;
+    return false;
+  }
   function dateMatchesDDMM_(dataRef, ddmm) {
     // ddmm = "08/04". Considera com ou sem zero à esquerda no dia/mês.
     const s = String(dataRef || "").trim();
@@ -175,8 +189,8 @@ function syncParcelas20260506() {
         continue;
       }
       matchTrace.date++;
-      const desc = normalizeDescPart_(r[2]);
-      if (desc.indexOf(descPart) === -1) {
+      const desc = normalizeDescPart_(stripParcelaSuffix_(r[2]));
+      if (!descMatches_(desc, descPart)) {
         candidates.push("row " + absRow + " valor=" + valor + " dataRef='" + dataRef + "' desc='" + r[2] + "' (desc miss; norm='" + desc + "')");
         continue;
       }
