@@ -3,10 +3,10 @@ import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { PrimaryNav } from "@/components/PrimaryNav";
 import { LoginPage } from "@/pages/LoginPage";
-import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
 import { DetalhePage } from "@/pages/DetalhePage";
 import { LancamentoPage } from "@/pages/LancamentoPage";
+import { AcertoPage } from "@/pages/AcertoPage";
 
 export default function App() {
   const token = useAppStore((s) => s.token);
@@ -33,10 +33,7 @@ function AppShell() {
         <Route path="/consulta" element={<ConsultaPage />} />
         <Route path="/detalhe" element={<DetalhePage />} />
         <Route path="/lancamento" element={<LancamentoPage />} />
-        <Route
-          path="/acerto"
-          element={<PlaceholderPage title="Acerto" note="Próxima task: D.5" />}
-        />
+        <Route path="/acerto" element={<AcertoPage />} />
         <Route path="*" element={<Navigate to="/consulta" replace />} />
       </Routes>
     </div>
