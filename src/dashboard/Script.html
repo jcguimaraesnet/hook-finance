@@ -817,10 +817,12 @@
     const totalCartao = rows
       .filter((r) => r.origem === "Cartão")
       .reduce((s, r) => s + r.valor, 0);
+    const totalParcelado = rows
+      .filter((r) => r.parcela > 1)
+      .reduce((s, r) => s + r.valor, 0);
     $("kpi-total-geral").textContent = Money.format(totalGeral);
     $("kpi-total-cartao").textContent = Money.format(totalCartao);
-    // Total parcelado: placeholder (sem coluna de parcelas hoje).
-    $("kpi-total-parcelado").textContent = Money.format(0);
+    $("kpi-total-parcelado").textContent = Money.format(totalParcelado);
   }
 
   function bucketKey_(row) {
