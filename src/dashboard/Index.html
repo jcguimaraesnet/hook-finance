@@ -49,7 +49,11 @@
       <section id="tab-mes" class="tab-panel" role="tabpanel">
         <div class="people">
           <div class="card person" data-person="Julio">
-            <h3>Júlio</h3>
+            <h3 class="card-header">
+              <span class="card-title">Júlio</span>
+              <button type="button" class="diff-toggle" data-person="Julio" aria-label="Mostrar diferença" title="Mostrar diferença">Δ</button>
+            </h3>
+            <div id="diff-julio" class="diff-line" hidden></div>
             <div class="scroll-x">
               <table class="origem-breakdown" id="table-julio"></table>
               <div id="skeleton-table-julio" class="skeleton-table">
@@ -59,14 +63,13 @@
                 <span class="skeleton skeleton-bar"></span>
               </div>
             </div>
-            <div class="person-kpis" id="kpis-julio">
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
-            </div>
           </div>
           <div class="card person" data-person="Dani">
-            <h3>Dani</h3>
+            <h3 class="card-header">
+              <span class="card-title">Dani</span>
+              <button type="button" class="diff-toggle" data-person="Dani" aria-label="Mostrar diferença" title="Mostrar diferença">Δ</button>
+            </h3>
+            <div id="diff-dani" class="diff-line" hidden></div>
             <div class="scroll-x">
               <table class="origem-breakdown" id="table-dani"></table>
               <div id="skeleton-table-dani" class="skeleton-table">
@@ -75,11 +78,6 @@
                 <span class="skeleton skeleton-bar"></span>
                 <span class="skeleton skeleton-bar"></span>
               </div>
-            </div>
-            <div class="person-kpis" id="kpis-dani">
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
-              <div class="mini-kpi skeleton skeleton-bar lg"></div>
             </div>
           </div>
         </div>

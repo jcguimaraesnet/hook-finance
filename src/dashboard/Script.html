@@ -52,6 +52,40 @@
     return window.matchMedia("(min-width: 750px)").matches;
   }
 
+  function setupDiffToggles() {
+    for (const btn of document.querySelectorAll(".diff-toggle")) {
+      btn.addEventListener("click", () => toggleDiff(btn.dataset.person));
+    }
+    for (const person of ["Julio", "Dani"]) {
+      const key = "hook-finance-diff-" + person.toLowerCase();
+      let saved = "0";
+      try { saved = localStorage.getItem(key) || "0"; } catch (_) {}
+      if (saved === "1") applyDiffVisibility_(person, true);
+    }
+  }
+
+  function toggleDiff(person) {
+    const diffEl = $("diff-" + person.toLowerCase());
+    if (!diffEl) return;
+    const becomeVisible = diffEl.hidden;
+    applyDiffVisibility_(person, becomeVisible);
+    try {
+      localStorage.setItem(
+        "hook-finance-diff-" + person.toLowerCase(),
+        becomeVisible ? "1" : "0",
+      );
+    } catch (_) {}
+  }
+
+  function applyDiffVisibility_(person, visible) {
+    const diffEl = $("diff-" + person.toLowerCase());
+    const btn = document.querySelector(
+      '.diff-toggle[data-person="' + person + '"]',
+    );
+    if (diffEl) diffEl.hidden = !visible;
+    if (btn) btn.classList.toggle("active", visible);
+  }
+
   function setActiveTab(tab) {
     if (!VALID_TABS.includes(tab)) tab = "mes";
     activeTab = tab;
@@ -138,6 +172,7 @@
     for (const btn of document.querySelectorAll(".tab-btn")) {
       btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
     }
+    setupDiffToggles();
     let saved = "mes";
     try { saved = localStorage.getItem(TAB_KEY) || "mes"; } catch (_) {}
     setActiveTab(saved);
@@ -258,13 +293,6 @@
       const t = $(tableId);
       if (t) t.innerHTML = "";
     }
-    for (const kpisId of ["kpis-julio", "kpis-dani"]) {
-      const el = $(kpisId);
-      el.innerHTML =
-        '<div class="mini-kpi skeleton skeleton-bar lg"></div>' +
-        '<div class="mini-kpi skeleton skeleton-bar lg"></div>' +
-        '<div class="mini-kpi skeleton skeleton-bar lg"></div>';
-    }
     const c = $("chart-rateio");
     if (c) c.hidden = true;
     const sk = $(RATEIO_SKELETON);
@@ -379,24 +407,12 @@
         "</td></tr>";
     }
     html +=
-      '<tr class="total"><td>Total geral</td><td class="num">' +
+      '<tr class="total"><td>Total</td><td class="num">' +
       Money.format(total) +
       '</td><td class="num">' +
       (total ? Pct.format(1) : "—") +
       "</td></tr></tbody>";
     t.innerHTML = html;
-
-    const cartaoContas =
-      (byOrigem["Cartão (compartilhado)"] || 0) +
-      (byOrigem["Pix"] || 0) +
-      (byOrigem["Empregados"] || 0) +
-      (byOrigem["Contas"] || 0);
-    const cartaoContasPessoal =
-      (byOrigem["Cartão (compartilhado)"] || 0) +
-      (byOrigem["Cartão (pessoal)"] || 0) +
-      (byOrigem["Pix"] || 0) +
-      (byOrigem["Contas"] || 0) +
-      (byOrigem["Empregados"] || 0);
 
     const otherPerson = person === "Julio" ? "Dani" : "Julio";
     const otherByOrigem = {};
@@ -415,23 +431,16 @@
       ? otherByOrigem["Pix"] || 0
       : (otherByOrigem["Contas"] || 0) + (otherByOrigem["Empregados"] || 0);
     const diff = meuValor - outroValor;
-    const diffSign = diff >= 0 ? "diff-pos" : "diff-neg";
 
-    const kpisId = person === "Julio" ? "kpis-julio" : "kpis-dani";
-    $(kpisId).innerHTML =
-      '<div class="mini-kpi"><small>Compart./Pix/Pessoal</small><b>' +
-      Money.format(cartaoContasPessoal) +
-      "</b></div>" +
-      '<div class="mini-kpi"><small>Compart./Pix</small><b>' +
-      Money.format(cartaoContas) +
-      "</b></div>" +
-      '<div class="mini-kpi ' +
-      diffSign +
-      '"><small>Diff ' +
-      person +
-      "</small><b>" +
-      Money.format(diff) +
-      "</b></div>";
+    const diffId = person === "Julio" ? "diff-julio" : "diff-dani";
+    const diffEl = $(diffId);
+    if (diffEl) {
+      const sign = diff >= 0 ? "+" : "−";
+      diffEl.textContent =
+        "Diff: " + sign + " R$ " + Money.format(Math.abs(diff));
+      diffEl.classList.toggle("diff-pos", diff >= 0);
+      diffEl.classList.toggle("diff-neg", diff < 0);
+    }
   }
 
   function renderCategoria(rows) {
