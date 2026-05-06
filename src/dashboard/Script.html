@@ -13,7 +13,14 @@
   const TAB_KEY = "hook-finance-tab";
   const PAGE_KEY = "hook-finance-page";
   const VALID_TABS = ["mes", "categoria", "pessoal", "historico"];
-  const VALID_PAGES = ["consulta", "detalhe"];
+  const VALID_PAGES = ["consulta", "detalhe", "lancamento"];
+  const MONTH_NAMES_PT = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+  ];
+  let lastEntries = [];
+  let editingEntry = null;
+  let editOriginalTotal = 0;
   const charts = {};
   const monthCache = Object.create(null);
   let currentMonth = null;
@@ -67,6 +74,7 @@
     for (const pageEl of document.querySelectorAll(".page")) {
       pageEl.hidden = pageEl.id !== "page-" + page;
     }
+    if (page === "lancamento") loadLancamentos();
   }
 
   function setupPageNav() {
@@ -213,6 +221,7 @@
     }
     setupPageNav();
     setupDiffToggles();
+    setupEditModal();
     let saved = "mes";
     try { saved = localStorage.getItem(TAB_KEY) || "mes"; } catch (_) {}
     setActiveTab(saved);
@@ -387,6 +396,226 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function loadLancamentos() {
+    const list = $("lancamento-list");
+    if (list) {
+      list.innerHTML =
+        '<div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>' +
+        '<div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>' +
+        '<div class="skeleton skeleton-bar lg" style="height:3rem"></div>';
+    }
+    updateLancamentoSubtitle_();
+    updateCategoriaOptions_();
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (!res || !res.ok) {
+          if (list) list.innerHTML =
+            '<p class="lancamento-empty">Erro: ' + escapeHtml_(res && res.error) + '</p>';
+          return;
+        }
+        lastEntries = res.entries || [];
+        renderLancamentos();
+      })
+      .withFailureHandler((err) => {
+        if (list) list.innerHTML =
+          '<p class="lancamento-empty">Falha: ' + escapeHtml_(err && err.message) + '</p>';
+      })
+      .getLastEntries(token, 10);
+  }
+
+  function updateLancamentoSubtitle_() {
+    const el = $("lancamento-mes-label");
+    if (!el) return;
+    if (!currentMonth) { el.textContent = "—"; return; }
+    const parts = currentMonth.split("/");
+    if (parts.length !== 3) { el.textContent = currentMonth; return; }
+    const m = parseInt(parts[1], 10);
+    const y = parts[2];
+    const monthName = MONTH_NAMES_PT[m - 1] || ("mês " + m);
+    el.textContent = monthName + " de " + y;
+  }
+
+  function updateCategoriaOptions_() {
+    const dl = $("categoria-options");
+    if (!dl) return;
+    const set = new Set();
+    for (const r of currentMonthRows) {
+      if (r.categoria) set.add(r.categoria);
+    }
+    for (const e of lastEntries) {
+      if (e.categoria) set.add(e.categoria);
+    }
+    const sorted = Array.from(set).sort();
+    dl.innerHTML = sorted
+      .map((c) => '<option value="' + escapeHtml_(c) + '"></option>')
+      .join("");
+  }
+
+  function renderLancamentos() {
+    const list = $("lancamento-list");
+    if (!list) return;
+    if (!lastEntries.length) {
+      list.innerHTML = '<p class="lancamento-empty">Sem lançamentos.</p>';
+      return;
+    }
+    let html = "";
+    for (const e of lastEntries) {
+      const parcelaTag = e.parcela > 1
+        ? '<span class="lc-tag lc-parcela">' + e.parcela + 'x</span>'
+        : '';
+      html +=
+        '<div class="lancamento-item" data-row="' + e.row + '">' +
+        '<div class="lc-meta">' + escapeHtml_(e.dataRef) + ' · ' + escapeHtml_(e.origem) + '</div>' +
+        '<div class="lc-desc">' + escapeHtml_(e.descricao) + '</div>' +
+        '<div class="lc-valor">R$ ' + Money.format(e.valor) + '</div>' +
+        '<div class="lc-tags">' +
+        (e.categoria ? '<span class="lc-tag">' + escapeHtml_(e.categoria) + '</span>' : '') +
+        (e.rateio ? '<span class="lc-tag">' + escapeHtml_(e.rateio) + '</span>' : '') +
+        parcelaTag +
+        '</div>' +
+        '</div>';
+    }
+    list.innerHTML = html;
+    for (const item of list.querySelectorAll(".lancamento-item")) {
+      item.addEventListener("click", () => openEditModal(parseInt(item.dataset.row, 10)));
+    }
+  }
+
+  function openEditModal(row) {
+    const entry = lastEntries.find((e) => e.row === row);
+    if (!entry) return;
+    editingEntry = entry;
+    editOriginalTotal = (Number(entry.valor) || 0) * (Number(entry.parcela) || 1);
+    $("edit-dataref").textContent = entry.dataRef || "—";
+    $("edit-origem").textContent = entry.origem || "—";
+    $("edit-descricao").value = entry.descricao || "";
+    $("edit-valor").value = (Number(entry.valor) || 0).toFixed(2);
+    $("edit-categoria").value = entry.categoria || "";
+    $("edit-rateio").value = entry.rateio || "";
+    setParcelaDisplay_(entry.parcela || 1);
+    $("edit-error").hidden = true;
+    $("edit-modal").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeEditModal() {
+    $("edit-modal").hidden = true;
+    document.body.style.overflow = "";
+    editingEntry = null;
+  }
+
+  function getCurrentParcela_() {
+    const txt = $("edit-parcela-value").textContent || "1x";
+    return parseInt(txt, 10) || 1;
+  }
+
+  function setParcelaDisplay_(n) {
+    const safe = Math.max(1, Math.min(99, parseInt(n, 10) || 1));
+    $("edit-parcela-value").textContent = safe + "x";
+    const valorPerParcela = editOriginalTotal / safe;
+    $("edit-valor").value = valorPerParcela.toFixed(2);
+    $("edit-parcela-total").textContent = "R$ " + Money.format(editOriginalTotal);
+  }
+
+  function setupEditModal() {
+    $("edit-modal-close").addEventListener("click", closeEditModal);
+    $("edit-cancel").addEventListener("click", closeEditModal);
+    $("edit-parcela-up").addEventListener("click", () => {
+      setParcelaDisplay_(getCurrentParcela_() + 1);
+    });
+    $("edit-parcela-down").addEventListener("click", () => {
+      setParcelaDisplay_(getCurrentParcela_() - 1);
+    });
+    $("edit-valor").addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value) || 0;
+      const parcela = getCurrentParcela_();
+      editOriginalTotal = v * parcela;
+      $("edit-parcela-total").textContent = "R$ " + Money.format(editOriginalTotal);
+    });
+    $("edit-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveEntry();
+    });
+    $("edit-delete").addEventListener("click", () => {
+      if (!editingEntry) return;
+      if (!window.confirm("Excluir este lançamento? Esta ação não pode ser desfeita.")) return;
+      deleteEntry();
+    });
+  }
+
+  function saveEntry() {
+    if (!editingEntry) return;
+    const fields = {
+      descricao: $("edit-descricao").value.trim(),
+      valor: parseFloat($("edit-valor").value) || 0,
+      categoria: $("edit-categoria").value.trim(),
+      rateio: $("edit-rateio").value,
+      parcela: getCurrentParcela_(),
+    };
+    const errEl = $("edit-error");
+    errEl.hidden = true;
+    const saveBtn = $("edit-save");
+    const deleteBtn = $("edit-delete");
+    saveBtn.disabled = true;
+    deleteBtn.disabled = true;
+    saveBtn.textContent = "Salvando...";
+    google.script.run
+      .withSuccessHandler((res) => {
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+        saveBtn.textContent = "Salvar";
+        if (!res || !res.ok) {
+          errEl.textContent = "Erro: " + ((res && res.error) || "desconhecido");
+          errEl.hidden = false;
+          return;
+        }
+        closeEditModal();
+        loadLancamentos();
+      })
+      .withFailureHandler((err) => {
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+        saveBtn.textContent = "Salvar";
+        errEl.textContent = "Falha: " + (err && err.message ? err.message : err);
+        errEl.hidden = false;
+      })
+      .updateEntry(localStorage.getItem(TOKEN_KEY), editingEntry.row, fields);
+  }
+
+  function deleteEntry() {
+    if (!editingEntry) return;
+    const errEl = $("edit-error");
+    errEl.hidden = true;
+    const saveBtn = $("edit-save");
+    const deleteBtn = $("edit-delete");
+    saveBtn.disabled = true;
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Excluindo...";
+    google.script.run
+      .withSuccessHandler((res) => {
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = "Excluir";
+        if (!res || !res.ok) {
+          errEl.textContent = "Erro: " + ((res && res.error) || "desconhecido");
+          errEl.hidden = false;
+          return;
+        }
+        closeEditModal();
+        loadLancamentos();
+      })
+      .withFailureHandler((err) => {
+        saveBtn.disabled = false;
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = "Excluir";
+        errEl.textContent = "Falha: " + (err && err.message ? err.message : err);
+        errEl.hidden = false;
+      })
+      .deleteEntry(localStorage.getItem(TOKEN_KEY), editingEntry.row);
   }
 
   function showCurrentMonthSkeleton() {

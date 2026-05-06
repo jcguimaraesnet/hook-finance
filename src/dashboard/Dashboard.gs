@@ -186,6 +186,70 @@ function getHistoricalSummary(token) {
   };
 }
 
+function getLastEntries(token, n) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: "sheet_not_found" };
+  const last = sheet.getLastRow();
+  if (last < 2) return { ok: true, entries: [] };
+  const count = Math.min(n || 10, last - 1);
+  const values = sheet.getRange(2, 1, count, 9).getValues();
+
+  const tz = Session.getScriptTimeZone();
+  const fmtDate = function (v) {
+    if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy");
+    return String(v || "").trim();
+  };
+  const fmtDateTime = function (v) {
+    if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy HH:mm");
+    return String(v || "").trim();
+  };
+
+  const entries = values.map((r, i) => ({
+    row: i + 2,
+    data: fmtDate(r[0]),
+    dataRef: fmtDateTime(r[1]),
+    descricao: String(r[2] || ""),
+    valor: Number(r[3]) || 0,
+    origem: String(r[4] || ""),
+    categoria: String(r[5] || ""),
+    rateio: String(r[6] || ""),
+    cardLast4: String(r[7] || ""),
+    parcela: Number(r[8]) || 1,
+  }));
+
+  return { ok: true, entries: entries };
+}
+
+function updateEntry(token, row, fields) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  if (!row || row < 2) return { ok: false, error: "invalid_row" };
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: "sheet_not_found" };
+  if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
+  fields = fields || {};
+  // Colunas: C=descricao(3), D=valor(4), F=categoria(6), G=rateio(7), I=parcela(9)
+  sheet.getRange(row, 3).setValue(String(fields.descricao || ""));
+  sheet.getRange(row, 4).setValue(Number(fields.valor) || 0);
+  sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
+  sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
+  sheet.getRange(row, 9).setValue(Number(fields.parcela) || 1);
+  return { ok: true, row: row };
+}
+
+function deleteEntry(token, row) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  if (!row || row < 2) return { ok: false, error: "invalid_row" };
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: "sheet_not_found" };
+  if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
+  sheet.deleteRow(row);
+  return { ok: true };
+}
+
 function checkToken_(token) {
   const expected = PropertiesService.getScriptProperties().getProperty(
     "WEBHOOK_TOKEN",
