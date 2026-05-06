@@ -6,6 +6,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
 import { DetalhePage } from "@/pages/DetalhePage";
+import { LancamentoPage } from "@/pages/LancamentoPage";
 
 export default function App() {
   const token = useAppStore((s) => s.token);
@@ -31,10 +32,7 @@ function AppShell() {
         <Route path="/" element={<Navigate to="/consulta" replace />} />
         <Route path="/consulta" element={<ConsultaPage />} />
         <Route path="/detalhe" element={<DetalhePage />} />
-        <Route
-          path="/lancamento"
-          element={<PlaceholderPage title="Lançamento" note="Próxima task: D.4" />}
-        />
+        <Route path="/lancamento" element={<LancamentoPage />} />
         <Route
           path="/acerto"
           element={<PlaceholderPage title="Acerto" note="Próxima task: D.5" />}
