@@ -58,7 +58,7 @@ Acerto Final cards are **always 2-col side-by-side** regardless of viewport.
 - `hook-finance-tab` — last active sub-tab in Consulta.
 - `hook-finance-page` — last active primary nav page.
 - `hook-finance-diff-{julio,dani}` — Δ button toggle state per person (Consulta tab).
-- `hook-finance-acerto-pix-{julio,dani}` — Pix (contas) expand/collapse toggle in Acerto tab per person.
+- `hook-finance-acerto-pix-julio` — hidden expand/collapse state for Pix (contas) section in the Acerto/Julio card. Triggered by clicking the "Pix (contas)" label (no visible button). Dani's card has no toggle.
 
 ### Loading flow
 

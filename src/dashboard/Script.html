@@ -722,8 +722,12 @@
       (r) => r.origem === "Pix (contas)" && r.rateio === person,
     );
     const pixAcerto = pixAll.filter((r) => r.acerto === "Sim");
-    const expanded = !!acertoPixExpanded[person];
+    const isJulio = person === "Julio";
+    const expanded = isJulio && !!acertoPixExpanded[person];
     const pixVisible = expanded ? pixAll : pixAcerto;
+    // Julio: seção aparece se há QUALQUER Pix (pra acomodar o clique pra expandir).
+    // Dani:  seção aparece só se há linhas de Acerto.
+    const showSection = isJulio ? pixAll.length > 0 : pixAcerto.length > 0;
 
     let total = cartaoCompart + cartaoPessoal;
     for (const r of pixVisible) total += r.valor;
@@ -737,16 +741,11 @@
       '<tr><td>Cartão (pessoal)</td><td class="num">' +
       Money.format(cartaoPessoal) +
       "</td></tr>";
-    if (pixAll.length) {
-      const sym = expanded ? "−" : "+";
-      const label = expanded ? "Recolher Pix (contas)" : "Expandir Pix (contas)";
-      html +=
-        '<tr class="section"><td colspan="2">Pix (contas) ' +
-        '<button type="button" class="pix-toggle" onclick="toggleAcertoPix(\'' +
-        person +
-        '\')" aria-label="' + label + '" title="' + label + '">' +
-        sym +
-        "</button></td></tr>";
+    if (showSection) {
+      const labelHtml = isJulio
+        ? '<span class="pix-label-toggle" onclick="toggleAcertoPix(\'Julio\')">Pix (contas)</span>'
+        : "Pix (contas)";
+      html += '<tr class="section"><td colspan="2">' + labelHtml + "</td></tr>";
       for (const r of pixVisible) {
         html +=
           "<tr><td>" +
