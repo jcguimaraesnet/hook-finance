@@ -41,7 +41,7 @@ function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
       e.categoria,
       e.rateio,
       "", // Final do cartão (n/a para Pix)
-      e.parcela || 1,
+      e.parcela || "", // Parcela (vazio = à vista; "1/N" se parcelado)
       e.acerto || "",
     ];
   });

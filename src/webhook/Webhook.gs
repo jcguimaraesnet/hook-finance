@@ -45,7 +45,7 @@ function doPost(e) {
         classification.categoria,
         classification.rateio,
         parsed.cardLast4,
-        1, // Parcela (default à vista)
+        "", // Parcela (vazio = à vista; se parcelado, usuário marca via modal "1/N")
         "", // Acerto (não aplicável a compras de Cartão)
       ],
     ]);

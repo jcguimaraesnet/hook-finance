@@ -405,6 +405,16 @@
       '<p class="detalhe-empty">Sem despesas pessoais neste mês.</p>';
   }
 
+  function parcelaTotal_(p) {
+    if (!p) return 1;
+    const s = String(p).trim();
+    if (s.indexOf("/") !== -1) {
+      const parts = s.split("/");
+      return parseInt(parts[1], 10) || 1;
+    }
+    return parseInt(s, 10) || 1;
+  }
+
   function escapeHtml_(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -480,8 +490,9 @@
     }
     let html = "";
     for (const e of lastEntries) {
-      const parcelaTag = e.parcela > 1
-        ? '<span class="lc-tag lc-parcela">' + e.parcela + 'x</span>'
+      const totalP = parcelaTotal_(e.parcela);
+      const parcelaTag = totalP > 1
+        ? '<span class="lc-tag lc-parcela">' + escapeHtml_(e.parcela) + '</span>'
         : '';
       html +=
         '<div class="lancamento-item" data-row="' + e.row + '">' +
@@ -505,14 +516,15 @@
     const entry = lastEntries.find((e) => e.row === row);
     if (!entry) return;
     editingEntry = entry;
-    editOriginalTotal = (Number(entry.valor) || 0) * (Number(entry.parcela) || 1);
+    const initialTotal = parcelaTotal_(entry.parcela);
+    editOriginalTotal = (Number(entry.valor) || 0) * initialTotal;
     $("edit-dataref").textContent = entry.dataRef || "—";
     $("edit-origem").textContent = entry.origem || "—";
     $("edit-descricao").value = entry.descricao || "";
     $("edit-valor").value = (Number(entry.valor) || 0).toFixed(2);
     $("edit-categoria").value = entry.categoria || "";
     $("edit-rateio").value = entry.rateio || "";
-    setParcelaDisplay_(entry.parcela || 1);
+    setParcelaDisplay_(initialTotal);
     $("edit-error").hidden = true;
     $("edit-modal").hidden = false;
     document.body.style.overflow = "hidden";
@@ -565,12 +577,13 @@
 
   function saveEntry() {
     if (!editingEntry) return;
+    const totalParcela = getCurrentParcela_();
     const fields = {
       descricao: $("edit-descricao").value.trim(),
       valor: parseFloat($("edit-valor").value) || 0,
       categoria: $("edit-categoria").value.trim(),
       rateio: $("edit-rateio").value,
-      parcela: getCurrentParcela_(),
+      parcela: totalParcela > 1 ? "1/" + totalParcela : "",
     };
     const errEl = $("edit-error");
     errEl.hidden = true;
@@ -818,7 +831,7 @@
       .filter((r) => r.origem === "Cartão")
       .reduce((s, r) => s + r.valor, 0);
     const totalParcelado = rows
-      .filter((r) => r.parcela > 1)
+      .filter((r) => parcelaTotal_(r.parcela) > 1)
       .reduce((s, r) => s + r.valor, 0);
     $("kpi-total-geral").textContent = Money.format(totalGeral);
     $("kpi-total-cartao").textContent = Money.format(totalCartao);

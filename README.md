@@ -89,7 +89,7 @@ A linha 1 da planilha deve ter os seguintes cabeçalhos, na ordem:
 | 6 | Categoria | Inferida via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Vazia se não houver match suficiente. |
 | 7 | Rateio | Inferido via [Classifier](src/webhook/Classifier.gs) a partir do histórico. Valores possíveis: `Julio`, `Dani`, `Metade`, `Alzira`. Vazio se não houver match suficiente. |
 | 8 | Cartão | Últimos 4 dígitos do cartão extraídos do texto. Mapeamento titular em [src/shared/Constants.gs](src/shared/Constants.gs) (`CARDS`): `1018`, `9727` → Julio; `4750`, `0784` → Dani. |
-| 9 | Parcela | Total de parcelas da compra. Default `1` (à vista). Editável pelo modal da aba Lançamento via [updateEntry](src/dashboard/Dashboard.gs). |
+| 9 | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª de 3). Vazio quando à vista. Editável pelo modal da aba Lançamento via [updateEntry](src/dashboard/Dashboard.gs) — o stepper edita só o total; parcela_atual é sempre gravada como `1`. |
 | 10 | Acerto | `Sim` quando a linha deve entrar no rateio do "Acerto Final". Vazio caso contrário. |
 
 Constantes que controlam o comportamento:

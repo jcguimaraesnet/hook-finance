@@ -23,10 +23,10 @@ Columns A–J (10 columns). Rows are inserted at the top (row 2 = newest).
 | F (6) | Categoria | Free-text. Inferred via `Classifier` (Jaccard similarity). Common values: `Alimentação`, `Pessoal`, `Contas`, `Saúde`, etc. |
 | G (7) | Rateio | `Julio`, `Dani`, `Metade`, `Alzira`, or empty. |
 | H (8) | Cartão | Last 4 digits. `1018`, `9727` → Julio; `4750`, `0784` → Dani. |
-| I (9) | Parcela | Total installments. Default `1`. Editable via Lançamento tab. |
+| I (9) | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª parcela de 3). Vazio quando à vista. Editável via Lançamento tab — o stepper edita só o total; a parcela atual é sempre gravada como `1`. |
 | J (10) | Acerto | `Sim` if the row counts in "Acerto Final" tab. Otherwise empty. |
 
-When reading from the sheet, use `Number(r[8]) || 1` for Parcela (defaults missing → 1) and `String(r[9] || "")` for Acerto.
+When reading from the sheet, use `String(r[8] || "")` for Parcela (string format) and `String(r[9] || "")` for Acerto. To extract the total of installments from `"X/Y"`, use the client-side helper `parcelaTotal_(p)` in [Script.html](src/dashboard/Script.html). A row counts as "parcelado" when its Parcela field has total `> 1`.
 
 ## Backend exposed endpoints (callable via `google.script.run`)
 

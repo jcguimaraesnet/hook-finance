@@ -72,7 +72,7 @@ function getMonthData(token, month) {
       categoria: String(r[5] || ""),
       rateio: String(r[6] || ""),
       cardLast4: String(r[7] || ""),
-      parcela: Number(r[8]) || 1,
+      parcela: String(r[8] || "").trim(),
       acerto: String(r[9] || ""),
     }));
 
@@ -218,7 +218,7 @@ function getLastEntries(token, n) {
     categoria: String(r[5] || ""),
     rateio: String(r[6] || ""),
     cardLast4: String(r[7] || ""),
-    parcela: Number(r[8]) || 1,
+    parcela: String(r[8] || "").trim(),
     acerto: String(r[9] || ""),
   }));
 
@@ -238,7 +238,7 @@ function updateEntry(token, row, fields) {
   sheet.getRange(row, 4).setValue(Number(fields.valor) || 0);
   sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
   sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
-  sheet.getRange(row, 9).setValue(Number(fields.parcela) || 1);
+  sheet.getRange(row, 9).setValue(String(fields.parcela || ""));
   return { ok: true, row: row };
 }
 
@@ -273,7 +273,7 @@ function mapRow_(r) {
     categoria: String(r[5] || ""),
     rateio: String(r[6] || ""),
     cardLast4: String(r[7] || ""),
-    parcela: Number(r[8]) || 1,
+    parcela: String(r[8] || "").trim(),
     acerto: String(r[9] || ""),
   };
 }
