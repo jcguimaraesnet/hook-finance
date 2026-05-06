@@ -45,6 +45,8 @@ function doPost(e) {
         classification.categoria,
         classification.rateio,
         parsed.cardLast4,
+        1, // Parcela (default à vista)
+        "", // Acerto (não aplicável a compras de Cartão)
       ],
     ]);
     return jsonResponse_({ ok: true });
