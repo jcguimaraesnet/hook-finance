@@ -20,94 +20,113 @@
   </div>
 
   <div id="dashboard" hidden>
-    <header>
-      <div class="filter-stack">
-        <div class="filter-group">
-          <label for="filter-data">Data</label>
-          <select id="filter-data" disabled><option>—</option></select>
-        </div>
-        <div class="kpi"><span>Total geral</span><strong id="kpi-total-geral" class="skeleton skeleton-bar lg">—</strong></div>
-      </div>
-      <div class="kpi"><span>Total cartão</span><strong id="kpi-total-cartao" class="skeleton skeleton-bar lg">—</strong></div>
-      <div class="kpi"><span>Total parcelado</span><strong id="kpi-total-parcelado" class="skeleton skeleton-bar lg">—</strong></div>
-    </header>
+    <nav class="primary-nav" role="navigation" aria-label="Páginas principais">
+      <button type="button" class="nav-item active" data-page="consulta">📊 Consulta</button>
+      <button type="button" class="nav-item disabled" disabled aria-disabled="true">📋 Detalhe</button>
+      <button type="button" class="nav-item disabled" disabled aria-disabled="true">➕ Lançamento</button>
+    </nav>
 
-    <section class="people">
-      <div class="card person" data-person="Julio">
-        <h3>Júlio</h3>
-        <div class="scroll-x">
-          <table class="origem-breakdown" id="table-julio"></table>
-          <div id="skeleton-table-julio" class="skeleton-table">
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
+    <div id="page-consulta" class="page">
+      <div class="sticky-header">
+        <div class="filter-and-kpis">
+          <div class="filter-group">
+            <label for="filter-data">Data</label>
+            <select id="filter-data" disabled><option>—</option></select>
+          </div>
+          <div class="kpi"><span>Total geral</span><strong id="kpi-total-geral" class="skeleton skeleton-bar lg">—</strong></div>
+          <div class="kpi"><span>Total cartão</span><strong id="kpi-total-cartao" class="skeleton skeleton-bar lg">—</strong></div>
+          <div class="kpi"><span>Total parcelado</span><strong id="kpi-total-parcelado" class="skeleton skeleton-bar lg">—</strong></div>
+        </div>
+      </div>
+
+      <div class="tab-strip" role="tablist" aria-label="Sub-seções">
+        <button type="button" class="tab-btn active" data-tab="mes" role="tab" aria-selected="true">Mês</button>
+        <button type="button" class="tab-btn" data-tab="cartao" role="tab" aria-selected="false">Cartão</button>
+        <button type="button" class="tab-btn" data-tab="historico" role="tab" aria-selected="false">Histórico</button>
+      </div>
+
+      <section id="tab-mes" class="tab-panel" role="tabpanel">
+        <div class="people">
+          <div class="card person" data-person="Julio">
+            <h3>Júlio</h3>
+            <div class="scroll-x">
+              <table class="origem-breakdown" id="table-julio"></table>
+              <div id="skeleton-table-julio" class="skeleton-table">
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+              </div>
+            </div>
+            <div class="person-kpis" id="kpis-julio">
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+            </div>
+          </div>
+          <div class="card person" data-person="Dani">
+            <h3>Dani</h3>
+            <div class="scroll-x">
+              <table class="origem-breakdown" id="table-dani"></table>
+              <div id="skeleton-table-dani" class="skeleton-table">
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+              </div>
+            </div>
+            <div class="person-kpis" id="kpis-dani">
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+              <div class="mini-kpi skeleton skeleton-bar lg"></div>
+            </div>
           </div>
         </div>
-        <div class="person-kpis" id="kpis-julio">
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-        </div>
-      </div>
-      <div class="card person" data-person="Dani">
-        <h3>Dani</h3>
-        <div class="scroll-x">
-          <table class="origem-breakdown" id="table-dani"></table>
-          <div id="skeleton-table-dani" class="skeleton-table">
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
+      </section>
+
+      <section id="tab-cartao" class="tab-panel" role="tabpanel" hidden>
+        <div class="lower">
+          <div class="card">
+            <h3>Cartão (por categoria)</h3>
+            <div class="scroll-x">
+              <table id="categoria-table"></table>
+              <div id="skeleton-table-categoria" class="skeleton-table">
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+                <span class="skeleton skeleton-bar"></span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Cartão (por pessoa)</h3>
+            <div class="chart-wrap">
+              <canvas id="chart-rateio" hidden></canvas>
+              <div id="skeleton-chart-rateio" class="skeleton skeleton-chart"></div>
+            </div>
           </div>
         </div>
-        <div class="person-kpis" id="kpis-dani">
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-          <div class="mini-kpi skeleton skeleton-bar lg"></div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="lower">
-      <div class="card">
-        <h3>Cartão (por categoria)</h3>
-        <div class="scroll-x">
-          <table id="categoria-table"></table>
-          <div id="skeleton-table-categoria" class="skeleton-table">
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
-            <span class="skeleton skeleton-bar"></span>
+      <section id="tab-historico" class="tab-panel" role="tabpanel" hidden>
+        <section class="card history">
+          <h3>Histórico — Total geral</h3>
+          <div class="chart-wrap">
+            <canvas id="chart-historico-total" hidden></canvas>
+            <div id="skeleton-chart-historico-total" class="skeleton skeleton-chart"></div>
+            <p id="error-historico-total" class="error" hidden></p>
           </div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Cartão (por pessoa)</h3>
-        <div class="chart-wrap">
-          <canvas id="chart-rateio" hidden></canvas>
-          <div id="skeleton-chart-rateio" class="skeleton skeleton-chart"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card history">
-      <h3>Histórico — Total geral</h3>
-      <div class="chart-wrap">
-        <canvas id="chart-historico-total" hidden></canvas>
-        <div id="skeleton-chart-historico-total" class="skeleton skeleton-chart"></div>
-        <p id="error-historico-total" class="error" hidden></p>
-      </div>
-    </section>
-
-    <section class="card history">
-      <h3>Histórico — Pessoal</h3>
-      <div class="chart-wrap">
-        <canvas id="chart-historico-pessoal" hidden></canvas>
-        <div id="skeleton-chart-historico-pessoal" class="skeleton skeleton-chart"></div>
-        <p id="error-historico-pessoal" class="error" hidden></p>
-      </div>
-    </section>
+        </section>
+        <section class="card history">
+          <h3>Histórico — Pessoal</h3>
+          <div class="chart-wrap">
+            <canvas id="chart-historico-pessoal" hidden></canvas>
+            <div id="skeleton-chart-historico-pessoal" class="skeleton skeleton-chart"></div>
+            <p id="error-historico-pessoal" class="error" hidden></p>
+          </div>
+        </section>
+      </section>
+    </div>
   </div>
 
   <?!= include_('dashboard/Script') ?>
