@@ -13,6 +13,25 @@
   --color-blue: #4a7ab8;
   --color-red: #c97070;
   --color-brown: #a07b5e;
+
+  /* Breakpoints alinhados ao Stylesheet atual */
+  --breakpoint-tablet: 640px;
+  --breakpoint-pc: 750px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -480px 0; }
+  100% { background-position:  480px 0; }
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, #ece8df 0px, #f5f1e8 240px, #ece8df 480px);
+  background-size: 960px 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
 }
 
 :root {

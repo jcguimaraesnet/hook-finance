@@ -1,23 +1,50 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useAppStore } from "@/store/useAppStore";
+import { PrimaryNav } from "@/components/PrimaryNav";
+import { LoginPage } from "@/pages/LoginPage";
+import { PlaceholderPage } from "@/pages/PlaceholderPage";
 
 export default function App() {
-  return (
-    <main className="min-h-dvh max-w-[880px] mx-auto p-3">
-      <Routes>
-        <Route path="/" element={<Placeholder title="hook-finance" />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </main>
-  );
+  const token = useAppStore((s) => s.token);
+  if (!token) return <LoginPage />;
+  return <AppShell />;
 }
 
-function Placeholder({ title }: { title: string }) {
+function AppShell() {
+  const location = useLocation();
+  const setActivePage = useAppStore((s) => s.setActivePage);
+
+  useEffect(() => {
+    const seg = location.pathname.split("/")[1] || "consulta";
+    if (["consulta", "detalhe", "lancamento", "acerto"].includes(seg)) {
+      setActivePage(seg as "consulta" | "detalhe" | "lancamento" | "acerto");
+    }
+  }, [location.pathname, setActivePage]);
+
   return (
-    <div className="grid place-items-center min-h-[60dvh] gap-3 text-center">
-      <h1 className="text-2xl font-semibold text-[--color-fg]">{title}</h1>
-      <p className="text-sm text-[--color-muted]">
-        Esqueleto inicial — Phase B do plano. Próxima etapa: API client + páginas.
-      </p>
+    <div className="min-h-dvh max-w-[880px] mx-auto p-3 pb-20 tablet:pb-3">
+      <PrimaryNav />
+      <Routes>
+        <Route path="/" element={<Navigate to="/consulta" replace />} />
+        <Route
+          path="/consulta"
+          element={<PlaceholderPage title="Consulta" note="Próxima task: D.2" />}
+        />
+        <Route
+          path="/detalhe"
+          element={<PlaceholderPage title="Detalhe" note="Próxima task: D.3" />}
+        />
+        <Route
+          path="/lancamento"
+          element={<PlaceholderPage title="Lançamento" note="Próxima task: D.4" />}
+        />
+        <Route
+          path="/acerto"
+          element={<PlaceholderPage title="Acerto" note="Próxima task: D.5" />}
+        />
+        <Route path="*" element={<Navigate to="/consulta" replace />} />
+      </Routes>
     </div>
   );
 }
