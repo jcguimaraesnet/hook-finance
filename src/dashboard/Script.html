@@ -83,13 +83,15 @@
         const p = chartPending.historicoTotal;
         chartPending.historicoTotal = null;
         revealHistoricoCanvases_();
-        drawLineChart_("chart-historico-total", "historicoTotal", p.months, p.series);
+        const sliced = sliceHistoryForViewport_(p.months, p.series);
+        drawLineChart_("chart-historico-total", "historicoTotal", sliced.months, sliced.series);
       }
       if (chartPending.historicoPessoal !== null) {
         const p = chartPending.historicoPessoal;
         chartPending.historicoPessoal = null;
         revealHistoricoCanvases_();
-        drawLineChart_("chart-historico-pessoal", "historicoPessoal", p.months, p.series);
+        const sliced = sliceHistoryForViewport_(p.months, p.series);
+        drawLineChart_("chart-historico-pessoal", "historicoPessoal", sliced.months, sliced.series);
       }
     }
   }
@@ -563,14 +565,25 @@
 
     if (activeTab === "historico") {
       revealHistoricoCanvases_();
-      drawLineChart_("chart-historico-total", "historicoTotal", meses, totalSeries);
-      drawLineChart_("chart-historico-pessoal", "historicoPessoal", meses, pessoalSeries);
+      const t = sliceHistoryForViewport_(meses, totalSeries);
+      const p = sliceHistoryForViewport_(meses, pessoalSeries);
+      drawLineChart_("chart-historico-total", "historicoTotal", t.months, t.series);
+      drawLineChart_("chart-historico-pessoal", "historicoPessoal", p.months, p.series);
       chartPending.historicoTotal = null;
       chartPending.historicoPessoal = null;
     } else {
       chartPending.historicoTotal = { months: meses, series: totalSeries };
       chartPending.historicoPessoal = { months: meses, series: pessoalSeries };
     }
+  }
+
+  function sliceHistoryForViewport_(months, series) {
+    const isMobile = window.matchMedia("(max-width: 639.98px)").matches;
+    if (!isMobile) return { months: months, series: series };
+    return {
+      months: months.slice(-6),
+      series: series.map((s) => ({ ...s, data: s.data.slice(-6) })),
+    };
   }
 
   function drawLineChart_(canvasId, chartKey, labels, series) {
