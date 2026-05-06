@@ -32,11 +32,11 @@ export function DetalhePage() {
 
   return (
     <>
-      <div className="sticky top-[-1px] bg-[--color-bg] z-20 mb-3">
-        <div className="flex flex-col gap-1 bg-white border border-[--color-border] rounded-lg p-2.5">
+      <div className="sticky top-[-1px] bg-bg z-20 mb-3">
+        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5">
           <label
             htmlFor="filter-data-detalhe"
-            className="text-[0.7rem] text-[--color-muted]"
+            className="text-[0.7rem] text-muted"
           >
             Data
           </label>
@@ -45,7 +45,7 @@ export function DetalhePage() {
             disabled={!allMonths.length}
             value={currentMonth ?? ""}
             onChange={(e) => setCurrentMonth(e.target.value)}
-            className="w-full text-sm px-2 py-1.5 border border-[--color-border] rounded-md bg-white text-[--color-fg] disabled:opacity-60"
+            className="w-full text-sm px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
               <option>—</option>
@@ -69,7 +69,7 @@ export function DetalhePage() {
       )}
 
       {!monthQ.isLoading && ordered.length === 0 && (
-        <p className="text-sm text-[--color-muted] text-center py-8">
+        <p className="text-sm text-muted text-center py-8">
           Sem despesas pessoais neste mês.
         </p>
       )}
@@ -83,11 +83,11 @@ export function DetalhePage() {
           return (
             <details
               key={person}
-              className="bg-white border border-[--color-border] rounded-lg overflow-hidden"
+              className="bg-white border border-border rounded-lg overflow-hidden"
             >
               <summary className="cursor-pointer select-none flex items-center justify-between gap-2 py-2.5 px-3 font-semibold list-none [&::-webkit-details-marker]:hidden">
                 <span className="flex items-center gap-2">
-                  <span className="text-[--color-muted] text-sm transition-transform">
+                  <span className="text-muted text-sm transition-transform">
                     ▸
                   </span>
                   <span className="text-[0.95rem]">{person}</span>
@@ -96,18 +96,18 @@ export function DetalhePage() {
                   R$ {formatMoney(data.total)}
                 </span>
               </summary>
-              <div className="px-3 pb-3 border-t border-[--color-border]">
+              <div className="px-3 pb-3 border-t border-border">
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-[0.78rem] tabular-nums mt-2">
                     <thead>
                       <tr>
-                        <th className="text-left text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+                        <th className="text-left text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                           Data
                         </th>
-                        <th className="text-left text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+                        <th className="text-left text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                           Descrição
                         </th>
-                        <th className="text-right text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+                        <th className="text-right text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                           Valor (R$)
                         </th>
                       </tr>
@@ -115,13 +115,13 @@ export function DetalhePage() {
                     <tbody>
                       {items.map((it, i) => (
                         <tr key={i}>
-                          <td className="text-left py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                          <td className="text-left py-1.5 px-2 border-b border-border whitespace-nowrap">
                             {it.dataRef}
                           </td>
-                          <td className="text-left py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                          <td className="text-left py-1.5 px-2 border-b border-border whitespace-nowrap">
                             {it.descricao}
                           </td>
-                          <td className="text-right py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                          <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap">
                             {formatMoney(it.valor)}
                           </td>
                         </tr>

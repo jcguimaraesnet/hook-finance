@@ -35,7 +35,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-3 right-3 z-40 tablet:bottom-4 tablet:left-auto tablet:right-4 tablet:max-w-sm bg-[--color-fg] text-white rounded-lg shadow-lg p-3 flex items-center gap-3">
+    <div className="fixed bottom-20 left-3 right-3 z-40 tablet:bottom-4 tablet:left-auto tablet:right-4 tablet:max-w-sm bg-fg text-white rounded-lg shadow-lg p-3 flex items-center gap-3">
       <div className="flex-1 text-sm">
         <p className="font-semibold m-0">Instalar app</p>
         <p className="text-white/70 text-xs m-0 mt-0.5">
@@ -52,7 +52,7 @@ export function InstallPrompt() {
       <button
         type="button"
         onClick={handleInstall}
-        className="bg-[--color-accent] text-[--color-accent-fg] font-semibold px-3 py-1.5 rounded-md text-sm"
+        className="bg-accent text-accent-fg font-semibold px-3 py-1.5 rounded-md text-sm"
       >
         Instalar
       </button>

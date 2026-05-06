@@ -30,11 +30,11 @@ export function AcertoPage() {
 
   return (
     <>
-      <div className="sticky top-[-1px] bg-[--color-bg] z-20 mb-3">
-        <div className="flex flex-col gap-1 bg-white border border-[--color-border] rounded-lg p-2.5">
+      <div className="sticky top-[-1px] bg-bg z-20 mb-3">
+        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5">
           <label
             htmlFor="filter-data-acerto"
-            className="text-[0.7rem] text-[--color-muted]"
+            className="text-[0.7rem] text-muted"
           >
             Data
           </label>
@@ -43,7 +43,7 @@ export function AcertoPage() {
             disabled={!allMonths.length}
             value={acertoMonth ?? ""}
             onChange={(e) => setAcertoMonth(e.target.value)}
-            className="w-full text-sm px-2 py-1.5 border border-[--color-border] rounded-md bg-white text-[--color-fg] disabled:opacity-60"
+            className="w-full text-sm px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
               <option>—</option>
@@ -118,7 +118,7 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
                 <tr>
                   <td
                     colSpan={2}
-                    className="font-semibold text-[--color-muted] uppercase text-[0.6rem] tracking-wide pt-2 pb-1"
+                    className="font-semibold text-muted uppercase text-[0.6rem] tracking-wide pt-2 pb-1"
                   >
                     {isJulio ? (
                       <span
@@ -134,10 +134,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
                 </tr>
                 {pixVisible.map((r, i) => (
                   <tr key={i}>
-                    <td className="text-left py-1 px-0.5 border-b border-[--color-border] truncate max-w-0">
+                    <td className="text-left py-1 px-0.5 border-b border-border truncate max-w-0">
                       {r.descricao}
                     </td>
-                    <td className="text-right py-1 px-0.5 border-b border-[--color-border] whitespace-nowrap w-px">
+                    <td className="text-right py-1 px-0.5 border-b border-border whitespace-nowrap w-px">
                       {formatMoney(r.valor)}
                     </td>
                   </tr>
@@ -145,10 +145,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
               </>
             )}
             <tr>
-              <td className="text-left font-bold pt-1.5 px-0.5 border-t-2 border-[--color-fg]">
+              <td className="text-left font-bold pt-1.5 px-0.5 border-t-2 border-fg">
                 Total
               </td>
-              <td className="text-right font-bold pt-1.5 px-0.5 border-t-2 border-[--color-fg] whitespace-nowrap">
+              <td className="text-right font-bold pt-1.5 px-0.5 border-t-2 border-fg whitespace-nowrap">
                 {formatMoney(total)}
               </td>
             </tr>
@@ -162,10 +162,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <tr>
-      <td className="text-left py-1 px-0.5 border-b border-[--color-border] truncate max-w-0">
+      <td className="text-left py-1 px-0.5 border-b border-border truncate max-w-0">
         {label}
       </td>
-      <td className="text-right py-1 px-0.5 border-b border-[--color-border] whitespace-nowrap w-px">
+      <td className="text-right py-1 px-0.5 border-b border-border whitespace-nowrap w-px">
         {value}
       </td>
     </tr>

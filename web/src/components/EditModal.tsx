@@ -90,8 +90,8 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
   const inProgress = update.isPending || del.isPending;
 
   return (
-    <div className="fixed inset-0 bg-[--color-bg] z-[200] flex flex-col overflow-y-auto">
-      <header className="sticky top-0 bg-[--color-accent] text-[--color-accent-fg] py-2.5 px-4 flex items-center justify-between border-b border-[#d4b54e] z-10">
+    <div className="fixed inset-0 bg-bg z-[200] flex flex-col overflow-y-auto">
+      <header className="sticky top-0 bg-accent text-accent-fg py-2.5 px-4 flex items-center justify-between border-b border-[#d4b54e] z-10">
         <h2 className="text-base font-semibold m-0">Editar lançamento</h2>
         <button
           type="button"
@@ -105,7 +105,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
 
       <form
         onSubmit={handleSave}
-        className="p-4 flex flex-col gap-3.5 max-w-[720px] w-full mx-auto pb-20 tablet:pb-4"
+        className="p-4 flex flex-col gap-3.5 max-w-[720px] w-full mx-auto pb-32 tablet:pb-4"
       >
         <ReadOnlyField label="Data de referência" value={entry.dataRef || "—"} />
         <ReadOnlyField label="Origem" value={entry.origem || "—"} />
@@ -116,7 +116,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             autoComplete="off"
-            className="w-full text-base px-3 py-2.5 border border-[--color-border] rounded-md bg-white text-[--color-fg]"
+            className="w-full text-base px-3 py-2.5 border border-border rounded-md bg-white text-fg"
           />
         </Field>
 
@@ -127,7 +127,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
             inputMode="decimal"
             value={valor}
             onChange={(e) => handleValorChange(parseFloat(e.target.value) || 0)}
-            className="w-full text-base px-3 py-2.5 border border-[--color-border] rounded-md bg-white text-[--color-fg]"
+            className="w-full text-base px-3 py-2.5 border border-border rounded-md bg-white text-fg"
           />
         </Field>
 
@@ -138,7 +138,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
             autoComplete="off"
-            className="w-full text-base px-3 py-2.5 border border-[--color-border] rounded-md bg-white text-[--color-fg]"
+            className="w-full text-base px-3 py-2.5 border border-border rounded-md bg-white text-fg"
           />
           <datalist id="categoria-options">
             {categoriaOptions.map((c) => (
@@ -151,7 +151,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
           <select
             value={rateio}
             onChange={(e) => setRateio(e.target.value)}
-            className="w-full text-base px-3 py-2.5 border border-[--color-border] rounded-md bg-white text-[--color-fg]"
+            className="w-full text-base px-3 py-2.5 border border-border rounded-md bg-white text-fg"
           >
             <option value="">(vazio)</option>
             <option value="Julio">Julio</option>
@@ -167,7 +167,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
               type="button"
               onClick={() => adjustParcela(-1)}
               aria-label="Diminuir parcela"
-              className="bg-[--color-fg] text-white rounded-md w-10 h-10 text-lg font-bold hover:opacity-85"
+              className="bg-fg text-white rounded-md w-10 h-10 text-lg font-bold hover:opacity-85"
             >
               −
             </button>
@@ -178,13 +178,13 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
               type="button"
               onClick={() => adjustParcela(1)}
               aria-label="Aumentar parcela"
-              className="bg-[--color-fg] text-white rounded-md w-10 h-10 text-lg font-bold hover:opacity-85"
+              className="bg-fg text-white rounded-md w-10 h-10 text-lg font-bold hover:opacity-85"
             >
               +
             </button>
-            <span className="text-[0.78rem] text-[--color-muted] basis-full ml-1">
+            <span className="text-[0.78rem] text-muted basis-full ml-1">
               Total da compra:{" "}
-              <span className="text-[--color-fg] font-semibold">
+              <span className="text-fg font-semibold">
                 R$ {formatMoney(originalTotalRef.current)}
               </span>
             </span>
@@ -192,7 +192,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
         </Field>
 
         {error && (
-          <p className="text-[--color-negative] text-sm m-0">Erro: {error}</p>
+          <p className="text-negative text-sm m-0">Erro: {error}</p>
         )}
 
         <div className="grid grid-cols-[auto_1fr_1fr] gap-2 mt-2">
@@ -200,7 +200,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
             type="button"
             onClick={handleDelete}
             disabled={inProgress}
-            className="bg-white text-[--color-negative] border border-[--color-negative] rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
+            className="bg-white text-negative border border-negative rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
           >
             Excluir
           </button>
@@ -208,14 +208,14 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
             type="button"
             onClick={onClose}
             disabled={inProgress}
-            className="bg-white text-[--color-fg] border border-[--color-border] rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
+            className="bg-white text-fg border border-border rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={inProgress}
-            className="bg-[--color-fg] text-white border border-[--color-fg] rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
+            className="bg-fg text-white border border-fg rounded-md py-2.5 px-3 font-semibold hover:opacity-90 disabled:opacity-60"
           >
             {update.isPending ? "Salvando..." : "Salvar"}
           </button>
@@ -228,7 +228,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[0.75rem] uppercase tracking-wide font-semibold text-[--color-muted]">
+      <label className="text-[0.75rem] uppercase tracking-wide font-semibold text-muted">
         {label}
       </label>
       {children}
@@ -239,7 +239,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <Field label={label}>
-      <div className="bg-[#f0ece2] border border-[--color-border] rounded-md px-3 py-2.5 text-sm">
+      <div className="bg-[#f0ece2] border border-border rounded-md px-3 py-2.5 text-sm">
         {value}
       </div>
     </Field>

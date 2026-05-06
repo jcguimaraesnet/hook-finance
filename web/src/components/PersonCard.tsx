@@ -62,7 +62,7 @@ export function PersonCard({ person, rows }: Props) {
     : (otherByOrigem["Contas"] || 0) + (otherByOrigem["Empregados"] || 0);
   const diff = meu - outro;
   const diffSign = diff >= 0 ? "+" : "−";
-  const diffColor = diff >= 0 ? "text-[#2c5aa0]" : "text-[--color-negative]";
+  const diffColor = diff >= 0 ? "text-[#2c5aa0]" : "text-negative";
 
   return (
     <Card className="flex flex-col">
@@ -75,8 +75,8 @@ export function PersonCard({ person, rows }: Props) {
             className={
               "text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
               (showDiff
-                ? "bg-[--color-fg] text-white border border-[--color-fg]"
-                : "bg-black/10 text-[--color-accent-fg] border border-transparent hover:bg-black/20")
+                ? "bg-fg text-white border border-fg"
+                : "bg-black/10 text-accent-fg border border-transparent hover:bg-black/20")
             }
             title="Mostrar/ocultar diferença"
             aria-label="Mostrar/ocultar diferença"
@@ -88,7 +88,7 @@ export function PersonCard({ person, rows }: Props) {
       {showDiff && (
         <div
           className={
-            "text-[0.78rem] font-semibold text-center py-1.5 px-2 -mx-1 mb-2 -mt-1 border border-[--color-border] border-t-0 rounded-b-md bg-white tabular-nums " +
+            "text-[0.78rem] font-semibold text-center py-1.5 px-2 -mx-1 mb-2 -mt-1 border border-border border-t-0 rounded-b-md bg-white tabular-nums " +
             diffColor
           }
         >
@@ -99,13 +99,13 @@ export function PersonCard({ person, rows }: Props) {
         <table className="w-full border-collapse text-[0.78rem] tabular-nums">
           <thead>
             <tr>
-              <th className="text-left text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+              <th className="text-left text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                 Despesas agrupadas
               </th>
-              <th className="text-right text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+              <th className="text-right text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                 Valor (R$)
               </th>
-              <th className="text-right text-[0.65rem] uppercase tracking-wider text-[--color-muted] font-semibold py-1.5 px-2 border-b border-[--color-border]">
+              <th className="text-right text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
                 %
               </th>
             </tr>
@@ -118,26 +118,26 @@ export function PersonCard({ person, rows }: Props) {
               const display = k === "Pix (contas)" ? "Pix (contas)" : k;
               return (
                 <tr key={k}>
-                  <td className="text-left py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                  <td className="text-left py-1.5 px-2 border-b border-border whitespace-nowrap">
                     {display}
                   </td>
-                  <td className="text-right py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                  <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap">
                     {formatMoney(v)}
                   </td>
-                  <td className="text-right py-1.5 px-2 border-b border-[--color-border] whitespace-nowrap">
+                  <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap">
                     {formatPct(pct)}
                   </td>
                 </tr>
               );
             })}
             <tr>
-              <td className="text-left font-bold py-1.5 px-2 border-t-2 border-[--color-fg]">
+              <td className="text-left font-bold py-1.5 px-2 border-t-2 border-fg">
                 Total Pessoal
               </td>
-              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-[--color-fg]">
+              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg">
                 {formatMoney(total)}
               </td>
-              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-[--color-fg]">
+              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg">
                 {total ? formatPct(1) : "—"}
               </td>
             </tr>

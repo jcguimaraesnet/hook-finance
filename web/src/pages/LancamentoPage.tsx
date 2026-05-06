@@ -18,9 +18,9 @@ export function LancamentoPage() {
 
   return (
     <>
-      <p className="text-[0.85rem] text-[--color-muted] mb-2.5 px-0.5">
+      <p className="text-[0.85rem] text-muted mb-2.5 px-0.5">
         Mês corrente:{" "}
-        <span className="text-[--color-fg] font-semibold">
+        <span className="text-fg font-semibold">
           {subtitle || "—"}
         </span>
       </p>
@@ -34,7 +34,7 @@ export function LancamentoPage() {
       )}
 
       {!lastQ.isLoading && entries.length === 0 && (
-        <p className="text-sm text-[--color-muted] text-center py-8">
+        <p className="text-sm text-muted text-center py-8">
           Sem lançamentos.
         </p>
       )}
@@ -47,18 +47,18 @@ export function LancamentoPage() {
               key={e.row}
               type="button"
               onClick={() => setEditing(e)}
-              className="text-left bg-white border border-[--color-border] rounded-lg p-2.5 grid grid-cols-[1fr_auto] gap-1 hover:bg-[#fbf8f1]"
+              className="text-left bg-white border border-border rounded-lg p-2.5 grid grid-cols-[1fr_auto] gap-1 hover:bg-[#fbf8f1]"
             >
-              <div className="text-[0.7rem] text-[--color-muted] col-span-2">
+              <div className="text-[0.7rem] text-muted col-span-2">
                 {e.dataRef} · {e.origem}
               </div>
-              <div className="text-[0.9rem] font-semibold text-[--color-fg] truncate">
+              <div className="text-[0.9rem] font-semibold text-fg truncate">
                 {e.descricao}
               </div>
               <div className="text-[0.95rem] font-semibold tabular-nums text-right">
                 R$ {formatMoney(e.valor)}
               </div>
-              <div className="col-span-2 flex gap-1.5 flex-wrap text-[0.7rem] text-[--color-muted]">
+              <div className="col-span-2 flex gap-1.5 flex-wrap text-[0.7rem] text-muted">
                 {e.categoria && (
                   <span className="bg-[#f0ece2] rounded-full px-2 py-0.5">
                     {e.categoria}
@@ -70,7 +70,7 @@ export function LancamentoPage() {
                   </span>
                 )}
                 {totalP > 1 && (
-                  <span className="bg-[--color-accent] text-[--color-accent-fg] font-semibold rounded-full px-2 py-0.5">
+                  <span className="bg-accent text-accent-fg font-semibold rounded-full px-2 py-0.5">
                     {e.parcela}
                   </span>
                 )}

@@ -12,7 +12,7 @@ export function SubTabs() {
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   return (
-    <div className="grid grid-cols-4 gap-[3px] bg-white border border-[--color-border] rounded-lg p-[3px] mb-3 pc:hidden">
+    <div className="grid grid-cols-4 gap-[3px] bg-white border border-border rounded-lg p-[3px] mb-3 pc:hidden">
       {TABS.map((t) => (
         <button
           key={t.id}
@@ -21,8 +21,8 @@ export function SubTabs() {
           className={
             "text-[0.8rem] font-semibold py-2 px-1 rounded-md transition " +
             (activeTab === t.id
-              ? "bg-[--color-accent] text-[--color-accent-fg]"
-              : "text-[--color-muted]")
+              ? "bg-accent text-accent-fg"
+              : "text-muted")
           }
         >
           {t.label}

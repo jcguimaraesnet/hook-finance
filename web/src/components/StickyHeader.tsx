@@ -22,13 +22,13 @@ export function StickyHeader({ rows, isLoading }: Props) {
     : 0;
 
   const cellClass =
-    "flex flex-col items-center text-center gap-0.5 px-1 first:border-r-0 not-first:border-l not-first:border-[--color-border]";
+    "flex flex-col items-center text-center gap-0.5 px-1 first:border-r-0 not-first:border-l not-first:border-border";
 
   return (
-    <div className="sticky top-[-1px] bg-[--color-bg] z-20 mb-3">
-      <div className="grid grid-cols-3 gap-1 bg-white border border-[--color-border] rounded-lg p-2.5 tablet:bg-transparent tablet:border-0 tablet:p-0 tablet:grid-cols-[1.2fr_1fr_1fr_1fr] tablet:gap-3">
-        <div className="col-span-3 flex flex-col gap-1 border-b border-[--color-border] pb-1.5 mb-0.5 tablet:col-span-1 tablet:border-b-0 tablet:bg-white tablet:border tablet:border-[--color-border] tablet:rounded-lg tablet:p-3 tablet:mb-0">
-          <label htmlFor="filter-data" className="text-[0.7rem] text-[--color-muted] tablet:text-[0.8rem]">
+    <div className="sticky top-[-1px] bg-bg z-20 mb-3">
+      <div className="grid grid-cols-3 gap-1 bg-white border border-border rounded-lg p-2.5 tablet:bg-transparent tablet:border-0 tablet:p-0 tablet:grid-cols-[1.2fr_1fr_1fr_1fr] tablet:gap-3">
+        <div className="col-span-3 flex flex-col gap-1 border-b border-border pb-1.5 mb-0.5 tablet:col-span-1 tablet:border-b-0 tablet:bg-white tablet:border tablet:border-border tablet:rounded-lg tablet:p-3 tablet:mb-0">
+          <label htmlFor="filter-data" className="text-[0.7rem] text-muted tablet:text-[0.8rem]">
             Data
           </label>
           <select
@@ -36,7 +36,7 @@ export function StickyHeader({ rows, isLoading }: Props) {
             disabled={!allMonths.length}
             value={currentMonth ?? ""}
             onChange={(e) => setCurrentMonth(e.target.value)}
-            className="w-full text-sm tablet:text-base px-2 py-1.5 border border-[--color-border] rounded-md bg-white text-[--color-fg] disabled:opacity-60"
+            className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
               <option>—</option>
@@ -69,8 +69,8 @@ function Tile({
   cls: string;
 }) {
   return (
-    <div className={`${cls} tablet:bg-white tablet:border tablet:border-[--color-border] tablet:rounded-lg tablet:p-3 tablet:items-start tablet:text-left tablet:border-l-0`}>
-      <span className="text-[0.65rem] text-[--color-muted] tablet:text-[0.75rem]">{label}</span>
+    <div className={`${cls} tablet:bg-white tablet:border tablet:border-border tablet:rounded-lg tablet:p-3 tablet:items-start tablet:text-left tablet:border-l-0`}>
+      <span className="text-[0.65rem] text-muted tablet:text-[0.75rem]">{label}</span>
       {loading ? (
         <span className="skeleton block h-4 w-16" />
       ) : (

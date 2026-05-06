@@ -97,7 +97,7 @@ export function ConsultaPage() {
       )}
 
       {monthQ.isError && (
-        <p className="text-[--color-negative] text-sm text-center mt-4">
+        <p className="text-negative text-sm text-center mt-4">
           Erro carregando dados do mês.
         </p>
       )}

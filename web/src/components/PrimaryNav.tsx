@@ -25,7 +25,7 @@ export function PrimaryNav() {
             [
               "px-1 py-2 text-center text-[0.7rem] font-semibold tablet:text-[0.85rem] tablet:px-2 tablet:py-3 tablet:rounded-md transition truncate",
               isActive
-                ? "bg-[--color-accent] text-[--color-accent-fg]"
+                ? "bg-accent text-accent-fg"
                 : "text-white",
             ].join(" ")
           }
