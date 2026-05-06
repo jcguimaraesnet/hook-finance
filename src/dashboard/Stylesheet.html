@@ -40,6 +40,44 @@
     margin: -0.25rem -0.25rem 0.6rem;
   }
 
+  /* Primary nav — Consulta / Detalhe / Lançamento */
+  .primary-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    background: #262626;
+    border-radius: 0;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 50;
+    border-top: 1px solid #3a3a3a;
+  }
+  .nav-item {
+    background: transparent;
+    color: white;
+    border: none;
+    border-radius: 0;
+    padding: 0.7rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+  }
+  .nav-item.active {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .nav-item.disabled,
+  .nav-item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   /* Skeleton */
   @keyframes shimmer {
     0%   { background-position: -480px 0; }
@@ -244,6 +282,18 @@
     .lower { grid-template-columns: 1fr 1fr; }
     .chart-wrap { height: 280px; }
     .history .chart-wrap { height: 300px; }
+    .primary-nav {
+      position: static;
+      margin-bottom: var(--gap);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+      border-top: none;
+    }
+    .nav-item {
+      border-radius: 6px;
+      padding: 0.7rem 0.6rem;
+    }
   }
 
   /* Desktop (≥1024px) — mantém max-width 720px, ajusta apenas spacing */
