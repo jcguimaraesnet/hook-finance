@@ -831,7 +831,7 @@
       .filter((r) => r.origem === "Cartão")
       .reduce((s, r) => s + r.valor, 0);
     const totalParcelado = rows
-      .filter((r) => parcelaTotal_(r.parcela) > 1)
+      .filter((r) => String(r.parcela || "").trim() !== "")
       .reduce((s, r) => s + r.valor, 0);
     $("kpi-total-geral").textContent = Money.format(totalGeral);
     $("kpi-total-cartao").textContent = Money.format(totalCartao);
