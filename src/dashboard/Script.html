@@ -65,8 +65,51 @@
     flushPendingCharts(tab);
   }
 
+  const chartPending = {
+    rateio: null,
+    historicoTotal: null,
+    historicoPessoal: null,
+  };
+
   function flushPendingCharts(tab) {
-    // implementação completa na Task 7; placeholder vazio agora
+    if (tab === "cartao" && chartPending.rateio !== null) {
+      const rows = chartPending.rateio;
+      chartPending.rateio = null;
+      revealRateioCanvas_();
+      renderRateioChart(rows);
+    }
+    if (tab === "historico") {
+      if (chartPending.historicoTotal !== null) {
+        const p = chartPending.historicoTotal;
+        chartPending.historicoTotal = null;
+        revealHistoricoCanvases_();
+        drawLineChart_("chart-historico-total", "historicoTotal", p.months, p.series);
+      }
+      if (chartPending.historicoPessoal !== null) {
+        const p = chartPending.historicoPessoal;
+        chartPending.historicoPessoal = null;
+        revealHistoricoCanvases_();
+        drawLineChart_("chart-historico-pessoal", "historicoPessoal", p.months, p.series);
+      }
+    }
+  }
+
+  function revealRateioCanvas_() {
+    const c = $("chart-rateio");
+    if (c) c.hidden = false;
+    const sk = $(RATEIO_SKELETON);
+    if (sk) sk.hidden = true;
+  }
+
+  function revealHistoricoCanvases_() {
+    for (const id of [HISTORICO_TOTAL_SKELETON, HISTORICO_PESSOAL_SKELETON]) {
+      const el = $(id);
+      if (el) el.hidden = true;
+    }
+    for (const cid of ["chart-historico-total", "chart-historico-pessoal"]) {
+      const c = $(cid);
+      if (c) c.hidden = false;
+    }
   }
 
   function init() {
@@ -182,7 +225,13 @@
     renderPerson("Julio", rows);
     renderPerson("Dani", rows);
     renderCategoria(rows);
-    renderRateioChart(rows);
+    if (activeTab === "cartao") {
+      revealRateioCanvas_();
+      renderRateioChart(rows);
+      chartPending.rateio = null;
+    } else {
+      chartPending.rateio = rows;
+    }
   }
 
   function showCurrentMonthSkeleton() {
@@ -220,10 +269,6 @@
       const el = $(id);
       if (el) el.hidden = true;
     }
-    const c = $("chart-rateio");
-    if (c) c.hidden = false;
-    const sk = $(RATEIO_SKELETON);
-    if (sk) sk.hidden = true;
   }
 
   function showHistoricoSkeleton() {
@@ -237,17 +282,6 @@
     }
     $("error-historico-total").hidden = true;
     $("error-historico-pessoal").hidden = true;
-  }
-
-  function clearHistoricoSkeleton() {
-    for (const id of [HISTORICO_TOTAL_SKELETON, HISTORICO_PESSOAL_SKELETON]) {
-      const el = $(id);
-      if (el) el.hidden = true;
-    }
-    for (const cid of ["chart-historico-total", "chart-historico-pessoal"]) {
-      const c = $(cid);
-      if (c) c.hidden = false;
-    }
   }
 
   function showHistoricalError(msg) {
@@ -491,20 +525,24 @@
     const julioPessoal = (history && history.julioPessoal) || [];
     const daniPessoal = (history && history.daniPessoal) || [];
 
-    clearHistoricoSkeleton();
-
-    drawLineChart_("chart-historico-total", "historicoTotal", meses, [
-      {
-        label: "Total geral",
-        data: totals,
-        color: "#a07b5e",
-        align: "top",
-      },
-    ]);
-    drawLineChart_("chart-historico-pessoal", "historicoPessoal", meses, [
+    const totalSeries = [
+      { label: "Total geral", data: totals, color: "#a07b5e", align: "top" },
+    ];
+    const pessoalSeries = [
       { label: "Julio", data: julioPessoal, color: "#4a7ab8", align: "top" },
       { label: "Dani", data: daniPessoal, color: "#c97070", align: "bottom" },
-    ]);
+    ];
+
+    if (activeTab === "historico") {
+      revealHistoricoCanvases_();
+      drawLineChart_("chart-historico-total", "historicoTotal", meses, totalSeries);
+      drawLineChart_("chart-historico-pessoal", "historicoPessoal", meses, pessoalSeries);
+      chartPending.historicoTotal = null;
+      chartPending.historicoPessoal = null;
+    } else {
+      chartPending.historicoTotal = { months: meses, series: totalSeries };
+      chartPending.historicoPessoal = { months: meses, series: pessoalSeries };
+    }
   }
 
   function drawLineChart_(canvasId, chartKey, labels, series) {
