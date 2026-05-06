@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { PrimaryNav } from "@/components/PrimaryNav";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
+import { ConsultaPage } from "@/pages/ConsultaPage";
 
 export default function App() {
   const token = useAppStore((s) => s.token);
@@ -27,10 +28,7 @@ function AppShell() {
       <PrimaryNav />
       <Routes>
         <Route path="/" element={<Navigate to="/consulta" replace />} />
-        <Route
-          path="/consulta"
-          element={<PlaceholderPage title="Consulta" note="Próxima task: D.2" />}
-        />
+        <Route path="/consulta" element={<ConsultaPage />} />
         <Route
           path="/detalhe"
           element={<PlaceholderPage title="Detalhe" note="Próxima task: D.3" />}
