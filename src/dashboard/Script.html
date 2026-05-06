@@ -16,6 +16,7 @@
   const VALID_PAGES = ["consulta", "detalhe", "lancamento", "acerto"];
   let allMonths = [];
   let acertoMonth = null;
+  const acertoPixExpanded = { Julio: false, Dani: false };
   const MONTH_NAMES_PT = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -229,6 +230,7 @@
     setupPageNav();
     setupDiffToggles();
     setupEditModal();
+    loadAcertoPixState_();
     let saved = "mes";
     try { saved = localStorage.getItem(TAB_KEY) || "mes"; } catch (_) {}
     setActiveTab(saved);
@@ -716,12 +718,15 @@
     const cartaoPessoal = cartao
       .filter((r) => r.categoria === "Pessoal")
       .reduce((s, r) => s + splitForPerson(r, person), 0);
-    const acertoRows = rows.filter(
-      (r) => r.acerto === "Sim" && r.rateio === person,
+    const pixAll = rows.filter(
+      (r) => r.origem === "Pix (contas)" && r.rateio === person,
     );
+    const pixAcerto = pixAll.filter((r) => r.acerto === "Sim");
+    const expanded = !!acertoPixExpanded[person];
+    const pixVisible = expanded ? pixAll : pixAcerto;
 
     let total = cartaoCompart + cartaoPessoal;
-    for (const r of acertoRows) total += r.valor;
+    for (const r of pixVisible) total += r.valor;
 
     let html = "<table><tbody>";
     html +=
@@ -732,9 +737,17 @@
       '<tr><td>Cartão (pessoal)</td><td class="num">' +
       Money.format(cartaoPessoal) +
       "</td></tr>";
-    if (acertoRows.length) {
-      html += '<tr class="section"><td colspan="2">Pix (contas)</td></tr>';
-      for (const r of acertoRows) {
+    if (pixAll.length) {
+      const sym = expanded ? "−" : "+";
+      const label = expanded ? "Recolher Pix (contas)" : "Expandir Pix (contas)";
+      html +=
+        '<tr class="section"><td colspan="2">Pix (contas) ' +
+        '<button type="button" class="pix-toggle" onclick="toggleAcertoPix(\'' +
+        person +
+        '\')" aria-label="' + label + '" title="' + label + '">' +
+        sym +
+        "</button></td></tr>";
+      for (const r of pixVisible) {
         html +=
           "<tr><td>" +
           escapeHtml_(r.descricao) +
@@ -748,6 +761,29 @@
       Money.format(total) +
       "</td></tr></tbody></table>";
     return html;
+  }
+
+  function toggleAcertoPix(person) {
+    if (person !== "Julio" && person !== "Dani") return;
+    acertoPixExpanded[person] = !acertoPixExpanded[person];
+    try {
+      localStorage.setItem(
+        "hook-finance-acerto-pix-" + person.toLowerCase(),
+        acertoPixExpanded[person] ? "1" : "0",
+      );
+    } catch (_) {}
+    if (!acertoMonth || !monthCache[acertoMonth]) return;
+    const el = $("acerto-" + person.toLowerCase());
+    if (el) el.innerHTML = renderAcertoCardHtml_(monthCache[acertoMonth], person);
+  }
+
+  function loadAcertoPixState_() {
+    for (const p of ["Julio", "Dani"]) {
+      try {
+        const v = localStorage.getItem("hook-finance-acerto-pix-" + p.toLowerCase());
+        acertoPixExpanded[p] = v === "1";
+      } catch (_) {}
+    }
   }
 
   function showCurrentMonthSkeleton() {
