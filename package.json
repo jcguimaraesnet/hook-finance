@@ -2,13 +2,20 @@
   "name": "hook-finance",
   "version": "0.1.0",
   "private": true,
-  "description": "Webhook em Google Apps Script que grava POSTs em uma Google Sheet.",
+  "description": "Monorepo: apps-script (backend) + web (PWA) + web/api (Azure Function proxy).",
   "scripts": {
     "login": "clasp login",
-    "create": "clasp create --type standalone --title hook-finance --rootDir src",
     "push": "clasp push -f",
     "pull": "clasp pull",
-    "deploy": "clasp deploy --description \"manual deploy\""
+    "deploy": "clasp deploy --description \"manual deploy\"",
+    "dev": "pnpm --filter hook-finance-web dev",
+    "build": "pnpm --filter hook-finance-web build",
+    "preview": "pnpm --filter hook-finance-web preview",
+    "lint": "pnpm --filter hook-finance-web lint"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20"
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2",

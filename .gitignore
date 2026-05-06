@@ -1,4 +1,9 @@
 node_modules/
+**/node_modules/
+web/dist/
+web/api/dist/
+.pnpm-store/
+**/*.tsbuildinfo
 .clasprc.json
 .token
 *.log
