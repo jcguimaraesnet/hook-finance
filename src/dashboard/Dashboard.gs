@@ -60,7 +60,7 @@ function getMonthData(token, month) {
 
   const minRow = matchIndexes[0];
   const maxRow = matchIndexes[matchIndexes.length - 1];
-  const slab = sheet.getRange(minRow, 1, maxRow - minRow + 1, 8).getValues();
+  const slab = sheet.getRange(minRow, 1, maxRow - minRow + 1, 10).getValues();
   const rows = slab
     .filter((r) => fmt(r[0]) === targetMonth)
     .map((r) => ({
@@ -72,6 +72,8 @@ function getMonthData(token, month) {
       categoria: String(r[5] || ""),
       rateio: String(r[6] || ""),
       cardLast4: String(r[7] || ""),
+      parcela: Number(r[8]) || 1,
+      acerto: String(r[9] || ""),
     }));
 
   return { ok: true, month: targetMonth, rows: rows };
@@ -194,7 +196,7 @@ function getLastEntries(token, n) {
   const last = sheet.getLastRow();
   if (last < 2) return { ok: true, entries: [] };
   const count = Math.min(n || 10, last - 1);
-  const values = sheet.getRange(2, 1, count, 9).getValues();
+  const values = sheet.getRange(2, 1, count, 10).getValues();
 
   const tz = Session.getScriptTimeZone();
   const fmtDate = function (v) {
@@ -217,6 +219,7 @@ function getLastEntries(token, n) {
     rateio: String(r[6] || ""),
     cardLast4: String(r[7] || ""),
     parcela: Number(r[8]) || 1,
+    acerto: String(r[9] || ""),
   }));
 
   return { ok: true, entries: entries };
@@ -270,6 +273,8 @@ function mapRow_(r) {
     categoria: String(r[5] || ""),
     rateio: String(r[6] || ""),
     cardLast4: String(r[7] || ""),
+    parcela: Number(r[8]) || 1,
+    acerto: String(r[9] || ""),
   };
 }
 
@@ -280,7 +285,7 @@ function readData_(token) {
   if (!sheet) return { ok: false, error: "sheet_not_found" };
   const last = sheet.getLastRow();
   if (last < 2) return { ok: true, rows: [] };
-  const values = sheet.getRange(2, 1, last - 1, 8).getValues();
+  const values = sheet.getRange(2, 1, last - 1, 10).getValues();
   return { ok: true, rows: values.map(mapRow_) };
 }
 

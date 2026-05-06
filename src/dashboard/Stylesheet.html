@@ -257,6 +257,53 @@
     font-size: 0.9rem;
   }
 
+  /* Acerto Final page */
+  .acerto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+  .acerto-card {
+    padding: 0.5rem;
+    overflow: hidden;
+  }
+  .acerto-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.7rem;
+  }
+  .acerto-content td {
+    padding: 0.3rem 0.2rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+  }
+  .acerto-content td.num {
+    text-align: right;
+    white-space: nowrap;
+    width: 1%;
+    overflow: visible;
+    max-width: none;
+  }
+  .acerto-content tr.total td {
+    font-weight: 700;
+    border-top: 2px solid var(--fg);
+    border-bottom: none;
+    padding-top: 0.4rem;
+  }
+  .acerto-content tr.section td {
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+    padding-top: 0.5rem;
+    border-bottom: none;
+  }
+
   /* Lançamento page */
   .lancamento-subtitle {
     margin: 0 0 0.6rem;

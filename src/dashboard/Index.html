@@ -24,6 +24,7 @@
       <button type="button" class="nav-item active" data-page="consulta">📊 Consulta</button>
       <button type="button" class="nav-item" data-page="detalhe">📋 Detalhe</button>
       <button type="button" class="nav-item" data-page="lancamento">➕ Lançamento</button>
+      <button type="button" class="nav-item" data-page="acerto">🤝 Acerto</button>
     </nav>
 
     <div id="page-consulta" class="page">
@@ -148,6 +149,33 @@
         <div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>
         <div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>
         <div class="skeleton skeleton-bar lg" style="height:3rem"></div>
+      </div>
+    </div>
+
+    <div id="page-acerto" class="page" hidden>
+      <div class="sticky-header">
+        <div class="filter-only">
+          <label for="filter-data-acerto">Data</label>
+          <select id="filter-data-acerto" disabled><option>—</option></select>
+        </div>
+      </div>
+      <div class="acerto-grid">
+        <div class="card acerto-card" data-person="Julio">
+          <h3 class="card-header"><span class="card-title">Júlio</span></h3>
+          <div id="acerto-julio" class="acerto-content">
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem"></div>
+          </div>
+        </div>
+        <div class="card acerto-card" data-person="Dani">
+          <h3 class="card-header"><span class="card-title">Dani</span></h3>
+          <div id="acerto-dani" class="acerto-content">
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>
+            <div class="skeleton skeleton-bar lg" style="height:1.4rem"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

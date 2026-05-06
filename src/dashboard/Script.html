@@ -13,7 +13,9 @@
   const TAB_KEY = "hook-finance-tab";
   const PAGE_KEY = "hook-finance-page";
   const VALID_TABS = ["mes", "categoria", "pessoal", "historico"];
-  const VALID_PAGES = ["consulta", "detalhe", "lancamento"];
+  const VALID_PAGES = ["consulta", "detalhe", "lancamento", "acerto"];
+  let allMonths = [];
+  let acertoMonth = null;
   const MONTH_NAMES_PT = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -75,6 +77,7 @@
       pageEl.hidden = pageEl.id !== "page-" + page;
     }
     if (page === "lancamento") loadLancamentos();
+    if (page === "acerto") loadAcerto();
   }
 
   function setupPageNav() {
@@ -216,6 +219,10 @@
     if (detalheSel) {
       detalheSel.addEventListener("change", (e) => onMonthChange(e.target.value));
     }
+    const acertoSel = $("filter-data-acerto");
+    if (acertoSel) {
+      acertoSel.addEventListener("change", (e) => onAcertoMonthChange(e.target.value));
+    }
     for (const btn of document.querySelectorAll(".tab-btn")) {
       btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
     }
@@ -312,6 +319,7 @@
 
   function expandSelector(meses) {
     const lista = (meses && meses.length ? meses : [currentMonth]).filter(Boolean);
+    allMonths = lista.slice();
     const html = lista
       .map((d) => '<option value="' + d + '">' + d + "</option>")
       .join("");
@@ -321,6 +329,14 @@
       sel.innerHTML = html;
       sel.value = currentMonth || lista[0] || "";
       sel.disabled = false;
+    }
+    const acertoSel = $("filter-data-acerto");
+    if (acertoSel) {
+      acertoSel.innerHTML = html;
+      if (!acertoMonth) acertoMonth = lista[1] || lista[0] || null;
+      acertoSel.value = acertoMonth || lista[0] || "";
+      acertoSel.disabled = false;
+      if (activePage === "acerto") loadAcerto();
     }
   }
 
@@ -616,6 +632,109 @@
         errEl.hidden = false;
       })
       .deleteEntry(localStorage.getItem(TOKEN_KEY), editingEntry.row);
+  }
+
+  function onAcertoMonthChange(novo) {
+    if (!novo || novo === acertoMonth) return;
+    acertoMonth = novo;
+    loadAcerto();
+  }
+
+  function loadAcerto() {
+    if (!acertoMonth && allMonths.length) {
+      acertoMonth = allMonths[1] || allMonths[0];
+    }
+    if (!acertoMonth) return;
+    const sel = $("filter-data-acerto");
+    if (sel && sel.value !== acertoMonth) sel.value = acertoMonth;
+    showAcertoSkeleton_();
+    if (monthCache[acertoMonth]) {
+      renderAcertoCards(monthCache[acertoMonth]);
+      return;
+    }
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (!res || !res.ok) {
+          showAcertoError_(res && res.error);
+          return;
+        }
+        monthCache[res.month] = res.rows || [];
+        renderAcertoCards(monthCache[res.month]);
+      })
+      .withFailureHandler((err) => {
+        showAcertoError_(err && err.message ? err.message : String(err));
+      })
+      .getMonthData(token, acertoMonth);
+  }
+
+  function showAcertoSkeleton_() {
+    const skeleton =
+      '<div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>' +
+      '<div class="skeleton skeleton-bar lg" style="height:1.4rem;margin-bottom:0.4rem"></div>' +
+      '<div class="skeleton skeleton-bar lg" style="height:1.4rem"></div>';
+    const j = $("acerto-julio");
+    const d = $("acerto-dani");
+    if (j) j.innerHTML = skeleton;
+    if (d) d.innerHTML = skeleton;
+  }
+
+  function showAcertoError_(msg) {
+    const text = '<p class="error" style="padding:0.5rem 0;margin:0">Erro: ' + escapeHtml_(msg || "desconhecido") + "</p>";
+    const j = $("acerto-julio");
+    const d = $("acerto-dani");
+    if (j) j.innerHTML = text;
+    if (d) d.innerHTML = text;
+  }
+
+  function renderAcertoCards(rows) {
+    const j = $("acerto-julio");
+    const d = $("acerto-dani");
+    if (j) j.innerHTML = renderAcertoCardHtml_(rows, "Julio");
+    if (d) d.innerHTML = renderAcertoCardHtml_(rows, "Dani");
+  }
+
+  function renderAcertoCardHtml_(rows, person) {
+    const cartao = rows.filter((r) => r.origem === "Cartão");
+    const cartaoCompart = cartao
+      .filter((r) => r.categoria !== "Pessoal")
+      .reduce((s, r) => s + splitForPerson(r, person), 0);
+    const cartaoPessoal = cartao
+      .filter((r) => r.categoria === "Pessoal")
+      .reduce((s, r) => s + splitForPerson(r, person), 0);
+    const acertoRows = rows.filter(
+      (r) => r.acerto === "Sim" && r.rateio === person,
+    );
+
+    let total = cartaoCompart + cartaoPessoal;
+    for (const r of acertoRows) total += r.valor;
+
+    let html = "<table><tbody>";
+    html +=
+      '<tr><td>Cartão (compart.)</td><td class="num">' +
+      Money.format(cartaoCompart) +
+      "</td></tr>";
+    html +=
+      '<tr><td>Cartão (pessoal)</td><td class="num">' +
+      Money.format(cartaoPessoal) +
+      "</td></tr>";
+    if (acertoRows.length) {
+      html += '<tr class="section"><td colspan="2">Acerto</td></tr>';
+      for (const r of acertoRows) {
+        html +=
+          "<tr><td>" +
+          escapeHtml_(r.descricao) +
+          '</td><td class="num">' +
+          Money.format(r.valor) +
+          "</td></tr>";
+      }
+    }
+    html +=
+      '<tr class="total"><td>Total</td><td class="num">' +
+      Money.format(total) +
+      "</td></tr></tbody></table>";
+    return html;
   }
 
   function showCurrentMonthSkeleton() {
