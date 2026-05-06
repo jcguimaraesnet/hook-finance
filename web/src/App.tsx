@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { PrimaryNav } from "@/components/PrimaryNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { LoginPage } from "@/pages/LoginPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
 import { DetalhePage } from "@/pages/DetalhePage";
@@ -28,6 +29,7 @@ function AppShell() {
   return (
     <div className="min-h-dvh max-w-[880px] mx-auto p-3 pb-20 tablet:pb-3">
       <PrimaryNav />
+      <InstallPrompt />
       <Routes>
         <Route path="/" element={<Navigate to="/consulta" replace />} />
         <Route path="/consulta" element={<ConsultaPage />} />
