@@ -726,7 +726,7 @@
     const ordered = [
       "Cartão (compartilhado)",
       "Cartão (pessoal)",
-      "Pix",
+      "Pix (contas)",
       "Pessoal",
       "Empregados",
     ];
@@ -743,10 +743,9 @@
       if (!byOrigem[k]) continue;
       const v = byOrigem[k];
       const pct = total ? v / total : 0;
-      const displayKey = k === "Pix" ? "Pix (contas)" : k;
       html +=
         "<tr><td>" +
-        displayKey +
+        k +
         '</td><td class="num">' +
         Money.format(v) +
         '</td><td class="num">' +
@@ -770,12 +769,12 @@
       otherByOrigem[k] = (otherByOrigem[k] || 0) + v;
     }
     // Diff: usa Pix se existir no mês; senão cai pra Contas + Empregados.
-    const monthHasPix = rows.some((r) => r.origem === "Pix");
+    const monthHasPix = rows.some((r) => r.origem === "Pix (contas)");
     const meuValor = monthHasPix
-      ? byOrigem["Pix"] || 0
+      ? byOrigem["Pix (contas)"] || 0
       : (byOrigem["Contas"] || 0) + (byOrigem["Empregados"] || 0);
     const outroValor = monthHasPix
-      ? otherByOrigem["Pix"] || 0
+      ? otherByOrigem["Pix (contas)"] || 0
       : (otherByOrigem["Contas"] || 0) + (otherByOrigem["Empregados"] || 0);
     const diff = meuValor - outroValor;
 
