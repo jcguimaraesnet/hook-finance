@@ -9,8 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body>
-  <div id="loading"><p>Carregando…</p></div>
-
   <div id="login" hidden>
     <div class="login-card">
       <h2>hook-finance</h2>
@@ -26,12 +24,12 @@
       <div class="filter-stack">
         <div class="filter-group">
           <label for="filter-data">Data</label>
-          <select id="filter-data"></select>
+          <select id="filter-data" disabled><option>—</option></select>
         </div>
-        <div class="kpi"><span>Total geral</span><strong id="kpi-total-geral">—</strong></div>
+        <div class="kpi"><span>Total geral</span><strong id="kpi-total-geral" class="skeleton skeleton-bar lg">—</strong></div>
       </div>
-      <div class="kpi"><span>Total cartão</span><strong id="kpi-total-cartao">—</strong></div>
-      <div class="kpi"><span>Total parcelado</span><strong id="kpi-total-parcelado">—</strong></div>
+      <div class="kpi"><span>Total cartão</span><strong id="kpi-total-cartao" class="skeleton skeleton-bar lg">—</strong></div>
+      <div class="kpi"><span>Total parcelado</span><strong id="kpi-total-parcelado" class="skeleton skeleton-bar lg">—</strong></div>
     </header>
 
     <section class="people">
@@ -39,15 +37,35 @@
         <h3>Júlio</h3>
         <div class="scroll-x">
           <table class="origem-breakdown" id="table-julio"></table>
+          <div id="skeleton-table-julio" class="skeleton-table">
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+          </div>
         </div>
-        <div class="person-kpis" id="kpis-julio"></div>
+        <div class="person-kpis" id="kpis-julio">
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+        </div>
       </div>
       <div class="card person" data-person="Dani">
         <h3>Dani</h3>
         <div class="scroll-x">
           <table class="origem-breakdown" id="table-dani"></table>
+          <div id="skeleton-table-dani" class="skeleton-table">
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+          </div>
         </div>
-        <div class="person-kpis" id="kpis-dani"></div>
+        <div class="person-kpis" id="kpis-dani">
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+          <div class="mini-kpi skeleton skeleton-bar lg"></div>
+        </div>
       </div>
     </section>
 
@@ -56,22 +74,39 @@
         <h3>Cartão (por categoria)</h3>
         <div class="scroll-x">
           <table id="categoria-table"></table>
+          <div id="skeleton-table-categoria" class="skeleton-table">
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+            <span class="skeleton skeleton-bar"></span>
+          </div>
         </div>
       </div>
       <div class="card">
         <h3>Cartão (por pessoa)</h3>
-        <div class="chart-wrap"><canvas id="chart-rateio"></canvas></div>
+        <div class="chart-wrap">
+          <canvas id="chart-rateio" hidden></canvas>
+          <div id="skeleton-chart-rateio" class="skeleton skeleton-chart"></div>
+        </div>
       </div>
     </section>
 
     <section class="card history">
       <h3>Histórico — Total geral</h3>
-      <div class="chart-wrap"><canvas id="chart-historico-total"></canvas></div>
+      <div class="chart-wrap">
+        <canvas id="chart-historico-total" hidden></canvas>
+        <div id="skeleton-chart-historico-total" class="skeleton skeleton-chart"></div>
+        <p id="error-historico-total" class="error" hidden></p>
+      </div>
     </section>
 
     <section class="card history">
       <h3>Histórico — Pessoal</h3>
-      <div class="chart-wrap"><canvas id="chart-historico-pessoal"></canvas></div>
+      <div class="chart-wrap">
+        <canvas id="chart-historico-pessoal" hidden></canvas>
+        <div id="skeleton-chart-historico-pessoal" class="skeleton skeleton-chart"></div>
+        <p id="error-historico-pessoal" class="error" hidden></p>
+      </div>
     </section>
   </div>
 

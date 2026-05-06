@@ -22,6 +22,15 @@ function formatBrDate_(v) {
   return String(v).trim();
 }
 
+function parseBrDate_(s) {
+  const parts = String(s || "").split("/");
+  if (parts.length !== 3) return new Date(0);
+  const d = parseInt(parts[0], 10) || 1;
+  const m = parseInt(parts[1], 10) || 1;
+  const y = parseInt(parts[2], 10) || 1970;
+  return new Date(y, m - 1, d);
+}
+
 function insertRowsAtTop_(sheet, rows) {
   if (!rows || rows.length === 0) return;
   sheet.insertRowsBefore(2, rows.length);

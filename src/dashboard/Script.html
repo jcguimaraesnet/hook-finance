@@ -10,22 +10,26 @@
   });
 
   const TOKEN_KEY = "hook-finance-token";
-  let allRows = [];
   const charts = {};
+  const monthCache = Object.create(null);
+  let currentMonth = null;
+  let currentMonthRows = [];
+
+  const TILE_IDS = ["kpi-total-geral", "kpi-total-cartao", "kpi-total-parcelado"];
+  const TABLE_SKELETONS = [
+    "skeleton-table-julio",
+    "skeleton-table-dani",
+    "skeleton-table-categoria",
+  ];
+  const RATEIO_SKELETON = "skeleton-chart-rateio";
+  const HISTORICO_TOTAL_SKELETON = "skeleton-chart-historico-total";
+  const HISTORICO_PESSOAL_SKELETON = "skeleton-chart-historico-pessoal";
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  function dateKey(brDate) {
-    if (!brDate) return "";
-    const parts = brDate.split("/");
-    if (parts.length !== 3) return brDate;
-    return parts[2] + "-" + parts[1] + "-" + parts[0];
-  }
-
   function showLogin(error) {
-    $("loading").hidden = true;
     $("login").hidden = false;
     $("dashboard").hidden = true;
     if (error) {
@@ -37,81 +41,197 @@
   }
 
   function showDashboard() {
-    $("loading").hidden = true;
     $("login").hidden = true;
     $("dashboard").hidden = false;
-  }
-
-  function showLoading() {
-    $("loading").hidden = false;
-    $("login").hidden = true;
-    $("dashboard").hidden = true;
   }
 
   function init() {
     $("token-submit").addEventListener("click", () => {
       const v = $("token-input").value.trim();
       if (!v) return;
-      showLoading();
-      loadData(v);
+      localStorage.setItem(TOKEN_KEY, v);
+      startDashboard(v);
     });
     $("token-input").addEventListener("keydown", (e) => {
       if (e.key === "Enter") $("token-submit").click();
     });
+    $("filter-data").addEventListener("change", (e) => {
+      onMonthChange(e.target.value);
+    });
 
     const stored = localStorage.getItem(TOKEN_KEY);
-    if (stored) {
-      showLoading();
-      loadData(stored);
-    } else {
-      showLogin();
-    }
+    if (stored) startDashboard(stored);
+    else showLogin();
   }
 
-  function loadData(token) {
+  function startDashboard(token) {
+    showDashboard();
+    showCurrentMonthSkeleton();
+    showHistoricoSkeleton();
+    loadCurrentMonth(token);
+  }
+
+  function loadCurrentMonth(token, requestedMonth) {
     google.script.run
       .withSuccessHandler((res) => {
         if (!res || !res.ok) {
-          localStorage.removeItem(TOKEN_KEY);
-          showLogin(
-            res && res.error === "unauthorized"
-              ? "Token inválido"
-              : "Erro: " + (res && res.error)
-          );
+          if (res && res.error === "unauthorized") {
+            localStorage.removeItem(TOKEN_KEY);
+            showLogin("Token inválido");
+          } else {
+            showLogin("Erro: " + (res && res.error));
+          }
           return;
         }
-        localStorage.setItem(TOKEN_KEY, token);
-        allRows = res.rows || [];
-        bootDashboard();
+        currentMonth = res.month;
+        currentMonthRows = res.rows || [];
+        if (res.month) monthCache[res.month] = currentMonthRows;
+        renderCurrentMonth(currentMonth, currentMonthRows);
+        if (!requestedMonth) {
+          // Primeira carga: passo 3 só dispara aqui.
+          seedSelector(currentMonth);
+          loadHistorical(token);
+        }
       })
       .withFailureHandler((err) => {
         showLogin("Falha: " + (err && err.message ? err.message : err));
       })
-      .getDataForDashboard(token);
+      .getMonthData(token, requestedMonth || null);
   }
 
-  function bootDashboard() {
-    showDashboard();
-    const dates = [...new Set(allRows.map((r) => r.data).filter(Boolean))].sort(
-      (a, b) => dateKey(b).localeCompare(dateKey(a))
-    );
+  function loadHistorical(token) {
+    google.script.run
+      .withSuccessHandler((res) => {
+        if (!res || !res.ok) {
+          showHistoricalError(res && res.error);
+          return;
+        }
+        renderHistoricoFromSummary(res.history);
+        expandSelector(res.months);
+      })
+      .withFailureHandler((err) => {
+        showHistoricalError(err && err.message ? err.message : String(err));
+      })
+      .getHistoricalSummary(token);
+  }
+
+  function onMonthChange(novoMes) {
+    if (!novoMes || novoMes === currentMonth) return;
+    if (monthCache[novoMes]) {
+      currentMonth = novoMes;
+      currentMonthRows = monthCache[novoMes];
+      renderCurrentMonth(currentMonth, currentMonthRows);
+      return;
+    }
+    showCurrentMonthSkeleton();
+    loadCurrentMonth(localStorage.getItem(TOKEN_KEY), novoMes);
+  }
+
+  function seedSelector(mes) {
     const sel = $("filter-data");
-    sel.innerHTML = dates
+    sel.innerHTML = mes
+      ? '<option value="' + mes + '">' + mes + "</option>"
+      : "<option>—</option>";
+    sel.value = mes || "";
+    sel.disabled = true;
+  }
+
+  function expandSelector(meses) {
+    const sel = $("filter-data");
+    const lista = (meses && meses.length ? meses : [currentMonth]).filter(Boolean);
+    sel.innerHTML = lista
       .map((d) => '<option value="' + d + '">' + d + "</option>")
       .join("");
-    if (dates.length) sel.value = dates[0];
-    sel.addEventListener("change", () => render(sel.value));
-    render(dates[0] || "");
+    sel.value = currentMonth || lista[0] || "";
+    sel.disabled = false;
   }
 
-  function render(fatura) {
-    const inFatura = allRows.filter((r) => r.data === fatura);
-    renderTotals(inFatura);
-    renderPerson("Julio", inFatura);
-    renderPerson("Dani", inFatura);
-    renderCategoria(inFatura);
-    renderRateioChart(inFatura);
-    renderHistorico();
+  function renderCurrentMonth(mes, rows) {
+    clearCurrentMonthSkeleton();
+    renderTotals(rows);
+    renderPerson("Julio", rows);
+    renderPerson("Dani", rows);
+    renderCategoria(rows);
+    renderRateioChart(rows);
+  }
+
+  function showCurrentMonthSkeleton() {
+    for (const id of TILE_IDS) {
+      const el = $(id);
+      el.classList.add("skeleton", "skeleton-bar", "lg");
+      el.textContent = "—";
+    }
+    for (const id of TABLE_SKELETONS) {
+      const el = $(id);
+      if (el) el.hidden = false;
+    }
+    for (const tableId of ["table-julio", "table-dani", "categoria-table"]) {
+      const t = $(tableId);
+      if (t) t.innerHTML = "";
+    }
+    for (const kpisId of ["kpis-julio", "kpis-dani"]) {
+      const el = $(kpisId);
+      el.innerHTML =
+        '<div class="mini-kpi skeleton skeleton-bar lg"></div>' +
+        '<div class="mini-kpi skeleton skeleton-bar lg"></div>' +
+        '<div class="mini-kpi skeleton skeleton-bar lg"></div>';
+    }
+    const c = $("chart-rateio");
+    if (c) c.hidden = true;
+    const sk = $(RATEIO_SKELETON);
+    if (sk) sk.hidden = false;
+  }
+
+  function clearCurrentMonthSkeleton() {
+    for (const id of TILE_IDS) {
+      $(id).classList.remove("skeleton", "skeleton-bar", "lg");
+    }
+    for (const id of TABLE_SKELETONS) {
+      const el = $(id);
+      if (el) el.hidden = true;
+    }
+    const c = $("chart-rateio");
+    if (c) c.hidden = false;
+    const sk = $(RATEIO_SKELETON);
+    if (sk) sk.hidden = true;
+  }
+
+  function showHistoricoSkeleton() {
+    for (const id of [HISTORICO_TOTAL_SKELETON, HISTORICO_PESSOAL_SKELETON]) {
+      const el = $(id);
+      if (el) el.hidden = false;
+    }
+    for (const cid of ["chart-historico-total", "chart-historico-pessoal"]) {
+      const c = $(cid);
+      if (c) c.hidden = true;
+    }
+    $("error-historico-total").hidden = true;
+    $("error-historico-pessoal").hidden = true;
+  }
+
+  function clearHistoricoSkeleton() {
+    for (const id of [HISTORICO_TOTAL_SKELETON, HISTORICO_PESSOAL_SKELETON]) {
+      const el = $(id);
+      if (el) el.hidden = true;
+    }
+    for (const cid of ["chart-historico-total", "chart-historico-pessoal"]) {
+      const c = $(cid);
+      if (c) c.hidden = false;
+    }
+  }
+
+  function showHistoricalError(msg) {
+    for (const id of [HISTORICO_TOTAL_SKELETON, HISTORICO_PESSOAL_SKELETON]) {
+      const el = $(id);
+      if (el) el.hidden = true;
+    }
+    const text = "Histórico indisponível: " + (msg || "erro desconhecido");
+    const e1 = $("error-historico-total");
+    const e2 = $("error-historico-pessoal");
+    e1.textContent = text;
+    e1.hidden = false;
+    e2.textContent = text;
+    e2.hidden = false;
   }
 
   function splitForPerson(row, person) {
@@ -335,36 +455,23 @@
     });
   }
 
-  function renderHistorico() {
-    const faturas = [...new Set(allRows.map((r) => r.data).filter(Boolean))]
-      .sort((a, b) => dateKey(a).localeCompare(dateKey(b)))
-      .slice(-12);
+  function renderHistoricoFromSummary(history) {
+    const meses = (history && history.months) || [];
+    const totals = (history && history.totals) || [];
+    const julioPessoal = (history && history.julioPessoal) || [];
+    const daniPessoal = (history && history.daniPessoal) || [];
 
-    const valorCheio = faturas.map((f) =>
-      allRows
-        .filter((r) => r.data === f && r.origem !== "Pessoal")
-        .reduce((s, r) => s + r.valor, 0)
-    );
-    const julioPessoal = faturas.map((f) =>
-      allRows
-        .filter((r) => r.data === f && r.categoria === "Pessoal")
-        .reduce((s, r) => s + splitForPerson(r, "Julio"), 0)
-    );
-    const daniPessoal = faturas.map((f) =>
-      allRows
-        .filter((r) => r.data === f && r.categoria === "Pessoal")
-        .reduce((s, r) => s + splitForPerson(r, "Dani"), 0)
-    );
+    clearHistoricoSkeleton();
 
-    drawLineChart_("chart-historico-total", "historicoTotal", faturas, [
+    drawLineChart_("chart-historico-total", "historicoTotal", meses, [
       {
         label: "Total geral",
-        data: valorCheio,
+        data: totals,
         color: "#a07b5e",
         align: "top",
       },
     ]);
-    drawLineChart_("chart-historico-pessoal", "historicoPessoal", faturas, [
+    drawLineChart_("chart-historico-pessoal", "historicoPessoal", meses, [
       { label: "Julio", data: julioPessoal, color: "#4a7ab8", align: "top" },
       { label: "Dani", data: daniPessoal, color: "#c97070", align: "bottom" },
     ]);
