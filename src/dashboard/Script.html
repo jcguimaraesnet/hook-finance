@@ -525,12 +525,21 @@
           },
         },
         scales: {
-          x: { ticks: { callback: (v) => Money.format(v) } },
+          x: { ticks: { callback: (v) => moneyK_(v) } },
           y: { ticks: { display: false } },
         },
       },
       plugins: [ChartDataLabels],
     });
+  }
+
+  function moneyK_(v) {
+    if (v == null || isNaN(v)) return "";
+    if (Math.abs(v) >= 1000) {
+      const k = v / 1000;
+      return (k % 1 === 0 ? k.toString() : k.toFixed(1).replace(".", ",")) + "k";
+    }
+    return v.toLocaleString("pt-BR");
   }
 
   function rateioLabel_(rateio) {
