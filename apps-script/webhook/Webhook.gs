@@ -1,29 +1,25 @@
 const PURCHASE_RE =
   /Compra.+?final\s+(\d+),.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
-function doPost(e) {
+// Handler do payload de webhook (Tasker/IFTTT). Chamado a partir do doPost
+// global em Dashboard.gs quando o body tem `title`+`text`.
+function handleWebhookBody_(body) {
   try {
-    if (!e || !e.postData || !e.postData.contents) {
-      return jsonResponse_({ ok: false, error: "empty_body" });
-    }
-
-    const body = JSON.parse(e.postData.contents);
-
     const expectedToken =
       PropertiesService.getScriptProperties().getProperty("WEBHOOK_TOKEN");
     if (!expectedToken || body.token !== expectedToken) {
-      return jsonResponse_({ ok: false, error: "unauthorized" });
+      return { ok: false, error: "unauthorized" };
     }
 
     const title = typeof body.title === "string" ? body.title.trim() : "";
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!title || !text) {
-      return jsonResponse_({ ok: false, error: "missing_fields" });
+      return { ok: false, error: "missing_fields" };
     }
 
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     if (!sheet) {
-      return jsonResponse_({ ok: false, error: "sheet_not_found" });
+      return { ok: false, error: "sheet_not_found" };
     }
 
     const parsed = parsePurchase_(text);
@@ -49,12 +45,9 @@ function doPost(e) {
         "", // Acerto (não aplicável a compras de Cartão)
       ],
     ]);
-    return jsonResponse_({ ok: true });
+    return { ok: true };
   } catch (err) {
-    return jsonResponse_({
-      ok: false,
-      error: String((err && err.message) || err),
-    });
+    return { ok: false, error: String((err && err.message) || err) };
   }
 }
 

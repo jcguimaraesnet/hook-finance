@@ -1,12 +1,48 @@
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action === "data") {
-    return jsonResponse_(readAllForApi_(e.parameter.token));
+  const action = (e && e.parameter && e.parameter.action) || "";
+  switch (action) {
+    case "":
+      // Default: serve HTML (legacy frontend, ainda em uso até cutover do PWA).
+      return HtmlService.createTemplateFromFile("dashboard/Index")
+        .evaluate()
+        .setTitle("hook-finance")
+        .addMetaTag("viewport", "width=device-width, initial-scale=1")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    case "data":
+      return jsonResponse_(readAllForApi_(e.parameter.token));
+    case "monthData":
+      return jsonResponse_(getMonthData(e.parameter.token, e.parameter.month || null));
+    case "historicalSummary":
+      return jsonResponse_(getHistoricalSummary(e.parameter.token));
+    case "lastEntries":
+      return jsonResponse_(getLastEntries(e.parameter.token, parseInt(e.parameter.n, 10) || 10));
+    default:
+      return jsonResponse_({ ok: false, error: "unknown_action" });
   }
-  return HtmlService.createTemplateFromFile("dashboard/Index")
-    .evaluate()
-    .setTitle("hook-finance")
-    .addMetaTag("viewport", "width=device-width, initial-scale=1")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(e) {
+  let body;
+  try {
+    body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+  } catch (_) {
+    return jsonResponse_({ ok: false, error: "invalid_json" });
+  }
+
+  // Caminho legado do webhook (Tasker/IFTTT envia title+text).
+  if (body.title && body.text) {
+    return jsonResponse_(handleWebhookBody_(body));
+  }
+
+  // Caminho REST.
+  switch (body.action) {
+    case "updateEntry":
+      return jsonResponse_(updateEntry(body.token, body.row, body.fields));
+    case "deleteEntry":
+      return jsonResponse_(deleteEntry(body.token, body.row));
+    default:
+      return jsonResponse_({ ok: false, error: "unknown_action" });
+  }
 }
 
 function getMonthData(token, month) {
