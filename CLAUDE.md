@@ -1,13 +1,32 @@
 # hook-finance — Project Notes for Claude
 
-Personal finance dashboard built as a Google Apps Script web app + webhook. All data lives in a single Google Sheet; the web app reads/writes to it via Apps Script.
+Personal finance monorepo. Backend is Google Apps Script (REST + webhook); frontend is a React PWA hosted on Azure Static Web Apps; an Azure Function proxy bridges the two. All data lives in a single Google Sheet.
+
+## Monorepo (pnpm workspace)
+
+```
+hook-finance/
+├── apps-script/                # Backend GAS (REST dispatcher + webhook)
+├── web/                        # React PWA (Vite + TS + Tailwind v4)
+├── web/api/                    # Azure Function /api/proxy (CORS bridge)
+├── .github/workflows/
+│   ├── deploy-apps-script.yml  # clasp push + deploy on push to main
+│   └── deploy-web.yml          # Azure SWA build + deploy
+├── pnpm-workspace.yaml
+└── package.json                # root scripts: dev, build, preview, lint
+```
+
+Use `pnpm install` at root to install all packages. `pnpm dev` runs the React PWA dev server.
 
 ## Architecture
 
-- **Backend** (`src/dashboard/Dashboard.gs`, `src/webhook/*.gs`, `src/shared/*.gs`): Apps Script `.gs` files. Exposed functions (no trailing underscore) are callable from the client via `google.script.run`.
-- **Frontend** (`src/dashboard/Index.html`, `Stylesheet.html`, `Script.html`): single page rendered server-side via `HtmlService.createTemplateFromFile`. Includes via `include_('dashboard/Stylesheet')` etc.
-- **Webhook** (`src/webhook/Webhook.gs`): receives POSTs from a phone notification automation (Tasker/IFTTT) on credit card purchases; classifies via [Classifier](src/webhook/Classifier.gs) and inserts at top via [Helpers.insertRowsAtTop_](src/shared/Helpers.gs).
-- **Deploy**: GitHub Action triggered on push to `main` → `clasp push -f` + `clasp deploy -i <PROD_DEPLOYMENT_ID>` ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)). Local development: `./node_modules/.bin/clasp.cmd push -f` (use `.cmd` on Windows; clasp not installed globally).
+- **Backend** (`apps-script/`): single `doGet` and `doPost` global handlers in [Dashboard.gs](apps-script/dashboard/Dashboard.gs) dispatch by `?action=` (GET) or `body.action` (POST). Webhook (Tasker/IFTTT) reuses the same `doPost` — when body has `title`+`text`, delegates to `handleWebhookBody_` in [Webhook.gs](apps-script/webhook/Webhook.gs). Legacy HTML rendering still served at `/exec` (no `action` param) until Phase G cutover.
+- **Frontend PWA** (`web/`): React 18 + TypeScript + Vite 5 + Tailwind v4 (CSS-first via `@theme`) + vite-plugin-pwa (manifest + workbox SW with NetworkFirst cache for `/api/proxy?action=monthData|historicalSummary`) + React Router v7 + Zustand (persist token/UI prefs) + Tanstack Query (data) + Chart.js + react-chartjs-2 (charts).
+- **API proxy** (`web/api/`): single Azure Function v4 at `/api/proxy` (GET + POST). Forwards to `APPS_SCRIPT_URL` (env var); returns body verbatim. Hosted by Azure SWA same-origin so the React app calls `/api/proxy` without CORS.
+- **Deploy**:
+  - Apps Script: GH Action `deploy-apps-script.yml` runs `clasp push -f` + `clasp deploy -i <PROD_ID>` on push to `main` when `apps-script/**` or related files change.
+  - Web PWA: GH Action `deploy-web.yml` runs `pnpm build` for `web` + `web/api`, then uses `Azure/static-web-apps-deploy@v1` (token in secret `AZURE_STATIC_WEB_APPS_API_TOKEN`).
+  - Local clasp: `./node_modules/.bin/clasp.cmd push -f` on Windows.
 
 ## Spreadsheet schema (`Despesas` sheet)
 

@@ -4,6 +4,10 @@ web/dist/
 web/api/dist/
 .pnpm-store/
 **/*.tsbuildinfo
+web/api/local.settings.json
+web/api/dist/
+web/api/bin/
+web/api/obj/
 .clasprc.json
 .token
 *.log
