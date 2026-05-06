@@ -392,14 +392,15 @@
     const tableId = person === "Julio" ? "table-julio" : "table-dani";
     const t = $(tableId);
     let html =
-      '<thead><tr><th>Subtotal</th><th class="num">Valor (R$)</th><th class="num">%</th></tr></thead><tbody>';
+      '<thead><tr><th>Despesas agrupadas</th><th class="num">Valor (R$)</th><th class="num">%</th></tr></thead><tbody>';
     for (const k of allKeys) {
       if (!byOrigem[k]) continue;
       const v = byOrigem[k];
       const pct = total ? v / total : 0;
+      const displayKey = k === "Pix" ? "Pix (contas)" : k;
       html +=
         "<tr><td>" +
-        k +
+        displayKey +
         '</td><td class="num">' +
         Money.format(v) +
         '</td><td class="num">' +
@@ -407,7 +408,7 @@
         "</td></tr>";
     }
     html +=
-      '<tr class="total"><td>Total</td><td class="num">' +
+      '<tr class="total"><td>Total Pessoal</td><td class="num">' +
       Money.format(total) +
       '</td><td class="num">' +
       (total ? Pct.format(1) : "—") +
