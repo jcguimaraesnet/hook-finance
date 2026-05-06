@@ -41,7 +41,8 @@
 
       <div class="tab-strip" role="tablist" aria-label="Sub-seções">
         <button type="button" class="tab-btn active" data-tab="mes" role="tab" aria-selected="true">Mês</button>
-        <button type="button" class="tab-btn" data-tab="cartao" role="tab" aria-selected="false">Cartão</button>
+        <button type="button" class="tab-btn" data-tab="categoria" role="tab" aria-selected="false">Categoria</button>
+        <button type="button" class="tab-btn" data-tab="pessoal" role="tab" aria-selected="false">Pessoal</button>
         <button type="button" class="tab-btn" data-tab="historico" role="tab" aria-selected="false">Histórico</button>
       </div>
 
@@ -84,26 +85,27 @@
         </div>
       </section>
 
-      <section id="tab-cartao" class="tab-panel" role="tabpanel" hidden>
-        <div class="lower">
-          <div class="card">
-            <h3>Cartão (por categoria)</h3>
-            <div class="scroll-x">
-              <table id="categoria-table"></table>
-              <div id="skeleton-table-categoria" class="skeleton-table">
-                <span class="skeleton skeleton-bar"></span>
-                <span class="skeleton skeleton-bar"></span>
-                <span class="skeleton skeleton-bar"></span>
-                <span class="skeleton skeleton-bar"></span>
-              </div>
+      <section id="tab-categoria" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h3>Cartão (por categoria)</h3>
+          <div class="scroll-x">
+            <table id="categoria-table"></table>
+            <div id="skeleton-table-categoria" class="skeleton-table">
+              <span class="skeleton skeleton-bar"></span>
+              <span class="skeleton skeleton-bar"></span>
+              <span class="skeleton skeleton-bar"></span>
+              <span class="skeleton skeleton-bar"></span>
             </div>
           </div>
-          <div class="card">
-            <h3>Cartão (por pessoa)</h3>
-            <div class="chart-wrap">
-              <canvas id="chart-rateio" hidden></canvas>
-              <div id="skeleton-chart-rateio" class="skeleton skeleton-chart"></div>
-            </div>
+        </div>
+      </section>
+
+      <section id="tab-pessoal" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h3>Cartão (por pessoa)</h3>
+          <div class="chart-wrap">
+            <canvas id="chart-rateio" hidden></canvas>
+            <div id="skeleton-chart-rateio" class="skeleton skeleton-chart"></div>
           </div>
         </div>
       </section>

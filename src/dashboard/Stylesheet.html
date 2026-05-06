@@ -148,8 +148,12 @@
     margin-bottom: 0.2rem;
   }
   .filter-and-kpis .filter-group label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--muted);
+  }
+  .filter-and-kpis .filter-group select {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.5rem;
   }
   .kpi {
     display: flex;
@@ -165,23 +169,23 @@
     border-right: 1px solid var(--border);
   }
   .kpi span {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--muted);
   }
   .kpi strong {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Sub-tabs (Mês / Cartão / Histórico) */
+  /* Sub-tabs (Mês / Categoria / Pessoal / Histórico) */
   .tab-strip {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 4px;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 3px;
     background: white;
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 4px;
+    padding: 3px;
     margin-bottom: var(--gap);
   }
   .tab-btn {
@@ -189,8 +193,8 @@
     color: var(--muted);
     border: none;
     border-radius: 6px;
-    padding: 0.6rem 0.4rem;
-    font-size: 0.95rem;
+    padding: 0.5rem 0.3rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
   }
@@ -316,7 +320,7 @@
   /* Tablet+ (≥640px) */
   @media (min-width: 640px) {
     body {
-      max-width: 720px;
+      max-width: 880px;
       margin: 0 auto;
     }
     .page {
@@ -372,16 +376,16 @@
       border-right: 1px solid var(--border);
     }
     .kpi strong {
-      font-size: 1.5rem;
+      font-size: 1.1rem;
     }
     .kpi span {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
     }
   }
 
-  /* Desktop (≥1024px) — mantém max-width 720px, ajusta apenas spacing */
+  /* Desktop (≥1024px) — mantém max-width 880px, ajusta apenas spacing */
   @media (min-width: 1024px) {
     :root { --gap: 1rem; --pad: 1rem; }
-    .kpi strong { font-size: 1.6rem; }
+    .kpi strong { font-size: 1.2rem; }
   }
 </style>

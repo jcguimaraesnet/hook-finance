@@ -11,7 +11,7 @@
 
   const TOKEN_KEY = "hook-finance-token";
   const TAB_KEY = "hook-finance-tab";
-  const VALID_TABS = ["mes", "cartao", "historico"];
+  const VALID_TABS = ["mes", "categoria", "pessoal", "historico"];
   const charts = {};
   const monthCache = Object.create(null);
   let currentMonth = null;
@@ -72,7 +72,7 @@
   };
 
   function flushPendingCharts(tab) {
-    if (tab === "cartao" && chartPending.rateio !== null) {
+    if (tab === "pessoal" && chartPending.rateio !== null) {
       const rows = chartPending.rateio;
       chartPending.rateio = null;
       revealRateioCanvas_();
@@ -225,7 +225,7 @@
     renderPerson("Julio", rows);
     renderPerson("Dani", rows);
     renderCategoria(rows);
-    if (activeTab === "cartao") {
+    if (activeTab === "pessoal") {
       revealRateioCanvas_();
       renderRateioChart(rows);
       chartPending.rateio = null;
