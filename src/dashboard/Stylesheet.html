@@ -40,10 +40,10 @@
     margin: -0.25rem -0.25rem 0.6rem;
   }
 
-  /* Primary nav — Consulta / Detalhe / Lançamento */
+  /* Primary nav — Consulta / Detalhe / Lançamento / Acerto */
   .primary-nav {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0;
     background: #262626;
     border-radius: 0;
@@ -61,11 +61,14 @@
     color: white;
     border: none;
     border-radius: 0;
-    padding: 0.7rem 0.4rem;
-    font-size: 0.85rem;
+    padding: 0.55rem 0.2rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-align: center;
     cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .nav-item.active {
     background: var(--accent);
@@ -260,8 +263,14 @@
   /* Acerto Final page */
   .acerto-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+    grid-template-columns: 1fr;
+    gap: var(--gap);
+  }
+  @media (min-width: 640px) {
+    .acerto-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
   }
   .acerto-card {
     padding: 0.5rem;
@@ -704,6 +713,7 @@
     .nav-item {
       border-radius: 6px;
       padding: 0.7rem 0.6rem;
+      font-size: 0.85rem;
     }
     .sticky-header {
       position: static;
