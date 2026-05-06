@@ -50,6 +50,22 @@ jobs:
           skip_app_build: true
           skip_api_build: true
 
+      - name: Azure login
+        if: github.event_name == 'push'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Sync SWA app settings (APPS_SCRIPT_URL)
+        if: github.event_name == 'push'
+        env:
+          APPS_SCRIPT_URL: https://script.google.com/macros/s/AKfycby7v9mrOGHV6tIaiOmgs7ZaGolmSTXsEKIj3rYjBlYalePcuBmSM0C35Wc5-vJZRNE-7Q/exec
+        run: |
+          az staticwebapp appsettings set \
+            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --setting-names "APPS_SCRIPT_URL=$APPS_SCRIPT_URL"
+
   close_pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
