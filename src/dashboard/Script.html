@@ -617,7 +617,19 @@
           },
         },
         scales: {
-          y: { ticks: { callback: (v) => Money.format(v) } },
+          x: {
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              callback: function (value, index) {
+                if (index % 2 !== 0) return "";
+                const label = this.getLabelForValue(value);
+                const parts = String(label || "").split("/");
+                return parts.length === 3 ? parts[1] + "/" + parts[2] : label;
+              },
+            },
+          },
+          y: { ticks: { callback: (v) => moneyK_(v) } },
         },
       },
       plugins: [ChartDataLabels],
