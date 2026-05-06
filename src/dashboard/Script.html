@@ -505,15 +505,28 @@
             },
           },
           datalabels: {
-            anchor: "end",
-            align: "end",
-            color: "#262626",
-            font: { weight: 600 },
-            formatter: (v) => Money.format(v),
+            labels: {
+              name: {
+                anchor: "start",
+                align: "end",
+                offset: 8,
+                color: "white",
+                font: { weight: 600, size: 11 },
+                formatter: (v, ctx) => ctx.chart.data.labels[ctx.dataIndex],
+              },
+              value: {
+                anchor: "end",
+                align: "end",
+                color: "#262626",
+                font: { weight: 600 },
+                formatter: (v) => Money.format(v),
+              },
+            },
           },
         },
         scales: {
           x: { ticks: { callback: (v) => Money.format(v) } },
+          y: { ticks: { display: false } },
         },
       },
       plugins: [ChartDataLabels],
