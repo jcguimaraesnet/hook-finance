@@ -462,15 +462,16 @@
 
     const t = $("categoria-table");
     let html =
-      '<thead><tr><th>Categoria</th><th class="num">Valor (R$)</th><th class="num">Metade (R$)</th><th class="num">%</th></tr></thead><tbody>';
+      '<thead><tr><th>Categoria</th><th class="num">Valor (R$)</th><th class="num">Compartilhado (R$)</th><th class="num">%</th></tr></thead><tbody>';
     for (const r of list) {
+      const compartilhado = r.cat === "Pessoal" ? "—" : Money.format(r.metade);
       html +=
         "<tr><td>" +
         r.cat +
         '</td><td class="num">' +
         Money.format(r.cheio) +
         '</td><td class="num">' +
-        Money.format(r.metade) +
+        compartilhado +
         '</td><td class="num">' +
         Pct.format(r.pct) +
         "</td></tr>";
@@ -478,9 +479,7 @@
     html +=
       '<tr class="total"><td>Total geral</td><td class="num">' +
       Money.format(totalCheio) +
-      '</td><td class="num">' +
-      Money.format(totalCheio / 2) +
-      '</td><td class="num">' +
+      '</td><td class="num">—</td><td class="num">' +
       (totalCheio ? Pct.format(1) : "—") +
       "</td></tr></tbody>";
     t.innerHTML = html;
