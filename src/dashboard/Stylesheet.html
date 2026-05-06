@@ -177,6 +177,86 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Filter-only header (página Detalhe) */
+  .filter-only {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem;
+  }
+  .filter-only label {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .filter-only select {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Detalhe page accordions */
+  .detalhe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .person-accordion {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .person-accordion[open] {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .person-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-weight: 600;
+    user-select: none;
+  }
+  .person-summary::-webkit-details-marker { display: none; }
+  .person-summary::before {
+    content: "▸";
+    margin-right: 0.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    transition: transform 0.15s ease;
+    display: inline-block;
+  }
+  .person-accordion[open] .person-summary::before {
+    transform: rotate(90deg);
+  }
+  .person-name {
+    flex: 1;
+    font-size: 0.95rem;
+  }
+  .person-total {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.95rem;
+    color: var(--fg);
+  }
+  .person-details {
+    padding: 0 0.8rem 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  .person-details table {
+    margin-top: 0.5rem;
+  }
+  .detalhe-empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.9rem;
+  }
+
   /* Sub-tabs (Mês / Categoria / Pessoal / Histórico) */
   .tab-strip {
     display: grid;

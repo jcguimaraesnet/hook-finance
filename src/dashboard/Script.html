@@ -11,12 +11,15 @@
 
   const TOKEN_KEY = "hook-finance-token";
   const TAB_KEY = "hook-finance-tab";
+  const PAGE_KEY = "hook-finance-page";
   const VALID_TABS = ["mes", "categoria", "pessoal", "historico"];
+  const VALID_PAGES = ["consulta", "detalhe"];
   const charts = {};
   const monthCache = Object.create(null);
   let currentMonth = null;
   let currentMonthRows = [];
   let activeTab = "mes";
+  let activePage = "consulta";
 
   const TILE_IDS = ["kpi-total-geral", "kpi-total-cartao", "kpi-total-parcelado"];
   const TABLE_SKELETONS = [
@@ -50,6 +53,38 @@
 
   function isPCWeb_() {
     return window.matchMedia("(min-width: 750px)").matches;
+  }
+
+  function setActivePage(page) {
+    if (!VALID_PAGES.includes(page)) page = "consulta";
+    activePage = page;
+    try { localStorage.setItem(PAGE_KEY, page); } catch (_) {}
+    for (const btn of document.querySelectorAll(".nav-item")) {
+      const btnPage = btn.dataset.page;
+      if (!btnPage) continue;
+      btn.classList.toggle("active", btnPage === page);
+    }
+    for (const pageEl of document.querySelectorAll(".page")) {
+      pageEl.hidden = pageEl.id !== "page-" + page;
+    }
+  }
+
+  function setupPageNav() {
+    for (const btn of document.querySelectorAll(".nav-item")) {
+      if (btn.disabled) continue;
+      const page = btn.dataset.page;
+      if (!page) continue;
+      btn.addEventListener("click", () => setActivePage(page));
+    }
+  }
+
+  function syncFilterSelectors_() {
+    for (const id of ["filter-data", "filter-data-detalhe"]) {
+      const sel = $(id);
+      if (sel && currentMonth && sel.value !== currentMonth) {
+        sel.value = currentMonth;
+      }
+    }
   }
 
   function setupDiffToggles() {
@@ -169,13 +204,21 @@
     $("filter-data").addEventListener("change", (e) => {
       onMonthChange(e.target.value);
     });
+    const detalheSel = $("filter-data-detalhe");
+    if (detalheSel) {
+      detalheSel.addEventListener("change", (e) => onMonthChange(e.target.value));
+    }
     for (const btn of document.querySelectorAll(".tab-btn")) {
       btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
     }
+    setupPageNav();
     setupDiffToggles();
     let saved = "mes";
     try { saved = localStorage.getItem(TAB_KEY) || "mes"; } catch (_) {}
     setActiveTab(saved);
+    let savedPage = "consulta";
+    try { savedPage = localStorage.getItem(PAGE_KEY) || "consulta"; } catch (_) {}
+    setActivePage(savedPage);
 
     const stored = localStorage.getItem(TOKEN_KEY);
     if (stored) startDashboard(stored);
@@ -246,22 +289,30 @@
   }
 
   function seedSelector(mes) {
-    const sel = $("filter-data");
-    sel.innerHTML = mes
+    const html = mes
       ? '<option value="' + mes + '">' + mes + "</option>"
       : "<option>—</option>";
-    sel.value = mes || "";
-    sel.disabled = true;
+    for (const id of ["filter-data", "filter-data-detalhe"]) {
+      const sel = $(id);
+      if (!sel) continue;
+      sel.innerHTML = html;
+      sel.value = mes || "";
+      sel.disabled = true;
+    }
   }
 
   function expandSelector(meses) {
-    const sel = $("filter-data");
     const lista = (meses && meses.length ? meses : [currentMonth]).filter(Boolean);
-    sel.innerHTML = lista
+    const html = lista
       .map((d) => '<option value="' + d + '">' + d + "</option>")
       .join("");
-    sel.value = currentMonth || lista[0] || "";
-    sel.disabled = false;
+    for (const id of ["filter-data", "filter-data-detalhe"]) {
+      const sel = $(id);
+      if (!sel) continue;
+      sel.innerHTML = html;
+      sel.value = currentMonth || lista[0] || "";
+      sel.disabled = false;
+    }
   }
 
   function renderCurrentMonth(mes, rows) {
@@ -277,6 +328,65 @@
     } else {
       chartPending.rateio = rows;
     }
+    renderDetalhe(rows);
+    syncFilterSelectors_();
+  }
+
+  function renderDetalhe(rows) {
+    const list = $("detalhe-list");
+    if (!list) return;
+    const byPerson = {};
+    for (const r of rows) {
+      if (r.categoria !== "Pessoal") continue;
+      if (!r.rateio || r.rateio === "Metade") continue;
+      if (!byPerson[r.rateio]) byPerson[r.rateio] = { total: 0, items: [] };
+      byPerson[r.rateio].total += r.valor;
+      byPerson[r.rateio].items.push(r);
+    }
+    const preferred = ["Julio", "Dani", "Alzira"];
+    const others = Object.keys(byPerson)
+      .filter((p) => !preferred.includes(p))
+      .sort();
+    const ordered = preferred.concat(others);
+
+    let html = "";
+    for (const person of ordered) {
+      const data = byPerson[person];
+      if (!data) continue;
+      data.items.sort((a, b) => String(b.dataRef).localeCompare(String(a.dataRef)));
+      html += '<details class="person-accordion" data-person="' + person + '">';
+      html += '<summary class="person-summary">';
+      html += '<span class="person-name">' + escapeHtml_(person) + "</span>";
+      html += '<span class="person-total">R$ ' + Money.format(data.total) + "</span>";
+      html += "</summary>";
+      html += '<div class="person-details"><div class="scroll-x"><table>';
+      html +=
+        '<thead><tr><th>Data</th><th>Descrição</th><th class="num">Valor (R$)</th></tr></thead><tbody>';
+      for (const item of data.items) {
+        html +=
+          "<tr><td>" +
+          escapeHtml_(item.dataRef) +
+          "</td><td>" +
+          escapeHtml_(item.descricao) +
+          '</td><td class="num">' +
+          Money.format(item.valor) +
+          "</td></tr>";
+      }
+      html += "</tbody></table></div></div>";
+      html += "</details>";
+    }
+    list.innerHTML =
+      html ||
+      '<p class="detalhe-empty">Sem despesas pessoais neste mês.</p>';
+  }
+
+  function escapeHtml_(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function showCurrentMonthSkeleton() {
@@ -292,6 +402,13 @@
     for (const tableId of ["table-julio", "table-dani", "categoria-table"]) {
       const t = $(tableId);
       if (t) t.innerHTML = "";
+    }
+    const dl = $("detalhe-list");
+    if (dl) {
+      dl.innerHTML =
+        '<div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>' +
+        '<div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>' +
+        '<div class="skeleton skeleton-bar lg" style="height:3rem"></div>';
     }
     const c = $("chart-rateio");
     if (c) c.hidden = true;

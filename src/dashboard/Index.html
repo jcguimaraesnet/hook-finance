@@ -22,7 +22,7 @@
   <div id="dashboard" hidden>
     <nav class="primary-nav" role="navigation" aria-label="Páginas principais">
       <button type="button" class="nav-item active" data-page="consulta">📊 Consulta</button>
-      <button type="button" class="nav-item disabled" disabled aria-disabled="true">📋 Detalhe</button>
+      <button type="button" class="nav-item" data-page="detalhe">📋 Detalhe</button>
       <button type="button" class="nav-item disabled" disabled aria-disabled="true">➕ Lançamento</button>
     </nav>
 
@@ -126,6 +126,20 @@
           </div>
         </section>
       </section>
+    </div>
+
+    <div id="page-detalhe" class="page" hidden>
+      <div class="sticky-header">
+        <div class="filter-only">
+          <label for="filter-data-detalhe">Data</label>
+          <select id="filter-data-detalhe" disabled><option>—</option></select>
+        </div>
+      </div>
+      <div id="detalhe-list" class="detalhe-list">
+        <div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>
+        <div class="skeleton skeleton-bar lg" style="height:3rem;margin-bottom:0.5rem"></div>
+        <div class="skeleton skeleton-bar lg" style="height:3rem"></div>
+      </div>
     </div>
   </div>
 
