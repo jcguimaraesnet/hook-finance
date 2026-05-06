@@ -483,11 +483,12 @@
     charts.rateio = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: data.map((d) => d.rateio),
+        labels: data.map((d) => rateioLabel_(d.rateio)),
         datasets: [
           {
             data: data.map((d) => d.valor),
             backgroundColor: "#a07b5e",
+            maxBarThickness: 18,
           },
         ],
       },
@@ -517,6 +518,11 @@
       },
       plugins: [ChartDataLabels],
     });
+  }
+
+  function rateioLabel_(rateio) {
+    if (rateio === "Metade") return "Compartilhado";
+    return rateio;
   }
 
   function renderHistoricoFromSummary(history) {
