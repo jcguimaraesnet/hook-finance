@@ -20,6 +20,14 @@
     background: var(--bg);
     padding: var(--pad);
   }
+  #dashboard {
+    max-width: none;
+    margin: 0;
+  }
+  .page {
+    padding-bottom: 4rem; /* espaço pro bottom nav fixo no mobile */
+  }
+  .tab-panel[hidden] { display: none !important; }
   h2, h3 { margin: 0 0 0.5rem; }
   h3 {
     background: var(--accent);
@@ -223,24 +231,24 @@
   button:hover, button:focus { opacity: 0.9; }
   select { width: 100%; }
 
-  /* Tablet ≥640px */
+  /* Tablet+ (≥640px) */
   @media (min-width: 640px) {
-    header {
-      grid-template-columns: 1.2fr 1fr 1fr;
-      align-items: end;
+    body {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .page {
+      padding-bottom: 0; /* sem bottom nav fixa em ≥640px */
     }
     .people { grid-template-columns: 1fr 1fr; }
     .lower { grid-template-columns: 1fr 1fr; }
-    .chart-wrap { height: 300px; }
-    .history .chart-wrap { height: 320px; }
+    .chart-wrap { height: 280px; }
+    .history .chart-wrap { height: 300px; }
   }
 
-  /* Desktop ≥1024px */
+  /* Desktop (≥1024px) — mantém max-width 720px, ajusta apenas spacing */
   @media (min-width: 1024px) {
     :root { --gap: 1rem; --pad: 1rem; }
-    body { max-width: 1280px; margin: 0 auto; }
-    .kpi strong { font-size: 1.8rem; }
-    .chart-wrap { height: 340px; }
-    .history .chart-wrap { height: 360px; }
+    .kpi strong { font-size: 1.6rem; }
   }
 </style>
