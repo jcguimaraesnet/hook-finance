@@ -238,7 +238,10 @@ function updateEntry(token, row, fields) {
   sheet.getRange(row, 4).setValue(Number(fields.valor) || 0);
   sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
   sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
-  sheet.getRange(row, 9).setValue(String(fields.parcela || ""));
+  // Força formato TEXT na col Parcela pra evitar que o Sheets auto-parseie "1/3" como data.
+  const parcelaCell = sheet.getRange(row, 9);
+  parcelaCell.setNumberFormat("@");
+  parcelaCell.setValue(String(fields.parcela || ""));
   return { ok: true, row: row };
 }
 
