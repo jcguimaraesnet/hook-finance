@@ -20,7 +20,7 @@ Use `pnpm install` at root to install all packages. `pnpm dev` runs the React PW
 
 ## Architecture
 
-- **Backend** (`apps-script/`): single `doGet` and `doPost` global handlers in [Dashboard.gs](apps-script/dashboard/Dashboard.gs) dispatch by `?action=` (GET) or `body.action` (POST). Webhook (Tasker/IFTTT) reuses the same `doPost` — when body has `title`+`text`, delegates to `handleWebhookBody_` in [Webhook.gs](apps-script/webhook/Webhook.gs). Legacy HTML rendering still served at `/exec` (no `action` param) until Phase G cutover.
+- **Backend** (`apps-script/`): single `doGet` and `doPost` global handlers in [Dashboard.gs](apps-script/dashboard/Dashboard.gs) dispatch by `?action=` (GET) or `body.action` (POST). Webhook (Tasker/IFTTT) reuses the same `doPost` — when body has `title`+`text`, delegates to `handleWebhookBody_` in [Webhook.gs](apps-script/webhook/Webhook.gs). `GET /exec` with no `action` returns a small HTML page that auto-redirects to the PWA (legacy HTML frontend was removed in Phase G cutover).
 - **Frontend PWA** (`web/`): React 18 + TypeScript + Vite 5 + Tailwind v4 (CSS-first via `@theme`) + vite-plugin-pwa (manifest + workbox SW with NetworkFirst cache for `/api/proxy?action=monthData|historicalSummary`) + React Router v7 + Zustand (persist token/UI prefs) + Tanstack Query (data) + Chart.js + react-chartjs-2 (charts).
 - **API proxy** (`web/api/`): single Azure Function v4 at `/api/proxy` (GET + POST). Forwards to `APPS_SCRIPT_URL` (env var); returns body verbatim. Hosted by Azure SWA same-origin so the React app calls `/api/proxy` without CORS.
 - **Deploy**:
@@ -45,50 +45,50 @@ Columns A–J (10 columns). Rows are inserted at the top (row 2 = newest).
 | I (9) | Parcela | String no formato `parcela_atual/total` (ex: `1/3` = 1ª parcela de 3). Vazio quando à vista. Editável via Lançamento tab — o stepper edita só o total; a parcela atual é sempre gravada como `1`. |
 | J (10) | Acerto | `Sim` if the row counts in "Acerto Final" tab. Otherwise empty. |
 
-When reading from the sheet, use `String(r[8] || "")` for Parcela (string format) and `String(r[9] || "")` for Acerto. To extract the total of installments from `"X/Y"`, use the client-side helper `parcelaTotal_(p)` in [Script.html](src/dashboard/Script.html). A row counts as "parcelado" when its Parcela field has total `> 1`.
+When reading from the sheet, use `String(r[8] || "")` for Parcela (string format) and `String(r[9] || "")` for Acerto. To extract the total of installments from `"X/Y"`, use the client-side helper `parcelaTotal(p)` in [web/src/utils/format.ts](web/src/utils/format.ts). A row counts as "parcelado" when its Parcela field is non-empty.
 
-## Backend exposed endpoints (callable via `google.script.run`)
+## Backend REST endpoints (called via `/api/proxy` from the PWA)
 
-- `getMonthData(token, month?)` — returns rows of the most recent month (or specified month).
-- `getHistoricalSummary(token)` — pre-aggregated 12-month totals + months list. Reads only cols A,D,E,F,G.
-- `getLastEntries(token, n)` — last N rows for the Lançamento list (with `row` index for editing).
-- `updateEntry(token, row, fields)` — writes cols 3, 4, 6, 7, 9 (descricao, valor, categoria, rateio, parcela).
-- `deleteEntry(token, row)` — removes a row.
+- `GET ?action=monthData&token&month?` → rows of the specified month (or most recent if omitted).
+- `GET ?action=historicalSummary&token` → pre-aggregated 12-month totals + months list. Reads only cols A,D,E,F,G.
+- `GET ?action=lastEntries&token&n` → last N rows for the Lançamento list (with `row` index for editing).
+- `POST { action:"updateEntry", token, row, fields }` → writes cols 3, 4, 6, 7, 9 (descricao, valor, categoria, rateio, parcela).
+- `POST { action:"deleteEntry", token, row }` → removes a row.
+- `GET /exec` (no `action`) → tiny HTML that auto-redirects to the PWA at `PWA_URL`.
+- `POST { title, text, token }` → webhook path (Tasker/IFTTT) handled by `handleWebhookBody_`.
 
 All endpoints validate the token via `checkToken_(token)` against `PropertiesService.getScriptProperties().getProperty("WEBHOOK_TOKEN")`.
 
-Optimization: `Utilities.formatDate` is expensive (per-call IPC). For functions that loop over many rows, cache by `Date.getTime()` — see `getMonthData` in [Dashboard.gs](src/dashboard/Dashboard.gs).
+Optimization: `Utilities.formatDate` is expensive (per-call IPC). For functions that loop over many rows, cache by `Date.getTime()` — see `getMonthData` in [Dashboard.gs](apps-script/dashboard/Dashboard.gs).
 
-## Frontend structure (`Script.html`)
+## Frontend structure (PWA — `web/`)
 
-Single-page app with primary nav (Consulta / Detalhe / Lançamento / Acerto Final) and, inside Consulta, sub-tabs (Mês / Categoria / Pessoal / Histórico).
+React Router routes: `/consulta`, `/detalhe`, `/lancamento`, `/acerto`. Consulta has sub-tabs (Mês / Categoria / Pessoal / Histórico) on viewports below PC.
 
 ### Responsive breakpoints
 
-- **Mobile** (`<640px`): bottom-fixed primary nav; Consulta sub-tabs visible; cards stack 1-col.
-- **Tablet** (`640–749px`): top primary nav; Consulta sub-tabs; cards 2-col; body max-width 880px centered.
-- **PC Web** (`≥750px`): top primary nav; Consulta **without sub-tabs** (all panels visible at once); cards 2-col; body max-width 880px.
+- **Mobile** (`<640px`): bottom-fixed primary nav; Consulta sub-tabs visible; cards stack 1-col; HistoricoChart shows last 6 months only.
+- **Tablet** (`640–749px`): top primary nav (sticky alongside the 4 tiles); Consulta sub-tabs; cards 2-col; body max-width 880px centered.
+- **PC Web** (`≥750px`): top primary nav; Consulta **without sub-tabs** (all panels visible at once); cards 2-col.
 
-Acerto Final cards are **always 2-col side-by-side** regardless of viewport.
+Acerto Final cards always stack on mobile and go 2-col from tablet+ matching Consulta person cards exactly.
 
-### State (localStorage keys)
+### Persisted state
 
-- `hook-finance-token` — webhook token for authenticated requests.
-- `hook-finance-tab` — last active sub-tab in Consulta.
-- `hook-finance-page` — last active primary nav page.
-- `hook-finance-diff-{julio,dani}` — Δ button toggle state per person (Consulta tab).
-- `hook-finance-acerto-pix-julio` — hidden expand/collapse state for Pix (contas) section in the Acerto/Julio card. Triggered by clicking the "Pix (contas)" label (no visible button). Dani's card has no toggle.
+- **Zustand `hook-finance-store` (localStorage)**: `token`, `activePage`, `activeTab`, `acertoPixJulio`. `currentMonth` and `allMonths` are session-only (not persisted).
+- **`hook-finance-diff-{Julio,Dani}` (sessionStorage)**: Δ toggle visibility per person; default true (visible). Survives reloads in the same tab; resets when the tab closes.
+- **`hook-finance-install-dismissed` (localStorage)**: `1` once user dismisses the install banner; suppresses it on subsequent visits.
 
 ### Loading flow
 
-1. Skeleton renders immediately.
-2. `getMonthData(token)` (most recent month) → render Consulta tiles + cards.
-3. `getHistoricalSummary(token)` in background → render history charts + populate selector with all 12 months.
-4. Charts are lazy-rendered: only drawn when their sub-tab becomes active (or always in PC Web).
+1. Login screen calls `validateToken(candidate)` (probes `lastEntries(n=1)`); only stores token if `ok: true`.
+2. After login, `StickyHeader` (hoisted to AppShell) fetches `monthData` for `currentMonth`. Tiles render with skeleton fallback.
+3. ConsultaPage fetches `historicalSummary` in background → populates `allMonths` + history charts.
+4. The shared StickyHeader instance persists across Consulta/Detalhe/Acerto navigations; Lançamento gets a separate disabled instance pinned to the latest invoice month.
 
 ### Charts
 
-Chart.js v4 + `chartjs-plugin-datalabels`. Use `moneyK_(v)` for compact axis ticks (e.g., `2k`, `1,5k`). For line charts, x-axis ticks alternate (every other label visible) and format as `MM/YYYY`.
+Chart.js v4 + `chartjs-plugin-datalabels`. `moneyK(v)` for compact ticks (e.g., `2k`, `1,5k`). HistoricoChart: tooltip mode `index` with a custom dashed vertical hover-line plugin; Y-axis ticks alternate (every other one). RateioChart: name label inside each bar (white), value outside at the right (dark).
 
 ## Conventions
 

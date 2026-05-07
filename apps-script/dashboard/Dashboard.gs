@@ -1,12 +1,16 @@
+var PWA_URL = "https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/";
+
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) || "";
   switch (action) {
     case "":
-      // Default: serve HTML (legacy frontend, ainda em uso até cutover do PWA).
-      return HtmlService.createTemplateFromFile("dashboard/Index")
-        .evaluate()
+      // Frontend antigo foi descontinuado: redireciona para o PWA.
+      return HtmlService.createHtmlOutput(
+        '<!doctype html><meta charset="utf-8"><title>hook-finance</title>' +
+          '<meta http-equiv="refresh" content="0; url=' + PWA_URL + '">' +
+          '<p>Redirecting to <a href="' + PWA_URL + '">' + PWA_URL + '</a>…</p>',
+      )
         .setTitle("hook-finance")
-        .addMetaTag("viewport", "width=device-width, initial-scale=1")
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     case "data":
       return jsonResponse_(readAllForApi_(e.parameter.token));
@@ -330,8 +334,4 @@ function readData_(token) {
 
 function readAllForApi_(token) {
   return readData_(token);
-}
-
-function include_(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }

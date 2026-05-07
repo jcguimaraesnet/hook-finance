@@ -149,22 +149,13 @@ E uma nova linha aparece na planilha com as 7 colunas preenchidas conforme o esq
 
 ## Dashboard
 
-Mesma URL do webhook, sem query params: abrir no navegador serve o HTML do dashboard.
+O dashboard agora roda como **PWA** em `https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/` (React + Vite + Tailwind v4 hospedado no Azure Static Web Apps). Abrir o `/exec` direto no navegador agora retorna apenas uma página de redirect.
 
-- **Acesso**: [src/dashboard/Index.html](src/dashboard/Index.html) (renderizado via `HtmlService` em [src/dashboard/Dashboard.gs](src/dashboard/Dashboard.gs)).
-- **Auth**: na primeira visita, a página pede o `WEBHOOK_TOKEN` (mesmo do POST). Token válido é salvo em `localStorage` (`hook-finance-token`); token inválido limpa o storage e mostra erro.
-- **Comunicação**: usa `google.script.run` chamando `getDataForDashboard(token)` — sem CORS, sem fetch externo.
-- **Endpoint JSON adicional** (debug ou outras UIs): `GET <WEB_APP_URL>?action=data&token=<TOKEN>` retorna `{ok, rows[]}`.
-- **Para limpar o token salvo**: DevTools → Application → Local Storage → `hook-finance-token` → remover.
-- **Responsivo**: layout mobile-first. Em ≥640px monta grid 2 colunas (Júlio/Dani lado a lado, categoria/rateio lado a lado). Em ≥1024px aumenta paddings/fontes.
-
-Componentes do dashboard (replicam o Looker Studio anterior):
-- Filtro `Data` (escolhe a fatura), KPIs `Total cartão` e `Total parcelado`.
-- Tabela por pessoa (Júlio, Dani) com subtotais por Origem + total geral.
-- Mini KPIs sob cada tabela: `Cartão/Contas`, `Cartão/Contas/Pessoal`, `Diff` (positivo/negativo).
-- `Cartão (por categoria)`: ValorCheio + Valor (somatório das parcelas dos rateios Julio+Dani+Metade) + %.
-- `Cartão (por pessoa)`: bar chart horizontal por Rateio.
-- `Histórico`: line chart somando todas as origens exceto `Pessoal`, agrupado por fatura.
+- **Auth**: PWA pede o `WEBHOOK_TOKEN` no login. O token é validado por uma chamada GET a `lastEntries(n=1)` antes de ser salvo em `localStorage` (`hook-finance-store.token`).
+- **Comunicação**: a app chama `/api/proxy?action=...` (Azure Function) que repassa para o `/exec` do Apps Script — same-origin, sem CORS no browser.
+- **Endpoint JSON legado** (debug): `GET <WEB_APP_URL>?action=data&token=<TOKEN>` ainda retorna `{ok, rows[]}`.
+- **Logout**: dentro da PWA, limpe `localStorage` em DevTools → `hook-finance-store` ou esqueça o token e vá direto pro login.
+- **Responsivo**: mobile-first. Em ≥640px nav e os 4 tiles ficam sticky no topo; em ≥750px Consulta exibe todos os painéis simultaneamente (sem sub-tabs).
 
 ## Comandos úteis
 
