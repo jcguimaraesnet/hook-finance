@@ -125,27 +125,65 @@ Se o texto não casar com `PURCHASE_RE`, a linha ainda é gravada, mas as coluna
 
 ## Testar o webhook
 
+### Caminho recomendado — via proxy
+
+Use o endpoint `/api/proxy` do Azure Function. Ele segue o redirect 302 do Apps Script preservando método e body, então o POST chega íntegro:
+
 ```bash
-curl -X POST "<WEB_APP_URL>" \
-  -H "Content-Type: application/json" \
-  -d '{"token":"<WEBHOOK_TOKEN>","title":"Compra aprovada","text":"Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada."}'
+curl -X POST "https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/api/proxy" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"title":"Compra Aprovada!","text":"Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada.","token":"<WEBHOOK_TOKEN>"}'
 ```
 
-Resposta esperada:
+Resposta:
 ```json
 {"ok":true}
 ```
 
-E uma nova linha aparece na planilha com as 7 colunas preenchidas conforme o esquema acima.
+### Caminho direto (`/exec`) — cuidado
+
+POST direto em `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec` retorna 302 → `script.googleusercontent.com/macros/echo?...`. O `curl -L` padrão converte POST em GET no redirect, e mesmo com `--post301 --post302 --post303` o segundo hop frequentemente devolve a página HTML "Página não encontrada" do Google Drive (problema de auth/cookie no caminho direto). Por isso o caminho via proxy é o seguro. Se ainda assim quiser testar direto, o Tasker/IFTTT funciona porque o cliente HTTP nativo do Android trata o redirect como o `fetch` do Node faz.
+
+### Estrutura obrigatória do request
+
+| Item | Valor |
+|---|---|
+| Método | `POST` |
+| Header | `Content-Type: application/json; charset=utf-8` |
+| Body | JSON com **exatamente** três campos: `title`, `text`, `token` |
+
+```json
+{
+  "title": "Compra Aprovada!",
+  "text": "Compra no cartão final 1018, de R$ 32,78, em 01/05/26, às 18:33, em SUPERMERCADOS V, aprovada.",
+  "token": "<WEBHOOK_TOKEN>"
+}
+```
+
+### Formato do `text` (regra do regex)
+
+O `PURCHASE_RE` em [Webhook.gs](apps-script/webhook/Webhook.gs) exige **vírgulas** como separador entre os campos da notificação:
+
+```
+Compra no cartão final <CARD>, de R$ <VALOR>, em <DD/MM/YY[YY]>, às <HH:MM>, em <DESCRICAO>, aprovada.
+```
+
+Se você usar pontos no lugar das vírgulas (ex.: `final 4750.de R$ 19.90.`), o regex não casa, `parsePurchase_` devolve campos vazios e a linha é gravada na planilha **com tudo em branco** — backend ainda responde `{"ok":true}`. Esse é o sintoma mais comum de "deu certo mas não preencheu nada".
+
+### Dedup automática (5 minutos)
+
+O webhook calcula `SHA-256(title + "\n" + text)` e guarda em `CacheService` por 300s. Reenviar o mesmo `title+text` dentro da janela retorna `{"ok":true,"deduped":true}` sem inserir nova linha. Pra forçar uma nova inserção antes da janela expirar, mude qualquer caractere do `text` (o hash muda). Constante: `DEDUP_WINDOW_SECONDS` em [Webhook.gs](apps-script/webhook/Webhook.gs).
 
 ### Erros possíveis
 
 | Resposta | Causa |
 |---|---|
-| `{"ok":false,"error":"unauthorized"}` | `token` ausente ou diferente do `WEBHOOK_TOKEN`. |
+| `{"ok":true,"deduped":true}` | Mesmo `title+text` já recebido nos últimos 5 min. |
+| `{"ok":false,"error":"unauthorized"}` | `token` ausente ou diferente do `WEBHOOK_TOKEN` em Script Properties. |
 | `{"ok":false,"error":"missing_fields"}` | `title` ou `text` vazio/ausente. |
+| `{"ok":false,"error":"invalid_json"}` | Body não é JSON válido. |
+| `{"ok":false,"error":"lock_timeout"}` | `LockService` não conseguiu adquirir o lock em 10s (concorrência alta). |
 | `{"ok":false,"error":"sheet_not_found"}` | `SHEET_NAME` não existe na planilha. |
-| `{"ok":false,"error":"empty_body"}` | POST sem body JSON. |
 
 ## Dashboard
 
