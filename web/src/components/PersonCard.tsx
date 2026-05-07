@@ -26,8 +26,26 @@ function bucketKey(row: Row): string {
   return row.origem;
 }
 
+function readShowDiff(person: Person): boolean {
+  if (typeof sessionStorage === "undefined") return true;
+  const v = sessionStorage.getItem(`hook-finance-diff-${person}`);
+  return v === null ? true : v === "1";
+}
+
 export function PersonCard({ person, rows }: Props) {
-  const [showDiff, setShowDiff] = useState(true);
+  const [showDiff, setShowDiff] = useState(() => readShowDiff(person));
+
+  function toggleShowDiff() {
+    setShowDiff((v) => {
+      const next = !v;
+      try {
+        sessionStorage.setItem(`hook-finance-diff-${person}`, next ? "1" : "0");
+      } catch {
+        // sessionStorage indisponível (ex. modo privado iOS antigo) — ignora.
+      }
+      return next;
+    });
+  }
 
   const byOrigem: Record<string, number> = {};
   for (const r of rows) {
@@ -78,7 +96,7 @@ export function PersonCard({ person, rows }: Props) {
         </span>
         <button
           type="button"
-          onClick={() => setShowDiff((v) => !v)}
+          onClick={toggleShowDiff}
           className={
             "absolute right-1 top-1/2 -translate-y-1/2 z-10 text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
             (showDiff
