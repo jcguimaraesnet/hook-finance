@@ -63,7 +63,7 @@ export function CategoriaTable({ rows }: Props) {
             ))}
             <tr>
               <td className="text-left font-bold py-1.5 px-2 border-t-2 border-fg">
-                Total geral
+                Total Geral
               </td>
               <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg">
                 {formatMoney(totalCheio)}
