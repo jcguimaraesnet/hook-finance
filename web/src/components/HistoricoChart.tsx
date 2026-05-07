@@ -1,9 +1,28 @@
 import "./chartjs-setup";
 import { Line } from "react-chartjs-2";
-import type { ChartOptions } from "chart.js";
+import type { ChartOptions, Plugin } from "chart.js";
 import { Card, CardHeader } from "./Card";
 import { formatMoney, moneyK } from "@/utils/format";
 import { brDateToMMYYYY } from "@/utils/dates";
+
+const verticalHoverLine: Plugin<"line"> = {
+  id: "verticalHoverLine",
+  afterDatasetsDraw(chart) {
+    const active = chart.tooltip?.getActiveElements();
+    if (!active || active.length === 0) return;
+    const x = active[0].element.x;
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(38, 38, 38, 0.45)";
+    ctx.moveTo(x, chartArea.top);
+    ctx.lineTo(x, chartArea.bottom);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
 
 interface Series {
   label: string;
@@ -39,9 +58,12 @@ export function HistoricoChart({ title, months, series, showLegend = true }: Pro
     responsive: true,
     maintainAspectRatio: false,
     layout: { padding: { top: 24 } },
+    interaction: { mode: "index", intersect: false, axis: "x" },
     plugins: {
       legend: { display: showLegend },
       tooltip: {
+        mode: "index",
+        intersect: false,
         callbacks: {
           label: (ctx) => `${ctx.dataset.label}: ${formatMoney(ctx.parsed.y ?? 0)}`,
         },
@@ -77,7 +99,7 @@ export function HistoricoChart({ title, months, series, showLegend = true }: Pro
     <Card>
       <CardHeader title={title} />
       <div className="relative h-[320px] tablet:h-[300px]">
-        <Line data={chartData} options={options} />
+        <Line data={chartData} options={options} plugins={[verticalHoverLine]} />
       </div>
     </Card>
   );

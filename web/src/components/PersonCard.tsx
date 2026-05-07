@@ -66,25 +66,18 @@ export function PersonCard({ person, rows }: Props) {
 
   return (
     <Card className="flex flex-col">
-      <h3 className="relative bg-accent text-accent-fg text-center text-[0.82rem] font-semibold py-1.5 px-2 rounded-md -mx-1 -mt-1 mb-2.5 overflow-hidden">
+      <h3 className="relative bg-accent text-accent-fg text-center text-[0.82rem] font-semibold py-1.5 px-2 rounded-md -mx-1 -mt-1 mb-2.5">
+        <span>{person === "Julio" ? "Júlio" : "Dani"}</span>
         <span
           className={
-            "inline-block transition-opacity duration-150 " +
-            (showDiff ? "opacity-0" : "opacity-100")
-          }
-        >
-          {person === "Julio" ? "Júlio" : "Dani"}
-        </span>
-        <span
-          className={
-            "absolute inset-0 flex items-center justify-center pr-10 bg-accent tabular-nums transition-transform duration-300 " +
-            (showDiff ? "translate-x-0" : "translate-x-full") +
+            "absolute right-9 top-1/2 -translate-y-1/2 text-[0.68rem] font-semibold tabular-nums leading-none transition-opacity duration-200 " +
+            (showDiff ? "opacity-100" : "opacity-0 pointer-events-none") +
             " " +
             diffColor
           }
           aria-hidden={!showDiff}
         >
-          Diff: {diffSign} R$ {formatMoney(Math.abs(diff))}
+          {diffSign} R$ {formatMoney(Math.abs(diff))}
         </span>
         <button
           type="button"

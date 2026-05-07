@@ -39,6 +39,7 @@ export function RateioChart({ rows }: Props) {
     indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { right: 64 } },
     plugins: {
       legend: { display: false },
       tooltip: {
