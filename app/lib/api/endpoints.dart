@@ -11,7 +11,7 @@ class ApiEndpoints {
   Future<MonthDataResponse> getMonthData({String? month}) async {
     final r = await _client.get(
       'monthData',
-      params: {if (month != null) 'month': month},
+      params: {'month': ?month},
     );
     return MonthDataResponse.fromJson(r);
   }
