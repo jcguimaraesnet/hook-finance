@@ -1,9 +1,25 @@
 import "./chartjs-setup";
+import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import type { ChartOptions, Plugin } from "chart.js";
 import { Card, CardHeader } from "./Card";
 import { formatMoney, moneyK } from "@/utils/format";
 import { brDateToMMYYYY } from "@/utils/dates";
+
+const MOBILE_QUERY = "(max-width: 639.98px)";
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
 
 const verticalHoverLine: Plugin<"line"> = {
   id: "verticalHoverLine",
@@ -39,9 +55,15 @@ interface Props {
 }
 
 export function HistoricoChart({ title, months, series, showLegend = true }: Props) {
+  const isMobile = useIsMobile();
+  const visibleMonths = isMobile ? months.slice(-6) : months;
+  const visibleSeries = isMobile
+    ? series.map((s) => ({ ...s, data: s.data.slice(-6) }))
+    : series;
+
   const chartData = {
-    labels: months,
-    datasets: series.map((s) => ({
+    labels: visibleMonths,
+    datasets: visibleSeries.map((s) => ({
       label: s.label,
       data: s.data,
       borderColor: s.color,
