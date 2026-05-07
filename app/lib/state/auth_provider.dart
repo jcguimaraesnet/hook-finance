@@ -17,7 +17,7 @@ class AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() => const AuthState(
-        config: ApiConfig(apiBase: '', token: ''),
+        config: ApiConfig(token: ''),
         ready: false,
       );
 
@@ -26,8 +26,8 @@ class AuthNotifier extends Notifier<AuthState> {
     state = AuthState(config: config, ready: true);
   }
 
-  Future<bool> signIn(String apiBase, String token) async {
-    final candidate = ApiConfig(apiBase: apiBase.trim(), token: token.trim());
+  Future<bool> signIn(String token) async {
+    final candidate = ApiConfig(token: token.trim());
     final ok = await validateConfig(candidate);
     if (!ok) return false;
     await saveConfig(candidate);
@@ -38,7 +38,7 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> signOut() async {
     await clearConfig();
     state = const AuthState(
-      config: ApiConfig(apiBase: '', token: ''),
+      config: ApiConfig(token: ''),
       ready: true,
     );
   }

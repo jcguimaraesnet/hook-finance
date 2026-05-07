@@ -16,13 +16,13 @@ PWA usa Zustand (com `persist` middleware → localStorage) + sessionStorage avu
 ### Persistido (sobrevive a fechar/reabrir o app)
 
 **Storage key (PWA):** `hook-finance-store` (localStorage, via Zustand persist).
-**Storage key (Flutter):** `hook_finance_store` (shared_preferences, namespace dos campos).
+**Storage keys (Flutter):** `hook_finance.token` em `shared_preferences`. URL do backend NÃO persiste — vem de `kApiBase` (constante compilada via `String.fromEnvironment`, ver [api/proxy.md](../api/proxy.md)).
 
 | Campo | Tipo | Default | Descrição |
 |---|---|---|---|
 | `token` | `string \| null` | `null` | WEBHOOK_TOKEN do Apps Script. Sem token → login screen. |
-| `activePage` | `"consulta" \| "detalhe" \| "lancamento" \| "acerto"` | `"consulta"` | Aba primária. |
-| `activeTab` | `"mes" \| "categoria" \| "pessoal" \| "historico"` | `"mes"` | Sub-tab de Consulta (mobile/tablet). |
+| `activePage` | `"consulta" \| "detalhe" \| "lancamento" \| "acerto"` | `"consulta"` | Aba primária. (PWA only — Flutter usa NavigationBar local.) |
+| `activeTab` | `"mes" \| "categoria" \| "pessoal" \| "historico"` | `"mes"` | Sub-tab de Consulta (mobile/tablet). (PWA only — Flutter usa TabController local.) |
 | `acertoPixJulio` | `boolean` | `false` | Expande Pix do Júlio em Acerto. |
 
 `partialize` no PWA garante que `currentMonth` e `allMonths` **NÃO** são persistidos.

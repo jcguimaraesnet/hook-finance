@@ -31,8 +31,12 @@ app/lib/
 ├── api/                   client.dart (dio), endpoints.dart, config.dart (prefs)
 ├── state/                 auth_provider.dart, data_providers.dart (Riverpod)
 ├── features/
-│   ├── login/             LoginScreen (URL + token)
-│   └── shell/             AppShell stub (Onda 4); Consulta/Detalhe/etc na Onda 5
+│   ├── login/             LoginScreen (só token; URL hardcoded)
+│   ├── shell/             AppShell com NavigationBar e 4 páginas
+│   ├── consulta/          ConsultaPage (mês/categoria/pessoal/histórico)
+│   ├── detalhe/           DetalhePage (accordions por pessoa)
+│   ├── lancamento/        LancamentoPage + EditDialog
+│   └── acerto/            AcertoPage
 └── theme/                 Material 3 inspirado na paleta amarela do PWA
 
 app/test/core/             35 testes — espelho 1:1 dos testes do web/src/core
@@ -40,14 +44,24 @@ app/test/core/             35 testes — espelho 1:1 dos testes do web/src/core
 
 ## Login
 
-Diferente do PWA (que vive same-origin com `/api/proxy`), o Flutter precisa saber a URL do backend. A tela de login pede:
+A URL do backend é compilada no app (constante `kApiBase` em [lib/api/config.dart](lib/api/config.dart) via `String.fromEnvironment`). Por padrão aponta para o `/api/proxy` do Azure SWA. A tela de login pede só o **token** (`WEBHOOK_TOKEN` configurado em `apps-script/shared/Setup.gs`).
 
-1. **URL da API** — `https://script.google.com/macros/s/.../exec` (Apps Script direto) OU `https://<seu-swa>.azurestaticapps.net/api/proxy` (proxy do PWA).
-2. **Token** — o `WEBHOOK_TOKEN` configurado em `apps-script/shared/Setup.gs`.
+Validação: bate `lastEntries(n=1)` antes de gravar. Token persiste em `shared_preferences`.
 
-Validação: bate `lastEntries(n=1)` antes de gravar. Persiste em `shared_preferences`.
+### Override da URL em build
 
-## Próximos passos
+Para apontar para outro backend (dev local, staging) sem editar código:
 
-- **Onda 5:** UI das 4 páginas (Consulta, Detalhe, Lançamento, Acerto) com paridade ao PWA. fl_chart para gráficos.
-- **Ship Android:** `flutter build apk --release` + sideload via `adb install` ou transferência manual.
+```bash
+flutter build apk --release --dart-define=API_BASE=https://outra/api/proxy
+flutter run --dart-define=API_BASE=http://localhost:7071/api/proxy
+```
+
+## Ship Android
+
+```bash
+flutter build apk --release
+# APK em build/app/outputs/flutter-apk/app-release.apk (~50 MB, debug-signed)
+```
+
+Sideload via `adb install` (USB debugging) ou GitHub Release pra baixar no celular.

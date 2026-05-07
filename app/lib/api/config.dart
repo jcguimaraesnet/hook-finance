@@ -1,40 +1,42 @@
 // Spec: docs/specs/state/persistence.md
 // Spec: docs/specs/api/endpoints.md
 //
-// Config persistido em shared_preferences. Diferente do PWA, o Flutter precisa
-// saber a URL do backend (PWA usa /api/proxy same-origin). Usuário fornece URL
-// + token no login.
+// URL do backend é compilada no app via String.fromEnvironment.
+// Default aponta para o /api/proxy do Azure SWA. Override em build time:
+//   flutter build apk --dart-define=API_BASE=https://outra/api/proxy
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String kApiBase = String.fromEnvironment(
+  'API_BASE',
+  defaultValue:
+      'https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/api/proxy',
+);
+
 class ApiConfig {
-  final String apiBase;
   final String token;
 
-  const ApiConfig({required this.apiBase, required this.token});
+  const ApiConfig({required this.token});
 
-  bool get isConfigured => apiBase.isNotEmpty && token.isNotEmpty;
+  String get apiBase => kApiBase;
+  bool get isConfigured => token.isNotEmpty;
 }
 
-const _keyApiBase = 'hook_finance.api_base';
 const _keyToken = 'hook_finance.token';
 
 Future<ApiConfig> loadConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  return ApiConfig(
-    apiBase: prefs.getString(_keyApiBase) ?? '',
-    token: prefs.getString(_keyToken) ?? '',
-  );
+  return ApiConfig(token: prefs.getString(_keyToken) ?? '');
 }
 
 Future<void> saveConfig(ApiConfig config) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_keyApiBase, config.apiBase);
   await prefs.setString(_keyToken, config.token);
 }
 
 Future<void> clearConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.remove(_keyApiBase);
   await prefs.remove(_keyToken);
+  // Limpa chave legada (Onda 4 antes do hardcode).
+  await prefs.remove('hook_finance.api_base');
 }

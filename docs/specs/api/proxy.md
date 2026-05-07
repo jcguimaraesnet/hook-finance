@@ -5,13 +5,13 @@ last_updated: 2026-05-07
 
 # Proxy `/api/proxy` (Azure Function)
 
-Bridge que o PWA usa para falar com o Apps Script sem CORS. Função única em [web/api/proxy/](../../../web/api/proxy/), hospedada pelo Azure Static Web Apps na mesma origem do PWA.
+Bridge para falar com o Apps Script. Função única em [web/api/proxy/](../../../web/api/proxy/), hospedada pelo Azure Static Web Apps. Usada por **PWA** (same-origin, evita CORS) e por **Flutter** (URL hardcoded em `app/lib/api/config.dart` aponta para `<azure-swa>/api/proxy`).
 
 ## Contexto
 
-Apps Script publicado em `https://script.google.com/macros/s/.../exec` exige `Content-Type: text/plain` em POST para evitar preflight CORS. Mesmo assim, GET cross-origin do PWA causa atrito (cookies, Same-Site, redirects do Apps Script). O proxy elimina o problema: o PWA chama `/api/proxy?...` mesma origem; a Function repassa para o Apps Script.
+Apps Script publicado em `https://script.google.com/macros/s/.../exec` exige `Content-Type: text/plain` em POST para evitar preflight CORS. Mesmo assim, GET cross-origin causa atrito (cookies, Same-Site, redirects do Apps Script). O proxy elimina o problema: PWA e Flutter chamam `/api/proxy?...`; a Function repassa para o Apps Script com a mesma querystring/body.
 
-O Flutter **não** usa o proxy — chama Apps Script direto, já que apps nativos não têm restrição CORS.
+Apesar do Flutter não ter restrição CORS, ele também usa o proxy — assim o backend tem **uma única fronteira** (a env var `APPS_SCRIPT_URL` na Function). Trocar o deploy do Apps Script é mudança em um lugar só.
 
 ## Regras
 
@@ -32,7 +32,7 @@ O Flutter **não** usa o proxy — chama Apps Script direto, já que apps nativo
 - **Function:** [web/api/proxy/](../../../web/api/proxy/)
 - **PWA dev:** Vite proxy em `vite.config.ts` redireciona `/api/*` → `localhost:7071` (Azure Functions Core Tools).
 - **PWA prod:** Azure SWA serve `/api/*` direto.
-- **Flutter:** não usa este proxy — chama Apps Script direto.
+- **Flutter:** URL hardcoded em [app/lib/api/config.dart](../../../app/lib/api/config.dart) (constante `kApiBase`, `String.fromEnvironment('API_BASE', defaultValue: '<azure-swa>/api/proxy')`). Override em build com `--dart-define=API_BASE=…`.
 
 ## Specs relacionadas
 

@@ -5,7 +5,7 @@ last_updated: 2026-05-07
 
 # API endpoints
 
-Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy` no PWA (Azure Function bridge — ver [proxy.md](proxy.md)) ou via URL direta `https://script.google.com/macros/s/.../exec` no Flutter.
+Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy` na Azure Function bridge — ver [proxy.md](proxy.md). PWA chama same-origin (relativo); Flutter usa URL absoluta hardcoded para o `<azure-swa>/api/proxy` (ver [proxy.md](proxy.md) — Implementações).
 
 ## Contexto
 

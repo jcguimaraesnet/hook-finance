@@ -1,10 +1,11 @@
 // Spec: docs/specs/state/persistence.md
 //
-// Login: usuário fornece a base URL do backend (Apps Script direto OU /api/proxy
-// do PWA hospedado) e o WEBHOOK_TOKEN. Validamos batendo lastEntries(n=1).
+// Login: usuário fornece o WEBHOOK_TOKEN. URL do backend é hardcoded em
+// `lib/api/config.dart` via String.fromEnvironment.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../api/config.dart';
 import '../../state/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -16,7 +17,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _apiBaseCtrl;
   late final TextEditingController _tokenCtrl;
   bool _busy = false;
   String? _error;
@@ -25,13 +25,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     final config = ref.read(authProvider).config;
-    _apiBaseCtrl = TextEditingController(text: config.apiBase);
     _tokenCtrl = TextEditingController(text: config.token);
   }
 
   @override
   void dispose() {
-    _apiBaseCtrl.dispose();
     _tokenCtrl.dispose();
     super.dispose();
   }
@@ -42,13 +40,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _error = null;
     });
-    final ok = await ref
-        .read(authProvider.notifier)
-        .signIn(_apiBaseCtrl.text, _tokenCtrl.text);
+    final ok = await ref.read(authProvider.notifier).signIn(_tokenCtrl.text);
     if (!mounted) return;
     setState(() => _busy = false);
     if (!ok) {
-      setState(() => _error = 'Não autorizou. Confira URL e token.');
+      setState(() => _error = 'Não autorizou. Confira o token.');
     }
   }
 
@@ -68,36 +64,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Configurar acesso',
+                    'Entrar',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'URL do backend (Apps Script ou /api/proxy do PWA) + token.',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    'Backend: $kApiBase',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                   const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _apiBaseCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'URL da API',
-                      hintText: 'https://… (termina em /exec ou /api/proxy)',
-                    ),
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    validator: (v) {
-                      final s = v?.trim() ?? '';
-                      if (s.isEmpty) return 'Informe a URL';
-                      if (!s.startsWith('http')) return 'URL inválida';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
                   TextFormField(
                     controller: _tokenCtrl,
                     decoration: const InputDecoration(labelText: 'Token'),
                     obscureText: true,
                     autocorrect: false,
+                    onFieldSubmitted: (_) => _submit(),
                     validator: (v) =>
                         (v?.trim().isEmpty ?? true) ? 'Informe o token' : null,
                   ),
