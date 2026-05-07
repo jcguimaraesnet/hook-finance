@@ -93,12 +93,8 @@ export function HistoricoChart({ title, months, series, showLegend = true }: Pro
       },
       y: {
         ticks: {
-          callback: function (_value, index) {
-            if (index % 2 !== 0) return "";
-            const v = (this as { getLabelForValue: (i: number) => string })
-              .getLabelForValue(index);
-            return moneyK(Number(v));
-          },
+          callback: (value, index) =>
+            index % 2 !== 0 ? "" : moneyK(Number(value)),
         },
       },
     },
