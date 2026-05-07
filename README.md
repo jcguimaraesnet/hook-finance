@@ -149,7 +149,7 @@ E uma nova linha aparece na planilha com as 7 colunas preenchidas conforme o esq
 
 ## Dashboard
 
-O dashboard agora roda como **PWA** em `https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/` (React + Vite + Tailwind v4 hospedado no Azure Static Web Apps). Abrir o `/exec` direto no navegador agora retorna apenas uma página de redirect.
+O dashboard roda como **PWA** em `https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/` (React + Vite + Tailwind v4 hospedado no Azure Static Web Apps). O Apps Script ficou apenas como backend JSON — abrir o `/exec` direto sem `?action=...` retorna `{ok:false,error:"unknown_action"}`.
 
 - **Auth**: PWA pede o `WEBHOOK_TOKEN` no login. O token é validado por uma chamada GET a `lastEntries(n=1)` antes de ser salvo em `localStorage` (`hook-finance-store.token`).
 - **Comunicação**: a app chama `/api/proxy?action=...` (Azure Function) que repassa para o `/exec` do Apps Script — same-origin, sem CORS no browser.

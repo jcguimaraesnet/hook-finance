@@ -20,7 +20,7 @@ Use `pnpm install` at root to install all packages. `pnpm dev` runs the React PW
 
 ## Architecture
 
-- **Backend** (`apps-script/`): single `doGet` and `doPost` global handlers in [Dashboard.gs](apps-script/dashboard/Dashboard.gs) dispatch by `?action=` (GET) or `body.action` (POST). Webhook (Tasker/IFTTT) reuses the same `doPost` — when body has `title`+`text`, delegates to `handleWebhookBody_` in [Webhook.gs](apps-script/webhook/Webhook.gs). `GET /exec` with no `action` returns a small HTML page that auto-redirects to the PWA (legacy HTML frontend was removed in Phase G cutover).
+- **Backend** (`apps-script/`): single `doGet` and `doPost` global handlers in [Dashboard.gs](apps-script/dashboard/Dashboard.gs) dispatch by `?action=` (GET) or `body.action` (POST). Webhook (Tasker/IFTTT) reuses the same `doPost` — when body has `title`+`text`, delegates to `handleWebhookBody_` in [Webhook.gs](apps-script/webhook/Webhook.gs). The legacy HTML frontend was removed in Phase G cutover; `GET /exec` with no `action` returns `{ok:false,error:"unknown_action"}`.
 - **Frontend PWA** (`web/`): React 18 + TypeScript + Vite 5 + Tailwind v4 (CSS-first via `@theme`) + vite-plugin-pwa (manifest + workbox SW with NetworkFirst cache for `/api/proxy?action=monthData|historicalSummary`) + React Router v7 + Zustand (persist token/UI prefs) + Tanstack Query (data) + Chart.js + react-chartjs-2 (charts).
 - **API proxy** (`web/api/`): single Azure Function v4 at `/api/proxy` (GET + POST). Forwards to `APPS_SCRIPT_URL` (env var); returns body verbatim. Hosted by Azure SWA same-origin so the React app calls `/api/proxy` without CORS.
 - **Deploy**:
@@ -54,7 +54,7 @@ When reading from the sheet, use `String(r[8] || "")` for Parcela (string format
 - `GET ?action=lastEntries&token&n` → last N rows for the Lançamento list (with `row` index for editing).
 - `POST { action:"updateEntry", token, row, fields }` → writes cols 3, 4, 6, 7, 9 (descricao, valor, categoria, rateio, parcela).
 - `POST { action:"deleteEntry", token, row }` → removes a row.
-- `GET /exec` (no `action`) → tiny HTML that auto-redirects to the PWA at `PWA_URL`.
+- `GET /exec` (no `action`) → `{ ok: false, error: "unknown_action" }`. The legacy HTML dashboard was removed and there is no public landing page; the backend is JSON-only.
 - `POST { title, text, token }` → webhook path (Tasker/IFTTT) handled by `handleWebhookBody_`.
 
 All endpoints validate the token via `checkToken_(token)` against `PropertiesService.getScriptProperties().getProperty("WEBHOOK_TOKEN")`.
