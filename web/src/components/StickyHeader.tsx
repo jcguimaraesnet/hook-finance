@@ -10,10 +10,12 @@ export function StickyHeader({ disabled = false }: Props) {
   const currentMonth = useAppStore((s) => s.currentMonth);
   const allMonths = useAppStore((s) => s.allMonths);
   const setCurrentMonth = useAppStore((s) => s.setCurrentMonth);
-  const monthQ = useMonthData(currentMonth);
+  // Disabled mode (Lançamento): always fetch the latest invoice month, independent of shared currentMonth.
+  const monthQ = useMonthData(disabled ? null : currentMonth);
 
   const rows = monthQ.data?.rows;
   const isLoading = monthQ.isLoading;
+  const displayMonth = disabled ? (monthQ.data?.month ?? null) : currentMonth;
 
   const totalGeral = rows ? rows.reduce((s, r) => s + r.valor, 0) : 0;
   const totalCartao = rows
@@ -36,12 +38,14 @@ export function StickyHeader({ disabled = false }: Props) {
           <select
             id="filter-data"
             disabled={disabled || !allMonths.length}
-            value={currentMonth ?? ""}
+            value={displayMonth ?? ""}
             onChange={(e) => setCurrentMonth(e.target.value)}
             className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
-            {allMonths.length === 0 ? (
-              <option value={currentMonth ?? ""}>{currentMonth ?? "—"}</option>
+            {disabled ? (
+              <option value={displayMonth ?? ""}>{displayMonth ?? "—"}</option>
+            ) : allMonths.length === 0 ? (
+              <option value={displayMonth ?? ""}>{displayMonth ?? "—"}</option>
             ) : (
               allMonths.map((m) => (
                 <option key={m} value={m}>
