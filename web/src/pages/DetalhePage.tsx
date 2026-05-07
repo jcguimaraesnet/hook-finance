@@ -1,9 +1,10 @@
 import { useAppStore } from "@/store/useAppStore";
 import { useMonthData } from "@/hooks/useMonthData";
-import { formatMoney } from "@/utils/format";
-import type { Row } from "@/api/types";
+import { formatMoney } from "@/core/format/money";
+import { PERSON_ORDER } from "@/core/constants";
+import type { Row } from "@/core/types";
 
-const PREFERRED_ORDER = ["Julio", "Dani", "Alzira"];
+const PREFERRED_ORDER: readonly string[] = PERSON_ORDER;
 
 interface PersonGroup {
   total: number;

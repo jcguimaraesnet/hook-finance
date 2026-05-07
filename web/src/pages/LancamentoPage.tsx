@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useLastEntries } from "@/hooks/useLastEntries";
 import { useMonthData } from "@/hooks/useMonthData";
-import { formatMoney, parcelaTotal } from "@/utils/format";
+import { formatMoney } from "@/core/format/money";
+import { parcelaTotal } from "@/core/rules/parcela";
 import { EditModal } from "@/components/EditModal";
-import type { Entry } from "@/api/types";
+import type { Entry } from "@/core/types";
 
 export function LancamentoPage() {
   const currentMonth = useAppStore((s) => s.currentMonth);

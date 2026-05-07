@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/api/endpoints";
 import { useAppStore } from "@/store/useAppStore";
-import type { UpdateEntryFields } from "@/api/types";
+import type { UpdateEntryFields } from "@/core/types";
 
 export function useLastEntries(n = 10) {
   const token = useAppStore((s) => s.token);

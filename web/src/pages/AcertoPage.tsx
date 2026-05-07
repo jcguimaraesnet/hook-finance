@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useMonthData } from "@/hooks/useMonthData";
 import { Card } from "@/components/Card";
-import { formatMoney } from "@/utils/format";
-import { splitForPerson } from "@/utils/splitForPerson";
-import type { Person, Row } from "@/api/types";
+import { formatMoney } from "@/core/format/money";
+import { splitForPerson } from "@/core/rules/splitForPerson";
+import { diffCalculation } from "@/core/rules/diffCalculation";
+import type { Person, Row } from "@/core/types";
 
 function readShowDiff(person: Person): boolean {
   if (typeof sessionStorage === "undefined") return true;
@@ -75,28 +76,7 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
   let total = cartaoCompart + cartaoPessoal;
   for (const r of pixVisible) total += r.valor;
 
-  // Diff: mesma regra do PersonCard (Consulta). Considera TODAS as despesas
-  // Pix (contas) do mês — não só as de Acerto=Sim — pra que o valor bata
-  // exatamente com o exibido em Consulta.
-  const otherPerson: Person = isJulio ? "Dani" : "Julio";
-  const monthHasPix = rows.some((r) => r.origem === "Pix (contas)");
-  let meu = 0;
-  let outro = 0;
-  if (monthHasPix) {
-    for (const r of rows) {
-      if (r.origem !== "Pix (contas)") continue;
-      meu += splitForPerson(r, person);
-      outro += splitForPerson(r, otherPerson);
-    }
-  } else {
-    for (const r of rows) {
-      if (r.origem === "Contas" || r.origem === "Empregados") {
-        meu += splitForPerson(r, person);
-        outro += splitForPerson(r, otherPerson);
-      }
-    }
-  }
-  const diff = meu - outro;
+  const diff = diffCalculation(rows, person);
   const diffSign = diff >= 0 ? "+" : "−";
   const diffColor = diff >= 0 ? "text-[#2c5aa0]" : "text-negative";
 

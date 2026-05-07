@@ -1,6 +1,6 @@
 import { Card, CardHeader } from "./Card";
-import { formatMoney, formatPct } from "@/utils/format";
-import type { Row } from "@/api/types";
+import { formatMoney, formatPct } from "@/core/format/money";
+import type { Row } from "@/core/types";
 
 interface Props {
   rows: Row[];

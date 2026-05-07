@@ -1,6 +1,7 @@
 import { useAppStore } from "@/store/useAppStore";
 import { useMonthData } from "@/hooks/useMonthData";
-import { formatMoney, isParcelado } from "@/utils/format";
+import { formatMoney } from "@/core/format/money";
+import { isParcelado } from "@/core/rules/parcela";
 
 interface Props {
   disabled?: boolean;

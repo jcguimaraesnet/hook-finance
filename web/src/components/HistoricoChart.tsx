@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import type { ChartOptions, Plugin } from "chart.js";
 import { Card, CardHeader } from "./Card";
-import { formatMoney, moneyK } from "@/utils/format";
-import { brDateToMMYYYY } from "@/utils/dates";
+import { formatMoney, moneyK } from "@/core/format/money";
+import { brDateToMMYYYY } from "@/core/format/dates";
 
 const MOBILE_QUERY = "(max-width: 639.98px)";
 

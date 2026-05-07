@@ -1,29 +1,15 @@
 import { useState } from "react";
-import { splitForPerson } from "@/utils/splitForPerson";
-import { formatMoney, formatPct } from "@/utils/format";
+import { splitForPerson } from "@/core/rules/splitForPerson";
+import { bucketKey } from "@/core/rules/bucketKey";
+import { diffCalculation } from "@/core/rules/diffCalculation";
+import { BUCKET_ORDER } from "@/core/constants";
+import { formatMoney, formatPct } from "@/core/format/money";
 import { Card } from "./Card";
-import type { Row, Person } from "@/api/types";
+import type { Row, Person } from "@/core/types";
 
 interface Props {
   person: Person;
   rows: Row[];
-}
-
-const ORDER = [
-  "Cartão (compartilhado)",
-  "Cartão (pessoal)",
-  "Pix (contas)",
-  "Pessoal",
-  "Empregados",
-];
-
-function bucketKey(row: Row): string {
-  if (row.origem === "Cartão") {
-    return row.rateio === "Metade"
-      ? "Cartão (compartilhado)"
-      : "Cartão (pessoal)";
-  }
-  return row.origem;
 }
 
 function readShowDiff(person: Person): boolean {
@@ -56,26 +42,12 @@ export function PersonCard({ person, rows }: Props) {
   }
   const total = Object.values(byOrigem).reduce((s, v) => s + v, 0);
 
-  const seen = new Set(ORDER);
-  const allKeys = ORDER.concat(Object.keys(byOrigem).filter((k) => !seen.has(k)));
+  const seen = new Set<string>(BUCKET_ORDER);
+  const allKeys = (BUCKET_ORDER as readonly string[]).concat(
+    Object.keys(byOrigem).filter((k) => !seen.has(k)),
+  );
 
-  // Diff = (this person's Pix or Contas+Empregados) - (other person's same)
-  const otherPerson: Person = person === "Julio" ? "Dani" : "Julio";
-  const otherByOrigem: Record<string, number> = {};
-  for (const r of rows) {
-    const v = splitForPerson(r, otherPerson);
-    if (v === 0) continue;
-    const k = bucketKey(r);
-    otherByOrigem[k] = (otherByOrigem[k] || 0) + v;
-  }
-  const monthHasPix = rows.some((r) => r.origem === "Pix (contas)");
-  const meu = monthHasPix
-    ? byOrigem["Pix (contas)"] || 0
-    : (byOrigem["Contas"] || 0) + (byOrigem["Empregados"] || 0);
-  const outro = monthHasPix
-    ? otherByOrigem["Pix (contas)"] || 0
-    : (otherByOrigem["Contas"] || 0) + (otherByOrigem["Empregados"] || 0);
-  const diff = meu - outro;
+  const diff = diffCalculation(rows, person);
   const diffSign = diff >= 0 ? "+" : "−";
   const diffColor = diff >= 0 ? "text-[#2c5aa0]" : "text-negative";
 

@@ -5,7 +5,7 @@ import type {
   MonthDataResponse,
   MutationResponse,
   UpdateEntryFields,
-} from "./types";
+} from "@/core/types";
 
 export function getMonthData(month?: string | null): Promise<MonthDataResponse> {
   return apiGet<MonthDataResponse>("monthData", { month: month || undefined });

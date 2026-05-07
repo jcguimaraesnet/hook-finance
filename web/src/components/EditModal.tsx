@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useUpdateEntry, useDeleteEntry } from "@/hooks/useLastEntries";
-import type { Entry, Row } from "@/api/types";
-import { parcelaTotal } from "@/utils/format";
-import { formatMoney } from "@/utils/format";
+import type { Entry, Row } from "@/core/types";
+import { parcelaTotal } from "@/core/rules/parcela";
+import { formatMoney } from "@/core/format/money";
 
 interface Props {
   entry: Entry | null;

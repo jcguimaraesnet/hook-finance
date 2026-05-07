@@ -2,8 +2,8 @@ import "./chartjs-setup";
 import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { Card, CardHeader } from "./Card";
-import { formatMoney, moneyK } from "@/utils/format";
-import type { Row } from "@/api/types";
+import { formatMoney, moneyK } from "@/core/format/money";
+import type { Row } from "@/core/types";
 
 interface Props {
   rows: Row[];
