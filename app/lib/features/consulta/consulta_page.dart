@@ -70,6 +70,13 @@ class _ConsultaPageState extends ConsumerState<ConsultaPage>
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
+    if (monthAsync.hasError && !monthAsync.hasValue) {
+      return _ErrorView(
+        error: monthAsync.error!,
+        onRetry: () => ref.invalidate(monthDataProvider),
+      );
+    }
+
     final mes = _MesPanel(rows: rows, loading: loading);
     final categoria = _CategoriaPanel(rows: rows, loading: loading, isPC: isPC);
     final pessoal = _PessoalPanel(rows: rows, loading: loading);
@@ -254,6 +261,46 @@ class _HistoricoPanel extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final Object error;
+  final VoidCallback onRetry;
+  const _ErrorView({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline,
+              size: 48, color: theme.colorScheme.error),
+          const SizedBox(height: 12),
+          Text(
+            'Falha carregando dados',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$error',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tentar de novo'),
+          ),
+        ],
+      ),
     );
   }
 }

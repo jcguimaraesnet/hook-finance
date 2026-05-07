@@ -3,7 +3,16 @@
 
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'config.dart';
+
+/// Resultado de validação de config — distingue ok de erros específicos.
+class ValidationResult {
+  final bool ok;
+  final String? message;
+  const ValidationResult.ok() : ok = true, message = null;
+  const ValidationResult.fail(this.message) : ok = false;
+}
 
 class ApiClient {
   final Dio _dio;
@@ -11,8 +20,19 @@ class ApiClient {
 
   ApiClient(this._config) : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 30),
-        ));
+          receiveTimeout: const Duration(seconds: 60),
+        )) {
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        request: false,
+        requestBody: false,
+        responseBody: false,
+        responseHeader: false,
+        error: true,
+        logPrint: (line) => debugPrint('[dio] $line'),
+      ));
+    }
+  }
 
   Future<Map<String, dynamic>> get(
     String action, {
@@ -62,14 +82,33 @@ class ApiClient {
   }
 }
 
-/// Valida URL+token tentando lastEntries(n=1).
-Future<bool> validateConfig(ApiConfig config) async {
-  if (!config.isConfigured) return false;
+/// Valida URL+token tentando lastEntries(n=1). Retorna mensagem específica
+/// quando falha (timeout, network, unauthorized, etc).
+Future<ValidationResult> validateConfig(ApiConfig config) async {
+  if (!config.isConfigured) {
+    return const ValidationResult.fail('Token vazio.');
+  }
   try {
     final client = ApiClient(config);
     final r = await client.get('lastEntries', params: {'n': 1});
-    return r['ok'] == true;
-  } catch (_) {
-    return false;
+    if (r['ok'] == true) return const ValidationResult.ok();
+    final err = r['error'];
+    if (err == 'unauthorized') {
+      return const ValidationResult.fail('Token inválido.');
+    }
+    return ValidationResult.fail('Backend respondeu: $err');
+  } on DioException catch (e) {
+    final msg = switch (e.type) {
+      DioExceptionType.connectionTimeout => 'Tempo esgotado conectando.',
+      DioExceptionType.receiveTimeout => 'Backend demorou demais (>60s).',
+      DioExceptionType.connectionError =>
+        'Sem conexão. Confira sua internet.',
+      DioExceptionType.badResponse =>
+        'Backend retornou HTTP ${e.response?.statusCode}.',
+      _ => 'Erro de rede: ${e.message}',
+    };
+    return ValidationResult.fail(msg);
+  } catch (e) {
+    return ValidationResult.fail('Erro: $e');
   }
 }

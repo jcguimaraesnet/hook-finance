@@ -40,11 +40,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _error = null;
     });
-    final ok = await ref.read(authProvider.notifier).signIn(_tokenCtrl.text);
+    final result = await ref.read(authProvider.notifier).signIn(_tokenCtrl.text);
     if (!mounted) return;
     setState(() => _busy = false);
-    if (!ok) {
-      setState(() => _error = 'Não autorizou. Confira o token.');
+    if (!result.ok) {
+      setState(() => _error = result.message ?? 'Falhou.');
     }
   }
 

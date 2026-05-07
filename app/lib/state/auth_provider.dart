@@ -26,13 +26,13 @@ class AuthNotifier extends Notifier<AuthState> {
     state = AuthState(config: config, ready: true);
   }
 
-  Future<bool> signIn(String token) async {
+  Future<ValidationResult> signIn(String token) async {
     final candidate = ApiConfig(token: token.trim());
-    final ok = await validateConfig(candidate);
-    if (!ok) return false;
+    final result = await validateConfig(candidate);
+    if (!result.ok) return result;
     await saveConfig(candidate);
     state = AuthState(config: candidate, ready: true);
-    return true;
+    return result;
   }
 
   Future<void> signOut() async {
