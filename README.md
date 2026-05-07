@@ -1,10 +1,10 @@
 # hook-finance
 
+- **PWA (Azure SWA)**: [clique aqui](https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/)
+- **Projeto Apps Script**: [clique aqui](https://script.google.com/home/projects/1HvwjDc_t-XIi1SmZnq5gxrZoTBEw7GlDx98d-UolqRAQBk0BBvGwz9E1/edit)
+- **Backend (Apps Script `/exec`)**: [clique aqui](https://script.google.com/macros/s/AKfycby7v9mrOGHV6tIaiOmgs7ZaGolmSTXsEKIj3rYjBlYalePcuBmSM0C35Wc5-vJZRNE-7Q/exec)
+
 Webhook em Google Apps Script que recebe `POST` com notificações de compra no cartão (campos `title` e `text` no body), faz parse do texto, e grava uma nova linha estruturada em uma Google Sheet. Deploy automatizado via GitHub Actions com [`clasp`](https://github.com/google/clasp).
-
-**Projeto Apps Script**: https://script.google.com/home/projects/1HvwjDc_t-XIi1SmZnq5gxrZoTBEw7GlDx98d-UolqRAQBk0BBvGwz9E1/edit
-
-**Webhook (POST)**: https://script.google.com/macros/s/AKfycby7v9mrOGHV6tIaiOmgs7ZaGolmSTXsEKIj3rYjBlYalePcuBmSM0C35Wc5-vJZRNE-7Q/exec
 
 ## Estrutura
 
