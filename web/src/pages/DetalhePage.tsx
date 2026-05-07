@@ -17,7 +17,7 @@ export function DetalhePage() {
   const rows = monthQ.data?.rows ?? [];
   const byPerson: Record<string, PersonGroup> = {};
   for (const r of rows) {
-    if (r.categoria !== "Pessoal") continue;
+    if (r.origem !== "Cartão") continue;
     if (!r.rateio || r.rateio === "Metade") continue;
     if (!byPerson[r.rateio]) byPerson[r.rateio] = { total: 0, items: [] };
     byPerson[r.rateio].total += r.valor;

@@ -34,10 +34,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
 
   const cartao = rows.filter((r) => r.origem === "Cartão");
   const cartaoCompart = cartao
-    .filter((r) => r.categoria !== "Pessoal")
+    .filter((r) => r.rateio === "Metade")
     .reduce((s, r) => s + splitForPerson(r, person), 0);
   const cartaoPessoal = cartao
-    .filter((r) => r.categoria === "Pessoal")
+    .filter((r) => r.rateio === "Julio" || r.rateio === "Dani")
     .reduce((s, r) => s + splitForPerson(r, person), 0);
 
   const pixAll = rows.filter(

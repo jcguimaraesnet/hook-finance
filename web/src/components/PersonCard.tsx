@@ -19,9 +19,9 @@ const ORDER = [
 
 function bucketKey(row: Row): string {
   if (row.origem === "Cartão") {
-    return row.categoria === "Pessoal"
-      ? "Cartão (pessoal)"
-      : "Cartão (compartilhado)";
+    return row.rateio === "Metade"
+      ? "Cartão (compartilhado)"
+      : "Cartão (pessoal)";
   }
   return row.origem;
 }

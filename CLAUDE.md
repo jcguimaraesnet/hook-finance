@@ -47,6 +47,26 @@ Columns A–J (10 columns). Rows are inserted at the top (row 2 = newest).
 
 When reading from the sheet, use `String(r[8] || "")` for Parcela (string format) and `String(r[9] || "")` for Acerto. To extract the total of installments from `"X/Y"`, use the client-side helper `parcelaTotal(p)` in [web/src/utils/format.ts](web/src/utils/format.ts). A row counts as "parcelado" when its Parcela field is non-empty.
 
+## Person-card aggregation rules
+
+These are the canonical rules for how each row's `valor` rolls into the labels shown on the PersonCard / AcertoCard / RateioChart / HistoricoChart "Pessoal". The grouping key is **`rateio`** (column G), not `categoria`. `categoria` is irrelevant for these rules.
+
+For the **selected month's invoice** (filtered by column A = invoice closing date):
+
+| UI label | Filter rule | Value attributed to Júlio | Value attributed to Dani |
+|---|---|---|---|
+| **Cartão (compartilhado)** | `origem = Cartão` AND `rateio = Metade` | `valor / 2` | `valor / 2` |
+| **Cartão (pessoal)** | `origem = Cartão` AND `rateio ∈ {Julio, Dani}` | `valor` if `rateio = Julio`, else `0` | `valor` if `rateio = Dani`, else `0` |
+
+Every component below must follow these rules:
+
+- **PersonCard** ([web/src/components/PersonCard.tsx](web/src/components/PersonCard.tsx)) on Consulta — rows "Cartão (compartilhado)" and "Cartão (pessoal)".
+- **AcertoCard** ([web/src/pages/AcertoPage.tsx](web/src/pages/AcertoPage.tsx)) — rows "Cartão (compartilhado)" and "Cartão (pessoal)".
+- **RateioChart** ([web/src/components/RateioChart.tsx](web/src/components/RateioChart.tsx)) "Cartão (por pessoa)" — bar `Compartilhado` follows rule 1; bars `Júlio`/`Dani` follow rule 2.
+- **HistoricoChart** "Histórico — Pessoal" series — same as rule 2 (sum of Cartão rows where `rateio ∈ {Julio, Dani}`, attributed to that person).
+
+The shared splitter [web/src/utils/splitForPerson.ts](web/src/utils/splitForPerson.ts) already encodes the per-person value math (full when `rateio === person`, half when `rateio === Metade`, else 0). What the components must NOT do is bucket by `categoria`; bucket by `rateio` instead.
+
 ## Backend REST endpoints (called via `/api/proxy` from the PWA)
 
 - `GET ?action=monthData&token&month?` → rows of the specified month (or most recent if omitted).

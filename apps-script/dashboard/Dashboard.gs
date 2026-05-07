@@ -190,16 +190,12 @@ function getHistoricalSummary(token) {
     if (!data || !last12Set[data]) continue;
     const valor = Number(r[3]) || 0;
     const origem = String(r[4] || "");
-    const categoria = String(r[5] || "");
     const rateio = String(r[6] || "");
     if (origem !== "Pessoal") byMonth[data].total += valor;
-    if (categoria === "Pessoal") {
+    // "Pessoal" segue Regra 2: Cartão + rateio em {Julio, Dani} (full value).
+    if (origem === "Cartão") {
       if (rateio === "Julio") byMonth[data].julioPessoal += valor;
       else if (rateio === "Dani") byMonth[data].daniPessoal += valor;
-      else if (rateio === "Metade") {
-        byMonth[data].julioPessoal += valor / 2;
-        byMonth[data].daniPessoal += valor / 2;
-      }
     }
   }
 
