@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useMonthData } from "@/hooks/useMonthData";
-import { Card, CardHeader } from "@/components/Card";
+import { Card } from "@/components/Card";
 import { formatMoney } from "@/utils/format";
 import { splitForPerson } from "@/utils/splitForPerson";
 import type { Person, Row } from "@/api/types";
+
+function readShowDiff(person: Person): boolean {
+  if (typeof sessionStorage === "undefined") return true;
+  const v = sessionStorage.getItem(`hook-finance-diff-${person}`);
+  return v === null ? true : v === "1";
+}
 
 export function AcertoPage() {
   const currentMonth = useAppStore((s) => s.currentMonth);
@@ -32,6 +39,19 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
   const isJulio = person === "Julio";
   const expanded = isJulio && acertoPixJulio;
 
+  const [showDiff, setShowDiff] = useState(() => readShowDiff(person));
+  function toggleShowDiff() {
+    setShowDiff((v) => {
+      const next = !v;
+      try {
+        sessionStorage.setItem(`hook-finance-diff-${person}`, next ? "1" : "0");
+      } catch {
+        // sessionStorage indisponível — ignora.
+      }
+      return next;
+    });
+  }
+
   const cartao = rows.filter((r) => r.origem === "Cartão");
   const cartaoCompart = cartao
     .filter((r) => r.rateio === "Metade")
@@ -40,22 +60,76 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
     .filter((r) => r.rateio === "Julio" || r.rateio === "Dani")
     .reduce((s, r) => s + splitForPerson(r, person), 0);
 
-  const pixAll = rows.filter(
+  const pixAllForPerson = rows.filter(
     (r) => r.origem === "Pix (contas)" && r.rateio === person,
   );
-  const pixAcerto = pixAll.filter((r) => r.acerto === "Sim");
-  const pixVisible = expanded ? pixAll : pixAcerto;
+  const pixAcerto = pixAllForPerson.filter((r) => r.acerto === "Sim");
+  const pixVisible = expanded ? pixAllForPerson : pixAcerto;
 
   // Julio: section visible if any Pix (mesmo só pra dar alvo de clique).
   // Dani: section só se há Acerto.
-  const showSection = isJulio ? pixAll.length > 0 : pixAcerto.length > 0;
+  const showSection = isJulio
+    ? pixAllForPerson.length > 0
+    : pixAcerto.length > 0;
 
   let total = cartaoCompart + cartaoPessoal;
   for (const r of pixVisible) total += r.valor;
 
+  // Diff: mesma regra do PersonCard (Consulta). Considera TODAS as despesas
+  // Pix (contas) do mês — não só as de Acerto=Sim — pra que o valor bata
+  // exatamente com o exibido em Consulta.
+  const otherPerson: Person = isJulio ? "Dani" : "Julio";
+  const monthHasPix = rows.some((r) => r.origem === "Pix (contas)");
+  let meu = 0;
+  let outro = 0;
+  if (monthHasPix) {
+    for (const r of rows) {
+      if (r.origem !== "Pix (contas)") continue;
+      meu += splitForPerson(r, person);
+      outro += splitForPerson(r, otherPerson);
+    }
+  } else {
+    for (const r of rows) {
+      if (r.origem === "Contas" || r.origem === "Empregados") {
+        meu += splitForPerson(r, person);
+        outro += splitForPerson(r, otherPerson);
+      }
+    }
+  }
+  const diff = meu - outro;
+  const diffSign = diff >= 0 ? "+" : "−";
+  const diffColor = diff >= 0 ? "text-[#2c5aa0]" : "text-negative";
+
   return (
     <Card className="overflow-hidden">
-      <CardHeader title={person === "Julio" ? "Júlio" : "Dani"} />
+      <h3 className="relative bg-accent text-accent-fg text-center text-[0.82rem] font-semibold py-1.5 px-2 rounded-md -mx-1 -mt-1 mb-2.5">
+        <span>{person === "Julio" ? "Júlio" : "Dani"}</span>
+        <span
+          className={
+            "absolute right-9 top-1/2 -translate-y-1/2 text-[0.68rem] font-semibold tabular-nums leading-none transition-opacity duration-200 " +
+            (showDiff ? "opacity-100" : "opacity-0 pointer-events-none") +
+            " " +
+            diffColor
+          }
+          aria-hidden={!showDiff}
+        >
+          {diffSign} R$ {formatMoney(Math.abs(diff))}
+        </span>
+        <button
+          type="button"
+          onClick={toggleShowDiff}
+          className={
+            "absolute right-1 top-1/2 -translate-y-1/2 z-10 text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
+            (showDiff
+              ? "bg-fg text-white border border-fg"
+              : "bg-black/10 text-accent-fg border border-transparent hover:bg-black/20")
+          }
+          title="Mostrar/ocultar diferença"
+          aria-label="Mostrar/ocultar diferença"
+        >
+          Δ
+        </button>
+      </h3>
       {loading ? (
         <div className="flex flex-col gap-1.5">
           <div className="skeleton h-5" />
