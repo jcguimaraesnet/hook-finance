@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { PrimaryNav } from "@/components/PrimaryNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { StickyHeader } from "@/components/StickyHeader";
 import { LoginPage } from "@/pages/LoginPage";
 import { ConsultaPage } from "@/pages/ConsultaPage";
 import { DetalhePage } from "@/pages/DetalhePage";
@@ -18,18 +19,24 @@ export default function App() {
 function AppShell() {
   const location = useLocation();
   const setActivePage = useAppStore((s) => s.setActivePage);
+  const seg = location.pathname.split("/")[1] || "consulta";
+  const isLancamento = seg === "lancamento";
 
   useEffect(() => {
-    const seg = location.pathname.split("/")[1] || "consulta";
     if (["consulta", "detalhe", "lancamento", "acerto"].includes(seg)) {
       setActivePage(seg as "consulta" | "detalhe" | "lancamento" | "acerto");
     }
-  }, [location.pathname, setActivePage]);
+  }, [seg, setActivePage]);
 
   return (
     <div className="min-h-dvh max-w-[880px] mx-auto p-3 pb-20 tablet:pb-3">
       <PrimaryNav />
       <InstallPrompt />
+      {isLancamento ? (
+        <StickyHeader key="fixed" disabled />
+      ) : (
+        <StickyHeader key="shared" />
+      )}
       <Routes>
         <Route path="/" element={<Navigate to="/consulta" replace />} />
         <Route path="/consulta" element={<ConsultaPage />} />

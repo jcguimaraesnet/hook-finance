@@ -1,63 +1,17 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/store/useAppStore";
-import * as api from "@/api/endpoints";
+import { useMonthData } from "@/hooks/useMonthData";
 import { Card, CardHeader } from "@/components/Card";
 import { formatMoney } from "@/utils/format";
 import { splitForPerson } from "@/utils/splitForPerson";
 import type { Person, Row } from "@/api/types";
 
 export function AcertoPage() {
-  const acertoMonth = useAppStore((s) => s.acertoMonth);
-  const setAcertoMonth = useAppStore((s) => s.setAcertoMonth);
-  const allMonths = useAppStore((s) => s.allMonths);
-  const token = useAppStore((s) => s.token);
-
-  // Quando allMonths chegar, default = mês anterior (índice 1; cai pro [0] se só houver 1).
-  useEffect(() => {
-    if (!acertoMonth && allMonths.length > 0) {
-      setAcertoMonth(allMonths[1] || allMonths[0]);
-    }
-  }, [acertoMonth, allMonths, setAcertoMonth]);
-
-  const monthQ = useQuery({
-    queryKey: ["monthData", acertoMonth ?? "_acerto_pending_"],
-    queryFn: () => api.getMonthData(acertoMonth ?? null),
-    enabled: !!token && !!acertoMonth,
-  });
-
+  const currentMonth = useAppStore((s) => s.currentMonth);
+  const monthQ = useMonthData(currentMonth);
   const rows = monthQ.data?.rows ?? [];
 
   return (
     <>
-      <div className="sticky top-[-1px] bg-bg z-20 mb-3">
-        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5 tablet:p-3">
-          <label
-            htmlFor="filter-data-acerto"
-            className="text-[0.7rem] text-muted tablet:text-[0.8rem]"
-          >
-            Data
-          </label>
-          <select
-            id="filter-data-acerto"
-            disabled={!allMonths.length}
-            value={acertoMonth ?? ""}
-            onChange={(e) => setAcertoMonth(e.target.value)}
-            className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
-          >
-            {allMonths.length === 0 ? (
-              <option>—</option>
-            ) : (
-              allMonths.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))
-            )}
-          </select>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 tablet:grid-cols-2 gap-2">
         <AcertoCard person="Julio" rows={rows} loading={monthQ.isLoading} />
         <AcertoCard person="Dani" rows={rows} loading={monthQ.isLoading} />

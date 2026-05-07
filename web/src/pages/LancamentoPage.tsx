@@ -3,7 +3,6 @@ import { useAppStore } from "@/store/useAppStore";
 import { useLastEntries } from "@/hooks/useLastEntries";
 import { useMonthData } from "@/hooks/useMonthData";
 import { formatMoney, parcelaTotal } from "@/utils/format";
-import { monthYearLabel } from "@/utils/dates";
 import { EditModal } from "@/components/EditModal";
 import type { Entry } from "@/api/types";
 
@@ -14,17 +13,9 @@ export function LancamentoPage() {
   const [editing, setEditing] = useState<Entry | null>(null);
 
   const entries = lastQ.data?.entries ?? [];
-  const subtitle = monthYearLabel(currentMonth);
 
   return (
     <>
-      <p className="text-[0.85rem] text-muted mb-2.5 px-0.5">
-        Mês corrente:{" "}
-        <span className="text-fg font-semibold">
-          {subtitle || "—"}
-        </span>
-      </p>
-
       {editing ? (
         <EditModal
           entry={editing}

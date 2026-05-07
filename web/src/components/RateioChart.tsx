@@ -39,7 +39,6 @@ export function RateioChart({ rows }: Props) {
     indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { top: 8 } },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -49,21 +48,22 @@ export function RateioChart({ rows }: Props) {
       },
       datalabels: {
         display: true,
+        clip: false,
         labels: {
           name: {
             anchor: "start",
-            align: "top",
-            offset: 4,
-            color: "#262626",
-            font: { weight: 600, size: 11 },
+            align: "right",
+            offset: 6,
+            color: "white",
+            font: { weight: 700, size: 11 },
             formatter: (_v, ctx) =>
               ctx.chart.data.labels?.[ctx.dataIndex] as string,
           },
           value: {
             anchor: "end",
-            align: "start",
-            offset: 8,
-            color: "white",
+            align: "right",
+            offset: 6,
+            color: "#262626",
             font: { weight: 600, size: 11 },
             formatter: (v: number | null) => formatMoney(v ?? 0),
           },

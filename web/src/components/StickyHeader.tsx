@@ -1,17 +1,19 @@
 import { useAppStore } from "@/store/useAppStore";
-import { formatMoney } from "@/utils/format";
-import type { Row } from "@/api/types";
-import { isParcelado } from "@/utils/format";
+import { useMonthData } from "@/hooks/useMonthData";
+import { formatMoney, isParcelado } from "@/utils/format";
 
 interface Props {
-  rows: Row[] | undefined;
-  isLoading: boolean;
+  disabled?: boolean;
 }
 
-export function StickyHeader({ rows, isLoading }: Props) {
+export function StickyHeader({ disabled = false }: Props) {
   const currentMonth = useAppStore((s) => s.currentMonth);
   const allMonths = useAppStore((s) => s.allMonths);
   const setCurrentMonth = useAppStore((s) => s.setCurrentMonth);
+  const monthQ = useMonthData(currentMonth);
+
+  const rows = monthQ.data?.rows;
+  const isLoading = monthQ.isLoading;
 
   const totalGeral = rows ? rows.reduce((s, r) => s + r.valor, 0) : 0;
   const totalCartao = rows
@@ -33,13 +35,13 @@ export function StickyHeader({ rows, isLoading }: Props) {
           </label>
           <select
             id="filter-data"
-            disabled={!allMonths.length}
+            disabled={disabled || !allMonths.length}
             value={currentMonth ?? ""}
             onChange={(e) => setCurrentMonth(e.target.value)}
             className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
-              <option>—</option>
+              <option value={currentMonth ?? ""}>{currentMonth ?? "—"}</option>
             ) : (
               allMonths.map((m) => (
                 <option key={m} value={m}>

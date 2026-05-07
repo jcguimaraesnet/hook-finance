@@ -19,8 +19,6 @@ interface AppState {
   // Month state
   currentMonth: string | null;
   setCurrentMonth: (m: string | null) => void;
-  acertoMonth: string | null;
-  setAcertoMonth: (m: string | null) => void;
   allMonths: string[];
   setAllMonths: (months: string[]) => void;
 
@@ -45,8 +43,6 @@ export const useAppStore = create<AppState>()(
 
       currentMonth: null,
       setCurrentMonth: (m) => set({ currentMonth: m }),
-      acertoMonth: null,
-      setAcertoMonth: (m) => set({ acertoMonth: m }),
       allMonths: [],
       setAllMonths: (months) => set({ allMonths: months }),
 

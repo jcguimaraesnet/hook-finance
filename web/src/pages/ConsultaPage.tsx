@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useMonthData } from "@/hooks/useMonthData";
 import { useHistoricalSummary } from "@/hooks/useHistoricalSummary";
-import { StickyHeader } from "@/components/StickyHeader";
 import { SubTabs } from "@/components/SubTabs";
 import { PersonCard } from "@/components/PersonCard";
 import { CategoriaTable } from "@/components/CategoriaTable";
@@ -53,7 +52,6 @@ export function ConsultaPage() {
 
   return (
     <>
-      <StickyHeader rows={monthQ.data?.rows} isLoading={monthQ.isLoading} />
       <SubTabs />
 
       {showMes && (
