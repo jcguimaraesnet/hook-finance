@@ -3,7 +3,7 @@
 
 import '../types.dart';
 
-double splitForPerson(Row row, Person person) {
+double splitForPerson(ExpenseRow row, Person person) {
   if (row.rateio == person.name) return row.valor;
   if (row.rateio == 'Metade' &&
       (person == Person.julio || person == Person.dani)) {

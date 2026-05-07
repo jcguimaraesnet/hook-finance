@@ -1,8 +1,12 @@
-// Spec: docs/specs/pages/* — placeholder shell. UI real vai na Onda 5.
+// Spec: docs/specs/pages/* (shell que hospeda as 4 páginas)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/auth_provider.dart';
+import '../acerto/acerto_page.dart';
+import '../consulta/consulta_page.dart';
+import '../detalhe/detalhe_page.dart';
+import '../lancamento/lancamento_page.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -21,6 +25,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     (icon: Icons.handshake_outlined, label: 'Acerto'),
   ];
 
+  static const _pages = <Widget>[
+    ConsultaPage(),
+    DetalhePage(),
+    LancamentoPage(),
+    AcertoPage(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,29 +45,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(_destinations[_index].icon,
-                  size: 56, color: Theme.of(context).colorScheme.outline),
-              const SizedBox(height: 12),
-              Text(
-                'Onda 4 — scaffold pronto',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Conteúdo de "${_destinations[_index].label}" virá na Onda 5.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

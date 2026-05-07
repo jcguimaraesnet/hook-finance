@@ -4,7 +4,7 @@
 import '../types.dart';
 import 'split_for_person.dart';
 
-double diffCalculation(List<Row> rows, Person person) {
+double diffCalculation(List<ExpenseRow> rows, Person person) {
   final other = person.other;
   final monthHasPix = rows.any((r) => r.origem == 'Pix (contas)');
   double meu = 0;

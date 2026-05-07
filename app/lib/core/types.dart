@@ -1,7 +1,7 @@
 // Spec: docs/specs/data/despesas-sheet.md
 // Spec: docs/specs/api/endpoints.md
 
-class Row {
+class ExpenseRow {
   final String data;
   final String dataRef;
   final String descricao;
@@ -13,7 +13,7 @@ class Row {
   final String parcela;
   final String acerto;
 
-  const Row({
+  const ExpenseRow({
     required this.data,
     required this.dataRef,
     required this.descricao,
@@ -26,7 +26,7 @@ class Row {
     required this.acerto,
   });
 
-  factory Row.fromJson(Map<String, dynamic> j) => Row(
+  factory ExpenseRow.fromJson(Map<String, dynamic> j) => ExpenseRow(
         data: (j['data'] ?? '') as String,
         dataRef: (j['dataRef'] ?? '') as String,
         descricao: (j['descricao'] ?? '') as String,
@@ -40,7 +40,7 @@ class Row {
       );
 }
 
-class Entry extends Row {
+class Entry extends ExpenseRow {
   final int row;
 
   const Entry({
@@ -76,7 +76,7 @@ class MonthDataResponse {
   final bool ok;
   final String? error;
   final String? month;
-  final List<Row> rows;
+  final List<ExpenseRow> rows;
 
   const MonthDataResponse({
     required this.ok,
@@ -91,7 +91,7 @@ class MonthDataResponse {
         error: j['error'] as String?,
         month: j['month'] as String?,
         rows: (j['rows'] as List?)
-                ?.map((e) => Row.fromJson(e as Map<String, dynamic>))
+                ?.map((e) => ExpenseRow.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             const [],
       );

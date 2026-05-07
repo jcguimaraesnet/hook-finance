@@ -3,7 +3,7 @@
 
 import '../types.dart';
 
-String bucketKey(Row row) {
+String bucketKey(ExpenseRow row) {
   if (row.origem == 'Cartão') {
     return row.rateio == 'Metade'
         ? 'Cartão (compartilhado)'

@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hook_finance/core/rules/diff_calculation.dart';
 import 'package:hook_finance/core/types.dart';
 
-Row _row({
+ExpenseRow _row({
   double valor = 0,
   String origem = 'Cartão',
   String rateio = '',
   String acerto = '',
 }) =>
-    Row(
+    ExpenseRow(
       data: '06/05/2026',
       dataRef: '03/04/2026 14:32',
       descricao: 'TEST',
