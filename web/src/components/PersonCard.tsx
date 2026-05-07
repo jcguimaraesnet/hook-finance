@@ -1,4 +1,4 @@
-import { useAppStore } from "@/store/useAppStore";
+import { useState } from "react";
 import { splitForPerson } from "@/utils/splitForPerson";
 import { formatMoney, formatPct } from "@/utils/format";
 import { Card } from "./Card";
@@ -27,10 +27,7 @@ function bucketKey(row: Row): string {
 }
 
 export function PersonCard({ person, rows }: Props) {
-  const diffJulio = useAppStore((s) => s.diffJulio);
-  const diffDani = useAppStore((s) => s.diffDani);
-  const toggleDiff = useAppStore((s) => s.toggleDiff);
-  const showDiff = person === "Julio" ? diffJulio : diffDani;
+  const [showDiff, setShowDiff] = useState(true);
 
   const byOrigem: Record<string, number> = {};
   for (const r of rows) {
@@ -81,7 +78,7 @@ export function PersonCard({ person, rows }: Props) {
         </span>
         <button
           type="button"
-          onClick={() => toggleDiff(person)}
+          onClick={() => setShowDiff((v) => !v)}
           className={
             "absolute right-1 top-1/2 -translate-y-1/2 z-10 text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
             (showDiff

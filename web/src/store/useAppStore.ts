@@ -22,10 +22,7 @@ interface AppState {
   allMonths: string[];
   setAllMonths: (months: string[]) => void;
 
-  // UI toggles per person
-  diffJulio: boolean;
-  diffDani: boolean;
-  toggleDiff: (p: Person) => void;
+  // UI toggles
   acertoPixJulio: boolean;
   toggleAcertoPix: () => void;
 }
@@ -46,31 +43,16 @@ export const useAppStore = create<AppState>()(
       allMonths: [],
       setAllMonths: (months) => set({ allMonths: months }),
 
-      diffJulio: true,
-      diffDani: true,
-      toggleDiff: (p) =>
-        set((s) =>
-          p === "Julio" ? { diffJulio: !s.diffJulio } : { diffDani: !s.diffDani },
-        ),
       acertoPixJulio: false,
       toggleAcertoPix: () => set((s) => ({ acertoPixJulio: !s.acertoPixJulio })),
     }),
     {
       name: "hook-finance-store",
-      version: 1,
-      // v0 → v1: liga Diff por padrão; usuário pode ocultar manualmente depois.
-      migrate: (persisted, version) => {
-        const p = (persisted as Partial<AppState>) ?? {};
-        const next = version < 1 ? { ...p, diffJulio: true, diffDani: true } : p;
-        return next as AppState;
-      },
       // Não persistir allMonths (recarregado a cada sessão).
       partialize: (s) => ({
         token: s.token,
         activePage: s.activePage,
         activeTab: s.activeTab,
-        diffJulio: s.diffJulio,
-        diffDani: s.diffDani,
         acertoPixJulio: s.acertoPixJulio,
       }),
     },
