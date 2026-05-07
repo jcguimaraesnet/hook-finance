@@ -46,8 +46,8 @@ export const useAppStore = create<AppState>()(
       allMonths: [],
       setAllMonths: (months) => set({ allMonths: months }),
 
-      diffJulio: false,
-      diffDani: false,
+      diffJulio: true,
+      diffDani: true,
       toggleDiff: (p) =>
         set((s) =>
           p === "Julio" ? { diffJulio: !s.diffJulio } : { diffDani: !s.diffDani },
@@ -57,6 +57,13 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "hook-finance-store",
+      version: 1,
+      // v0 → v1: liga Diff por padrão; usuário pode ocultar manualmente depois.
+      migrate: (persisted, version) => {
+        const p = (persisted as Partial<AppState>) ?? {};
+        const next = version < 1 ? { ...p, diffJulio: true, diffDani: true } : p;
+        return next as AppState;
+      },
       // Não persistir allMonths (recarregado a cada sessão).
       partialize: (s) => ({
         token: s.token,
