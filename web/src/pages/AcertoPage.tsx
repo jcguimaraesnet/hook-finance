@@ -63,51 +63,63 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
           <div className="skeleton h-5" />
         </div>
       ) : (
-        <table className="w-full border-collapse text-[0.78rem] tabular-nums">
-          <tbody>
-            <Row label="Cartão (compart.)" value={formatMoney(cartaoCompart)} />
-            <Row label="Cartão (pessoal)" value={formatMoney(cartaoPessoal)} />
-            {showSection && (
-              <>
-                <tr>
-                  <td
-                    colSpan={2}
-                    className="font-semibold text-muted uppercase text-[0.65rem] tracking-wider pt-2 pb-1"
-                  >
-                    {isJulio ? (
-                      <span
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleAcertoPix()}
-                      >
-                        Pix (contas)
-                      </span>
-                    ) : (
-                      "Pix (contas)"
-                    )}
-                  </td>
-                </tr>
-                {pixVisible.map((r, i) => (
-                  <tr key={i}>
-                    <td className="text-left py-1.5 px-2 border-b border-border truncate max-w-0">
-                      {r.descricao}
-                    </td>
-                    <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap w-px">
-                      {formatMoney(r.valor)}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[0.78rem] tabular-nums">
+            <thead>
+              <tr>
+                <th className="text-left text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
+                  Despesas agrupadas
+                </th>
+                <th className="text-right text-[0.65rem] uppercase tracking-wider text-muted font-semibold py-1.5 px-2 border-b border-border">
+                  Valor (R$)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <Row label="Cartão (compart.)" value={formatMoney(cartaoCompart)} />
+              <Row label="Cartão (pessoal)" value={formatMoney(cartaoPessoal)} />
+              {showSection && (
+                <>
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="font-semibold text-muted uppercase text-[0.65rem] tracking-wider pt-2 pb-1"
+                    >
+                      {isJulio ? (
+                        <span
+                          className="cursor-pointer select-none"
+                          onClick={() => toggleAcertoPix()}
+                        >
+                          Pix (contas)
+                        </span>
+                      ) : (
+                        "Pix (contas)"
+                      )}
                     </td>
                   </tr>
-                ))}
-              </>
-            )}
-            <tr>
-              <td className="text-left font-bold py-1.5 px-2 border-t-2 border-fg">
-                Total
-              </td>
-              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg whitespace-nowrap">
-                {formatMoney(total)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  {pixVisible.map((r, i) => (
+                    <tr key={i}>
+                      <td className="text-left py-1.5 px-2 border-b border-border truncate max-w-0">
+                        {r.descricao}
+                      </td>
+                      <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap w-px">
+                        {formatMoney(r.valor)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
+              <tr>
+                <td className="text-left font-bold py-1.5 px-2 border-t-2 border-fg">
+                  Total
+                </td>
+                <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg whitespace-nowrap">
+                  {formatMoney(total)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       )}
     </Card>
   );
@@ -116,10 +128,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <tr>
-      <td className="text-left py-1.5 px-2 border-b border-border truncate max-w-0">
+      <td className="text-left py-1.5 px-2 border-b border-border whitespace-nowrap">
         {label}
       </td>
-      <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap w-px">
+      <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap">
         {value}
       </td>
     </tr>
