@@ -1,16 +1,26 @@
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { validateToken } from "@/api/client";
 
 export function LoginPage() {
   const setToken = useAppStore((s) => s.setToken);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e?: React.FormEvent) {
+  async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     const v = value.trim();
     if (!v) {
       setError("Token vazio.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    const valid = await validateToken(v);
+    setSubmitting(false);
+    if (!valid) {
+      setError("Token inválido.");
       return;
     }
     setToken(v);
@@ -32,13 +42,15 @@ export function LoginPage() {
           autoComplete="off"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="border border-border rounded-md px-3 py-2 text-base bg-white text-fg"
+          disabled={submitting}
+          className="border border-border rounded-md px-3 py-2 text-base bg-white text-fg disabled:opacity-60"
         />
         <button
           type="submit"
-          className="bg-fg text-white rounded-md px-3 py-2 text-base font-semibold hover:opacity-90"
+          disabled={submitting}
+          className="bg-fg text-white rounded-md px-3 py-2 text-base font-semibold hover:opacity-90 disabled:opacity-60"
         >
-          Entrar
+          {submitting ? "Validando..." : "Entrar"}
         </button>
         {error && (
           <p className="text-negative text-sm m-0">{error}</p>

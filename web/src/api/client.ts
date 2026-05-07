@@ -23,6 +23,21 @@ export async function apiGet<T>(
   return (await r.json()) as T;
 }
 
+export async function validateToken(candidate: string): Promise<boolean> {
+  const url = new URL(BASE, window.location.origin);
+  url.searchParams.set("action", "lastEntries");
+  url.searchParams.set("token", candidate);
+  url.searchParams.set("n", "1");
+  try {
+    const r = await fetch(url.toString(), { method: "GET" });
+    if (!r.ok) return false;
+    const data = (await r.json()) as { ok?: boolean };
+    return data?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function apiPost<T>(action: string, body: object): Promise<T> {
   // text/plain evita preflight CORS no Apps Script direto (defesa em profundidade,
   // mesmo passando pelo proxy).
