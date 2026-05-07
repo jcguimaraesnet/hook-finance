@@ -1,7 +1,7 @@
 import { useAppStore } from "@/store/useAppStore";
 import { splitForPerson } from "@/utils/splitForPerson";
 import { formatMoney, formatPct } from "@/utils/format";
-import { Card, CardHeader } from "./Card";
+import { Card } from "./Card";
 import type { Row, Person } from "@/api/types";
 
 interface Props {
@@ -66,35 +66,41 @@ export function PersonCard({ person, rows }: Props) {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader
-        title={person === "Julio" ? "Júlio" : "Dani"}
-        right={
-          <button
-            type="button"
-            onClick={() => toggleDiff(person)}
-            className={
-              "text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
-              (showDiff
-                ? "bg-fg text-white border border-fg"
-                : "bg-black/10 text-accent-fg border border-transparent hover:bg-black/20")
-            }
-            title="Mostrar/ocultar diferença"
-            aria-label="Mostrar/ocultar diferença"
-          >
-            Δ
-          </button>
-        }
-      />
-      {showDiff && (
-        <div
+      <h3 className="relative bg-accent text-accent-fg text-center text-[0.82rem] font-semibold py-1.5 px-2 rounded-md -mx-1 -mt-1 mb-2.5 overflow-hidden">
+        <span
           className={
-            "text-[0.78rem] font-semibold text-center py-1.5 px-2 -mx-1 mb-2 -mt-1 border border-border border-t-0 rounded-b-md bg-white tabular-nums " +
-            diffColor
+            "inline-block transition-opacity duration-150 " +
+            (showDiff ? "opacity-0" : "opacity-100")
           }
         >
+          {person === "Julio" ? "Júlio" : "Dani"}
+        </span>
+        <span
+          className={
+            "absolute inset-0 flex items-center justify-center pr-10 bg-accent tabular-nums transition-transform duration-300 " +
+            (showDiff ? "translate-x-0" : "translate-x-full") +
+            " " +
+            diffColor
+          }
+          aria-hidden={!showDiff}
+        >
           Diff: {diffSign} R$ {formatMoney(Math.abs(diff))}
-        </div>
-      )}
+        </span>
+        <button
+          type="button"
+          onClick={() => toggleDiff(person)}
+          className={
+            "absolute right-1 top-1/2 -translate-y-1/2 z-10 text-[0.75rem] font-bold leading-tight px-1.5 py-0.5 rounded transition " +
+            (showDiff
+              ? "bg-fg text-white border border-fg"
+              : "bg-black/10 text-accent-fg border border-transparent hover:bg-black/20")
+          }
+          title="Mostrar/ocultar diferença"
+          aria-label="Mostrar/ocultar diferença"
+        >
+          Δ
+        </button>
+      </h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-[0.78rem] tabular-nums">
           <thead>

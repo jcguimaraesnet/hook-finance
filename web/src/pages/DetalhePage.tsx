@@ -33,10 +33,10 @@ export function DetalhePage() {
   return (
     <>
       <div className="sticky top-[-1px] bg-bg z-20 mb-3">
-        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5">
+        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5 tablet:p-3">
           <label
             htmlFor="filter-data-detalhe"
-            className="text-[0.7rem] text-muted"
+            className="text-[0.7rem] text-muted tablet:text-[0.8rem]"
           >
             Data
           </label>
@@ -45,7 +45,7 @@ export function DetalhePage() {
             disabled={!allMonths.length}
             value={currentMonth ?? ""}
             onChange={(e) => setCurrentMonth(e.target.value)}
-            className="w-full text-sm px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
+            className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
               <option>—</option>

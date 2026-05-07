@@ -31,10 +31,10 @@ export function AcertoPage() {
   return (
     <>
       <div className="sticky top-[-1px] bg-bg z-20 mb-3">
-        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5">
+        <div className="flex flex-col gap-1 bg-white border border-border rounded-lg p-2.5 tablet:p-3">
           <label
             htmlFor="filter-data-acerto"
-            className="text-[0.7rem] text-muted"
+            className="text-[0.7rem] text-muted tablet:text-[0.8rem]"
           >
             Data
           </label>
@@ -43,7 +43,7 @@ export function AcertoPage() {
             disabled={!allMonths.length}
             value={acertoMonth ?? ""}
             onChange={(e) => setAcertoMonth(e.target.value)}
-            className="w-full text-sm px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
+            className="w-full text-sm tablet:text-base px-2 py-1.5 border border-border rounded-md bg-white text-fg disabled:opacity-60"
           >
             {allMonths.length === 0 ? (
               <option>—</option>
@@ -100,7 +100,7 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
   for (const r of pixVisible) total += r.valor;
 
   return (
-    <Card className="p-2 overflow-hidden">
+    <Card className="overflow-hidden">
       <CardHeader title={person === "Julio" ? "Júlio" : "Dani"} />
       {loading ? (
         <div className="flex flex-col gap-1.5">
@@ -109,7 +109,7 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
           <div className="skeleton h-5" />
         </div>
       ) : (
-        <table className="w-full border-collapse text-[0.7rem] tabular-nums">
+        <table className="w-full border-collapse text-[0.78rem] tabular-nums">
           <tbody>
             <Row label="Cartão (compart.)" value={formatMoney(cartaoCompart)} />
             <Row label="Cartão (pessoal)" value={formatMoney(cartaoPessoal)} />
@@ -118,7 +118,7 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
                 <tr>
                   <td
                     colSpan={2}
-                    className="font-semibold text-muted uppercase text-[0.6rem] tracking-wide pt-2 pb-1"
+                    className="font-semibold text-muted uppercase text-[0.65rem] tracking-wider pt-2 pb-1"
                   >
                     {isJulio ? (
                       <span
@@ -134,10 +134,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
                 </tr>
                 {pixVisible.map((r, i) => (
                   <tr key={i}>
-                    <td className="text-left py-1 px-0.5 border-b border-border truncate max-w-0">
+                    <td className="text-left py-1.5 px-2 border-b border-border truncate max-w-0">
                       {r.descricao}
                     </td>
-                    <td className="text-right py-1 px-0.5 border-b border-border whitespace-nowrap w-px">
+                    <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap w-px">
                       {formatMoney(r.valor)}
                     </td>
                   </tr>
@@ -145,10 +145,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
               </>
             )}
             <tr>
-              <td className="text-left font-bold pt-1.5 px-0.5 border-t-2 border-fg">
+              <td className="text-left font-bold py-1.5 px-2 border-t-2 border-fg">
                 Total
               </td>
-              <td className="text-right font-bold pt-1.5 px-0.5 border-t-2 border-fg whitespace-nowrap">
+              <td className="text-right font-bold py-1.5 px-2 border-t-2 border-fg whitespace-nowrap">
                 {formatMoney(total)}
               </td>
             </tr>
@@ -162,10 +162,10 @@ function AcertoCard({ person, rows, loading }: AcertoCardProps) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <tr>
-      <td className="text-left py-1 px-0.5 border-b border-border truncate max-w-0">
+      <td className="text-left py-1.5 px-2 border-b border-border truncate max-w-0">
         {label}
       </td>
-      <td className="text-right py-1 px-0.5 border-b border-border whitespace-nowrap w-px">
+      <td className="text-right py-1.5 px-2 border-b border-border whitespace-nowrap w-px">
         {value}
       </td>
     </tr>

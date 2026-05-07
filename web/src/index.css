@@ -38,6 +38,10 @@
   color-scheme: light only;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 html,
 body {
   margin: 0;

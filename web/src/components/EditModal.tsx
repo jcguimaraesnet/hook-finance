@@ -32,10 +32,6 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
     setRateio(entry.rateio);
     setParcela(initialTotal);
     setError(null);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [entry]);
 
   if (!entry) return null;
@@ -90,8 +86,8 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
   const inProgress = update.isPending || del.isPending;
 
   return (
-    <div className="fixed inset-0 bg-bg z-[200] flex flex-col overflow-y-auto">
-      <header className="sticky top-0 bg-accent text-accent-fg py-2.5 px-4 flex items-center justify-between border-b border-[#d4b54e] z-10">
+    <div className="bg-white border border-border rounded-lg overflow-hidden">
+      <header className="bg-accent text-accent-fg py-2.5 px-4 flex items-center justify-between border-b border-[#d4b54e]">
         <h2 className="text-base font-semibold m-0">Editar lançamento</h2>
         <button
           type="button"
@@ -105,7 +101,7 @@ export function EditModal({ entry, rowsForCategoriaSuggestions, onClose }: Props
 
       <form
         onSubmit={handleSave}
-        className="p-4 flex flex-col gap-3.5 max-w-[720px] w-full mx-auto pb-32 tablet:pb-4"
+        className="p-4 flex flex-col gap-3.5 max-w-[720px] w-full mx-auto"
       >
         <ReadOnlyField label="Data de referência" value={entry.dataRef || "—"} />
         <ReadOnlyField label="Origem" value={entry.origem || "—"} />
