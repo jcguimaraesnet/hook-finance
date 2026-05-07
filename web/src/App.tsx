@@ -29,14 +29,16 @@ function AppShell() {
   }, [seg, setActivePage]);
 
   return (
-    <div className="min-h-dvh max-w-[880px] mx-auto p-3 pb-20 tablet:pb-3">
-      <PrimaryNav />
+    <div className="min-h-dvh max-w-[880px] mx-auto px-3 pb-20 tablet:pb-3">
+      <div className="pt-3 tablet:sticky tablet:top-0 tablet:z-30 tablet:bg-bg">
+        <PrimaryNav />
+        {isLancamento ? (
+          <StickyHeader key="fixed" disabled />
+        ) : (
+          <StickyHeader key="shared" />
+        )}
+      </div>
       <InstallPrompt />
-      {isLancamento ? (
-        <StickyHeader key="fixed" disabled />
-      ) : (
-        <StickyHeader key="shared" />
-      )}
       <Routes>
         <Route path="/" element={<Navigate to="/consulta" replace />} />
         <Route path="/consulta" element={<ConsultaPage />} />
