@@ -26,7 +26,7 @@ export function StickyHeader({ rows, isLoading }: Props) {
 
   return (
     <div className="sticky top-[-1px] bg-bg z-20 mb-3">
-      <div className="grid grid-cols-3 gap-1 bg-white border border-border rounded-lg p-2.5 tablet:bg-transparent tablet:border-0 tablet:p-0 tablet:grid-cols-[1.2fr_1fr_1fr_1fr] tablet:gap-3">
+      <div className="grid grid-cols-3 gap-1 bg-white border border-border rounded-lg p-2.5 tablet:bg-transparent tablet:border-0 tablet:p-0 tablet:grid-cols-4 tablet:gap-3">
         <div className="col-span-3 flex flex-col gap-1 border-b border-border pb-1.5 mb-0.5 tablet:col-span-1 tablet:border-b-0 tablet:bg-white tablet:border tablet:border-border tablet:rounded-lg tablet:p-3 tablet:mb-0">
           <label htmlFor="filter-data" className="text-[0.7rem] text-muted tablet:text-[0.8rem]">
             Data

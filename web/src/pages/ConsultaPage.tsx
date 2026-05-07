@@ -8,6 +8,7 @@ import { PersonCard } from "@/components/PersonCard";
 import { CategoriaTable } from "@/components/CategoriaTable";
 import { RateioChart } from "@/components/RateioChart";
 import { HistoricoChart } from "@/components/HistoricoChart";
+import { CardSkeleton } from "@/components/CardSkeleton";
 
 const PC_QUERY = "(min-width: 750px)";
 
@@ -57,42 +58,73 @@ export function ConsultaPage() {
 
       {showMes && (
         <section className="grid gap-3 tablet:grid-cols-2 mb-3">
-          <PersonCard person="Julio" rows={rows} />
-          <PersonCard person="Dani" rows={rows} />
+          {monthQ.isLoading ? (
+            <>
+              <CardSkeleton title="Júlio" />
+              <CardSkeleton title="Dani" />
+            </>
+          ) : (
+            <>
+              <PersonCard person="Julio" rows={rows} />
+              <PersonCard person="Dani" rows={rows} />
+            </>
+          )}
         </section>
       )}
 
       {showCategoria && (
         <section className={isPC ? "grid gap-3 tablet:grid-cols-2 mb-3" : "mb-3"}>
-          <CategoriaTable rows={rows} />
-          {isPC && <RateioChart rows={rows} />}
+          {monthQ.isLoading ? (
+            <CardSkeleton title="Cartão compartilhado (por categoria)" />
+          ) : (
+            <CategoriaTable rows={rows} />
+          )}
+          {isPC &&
+            (monthQ.isLoading ? (
+              <CardSkeleton title="Cartão (por pessoa)" variant="chart" />
+            ) : (
+              <RateioChart rows={rows} />
+            ))}
         </section>
       )}
 
       {showPessoal && !isPC && (
         <section className="mb-3">
-          <RateioChart rows={rows} />
+          {monthQ.isLoading ? (
+            <CardSkeleton title="Cartão (por pessoa)" variant="chart" />
+          ) : (
+            <RateioChart rows={rows} />
+          )}
         </section>
       )}
 
       {showHistorico && (
         <section className="grid gap-3">
-          <HistoricoChart
-            title="Histórico — Total geral"
-            months={months}
-            series={[
-              { label: "Total geral", data: totals, color: "#a07b5e", align: "top" },
-            ]}
-            showLegend={false}
-          />
-          <HistoricoChart
-            title="Histórico — Pessoal"
-            months={months}
-            series={[
-              { label: "Julio", data: julioP, color: "#4a7ab8", align: "top" },
-              { label: "Dani", data: daniP, color: "#c97070", align: "bottom" },
-            ]}
-          />
+          {historyQ.isLoading ? (
+            <>
+              <CardSkeleton title="Histórico — Total geral" variant="chart" />
+              <CardSkeleton title="Histórico — Pessoal" variant="chart" />
+            </>
+          ) : (
+            <>
+              <HistoricoChart
+                title="Histórico — Total geral"
+                months={months}
+                series={[
+                  { label: "Total geral", data: totals, color: "#a07b5e", align: "top" },
+                ]}
+                showLegend={false}
+              />
+              <HistoricoChart
+                title="Histórico — Pessoal"
+                months={months}
+                series={[
+                  { label: "Julio", data: julioP, color: "#4a7ab8", align: "top" },
+                  { label: "Dani", data: daniP, color: "#c97070", align: "bottom" },
+                ]}
+              />
+            </>
+          )}
         </section>
       )}
 

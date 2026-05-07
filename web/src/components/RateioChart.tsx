@@ -48,30 +48,24 @@ export function RateioChart({ rows }: Props) {
       },
       datalabels: {
         display: true,
-        labels: {
-          name: {
-            anchor: "start",
-            align: "end",
-            offset: 8,
-            color: "white",
-            font: { weight: 600, size: 11 },
-            formatter: (_v: number, ctx) =>
-              ctx.chart.data.labels?.[ctx.dataIndex] as string,
-          },
-          value: {
-            anchor: "end",
-            align: "start",
-            offset: 8,
-            color: "white",
-            font: { weight: 600, size: 11 },
-            formatter: (v: number | null) => formatMoney(v ?? 0),
-          },
-        },
+        anchor: "end",
+        align: "start",
+        offset: 8,
+        color: "white",
+        font: { weight: 600, size: 11 },
+        formatter: (v: number | null) => formatMoney(v ?? 0),
       },
     },
     scales: {
       x: { ticks: { callback: (v) => moneyK(Number(v)) } },
-      y: { ticks: { display: false } },
+      y: {
+        ticks: {
+          display: true,
+          color: "#262626",
+          font: { weight: 600, size: 11 },
+        },
+        grid: { display: false },
+      },
     },
   };
 
