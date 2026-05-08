@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necessária para chamadas HTTP em release. O manifest de debug já tem,
+         mas o de release herda só este. Sem isso o dio falha com "connection error". -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="hook_finance"
         android:name="${applicationName}"
