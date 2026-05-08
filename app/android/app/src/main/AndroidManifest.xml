@@ -5,7 +5,7 @@
     <!-- local_auth (BiometricPrompt) — Spec: docs/specs/state/persistence.md -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
-        android:label="hook_finance"
+        android:label="Hook Finance"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
