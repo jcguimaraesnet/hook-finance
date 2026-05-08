@@ -82,30 +82,53 @@ class _ConsultaPageState extends ConsumerState<ConsultaPage>
     final pessoal = _PessoalPanel(rows: rows, loading: loading);
     final historico = _HistoricoPanel(historyAsync: historyAsync);
 
+    Future<void> onRefresh() async {
+      ref.invalidate(monthDataProvider);
+      ref.invalidate(historicalSummaryProvider);
+      // Espera as refetches completarem antes de fechar o spinner.
+      await Future.wait([
+        ref.read(monthDataProvider(currentMonth).future),
+        ref.read(historicalSummaryProvider.future),
+      ]).catchError((_) => <Object>[]);
+    }
+
     if (isPC) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const StickyHeader(),
-            const SizedBox(height: 12),
-            mes,
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: categoria),
-                const SizedBox(width: 12),
-                Expanded(child: pessoal),
-              ],
-            ),
-            const SizedBox(height: 12),
-            historico,
-          ],
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const StickyHeader(),
+              const SizedBox(height: 12),
+              mes,
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: categoria),
+                  const SizedBox(width: 12),
+                  Expanded(child: pessoal),
+                ],
+              ),
+              const SizedBox(height: 12),
+              historico,
+            ],
+          ),
         ),
       );
     }
+
+    Widget tabPanel(Widget child) => RefreshIndicator(
+          onRefresh: onRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12),
+            child: child,
+          ),
+        );
 
     return Column(
       children: [
@@ -128,22 +151,10 @@ class _ConsultaPageState extends ConsumerState<ConsultaPage>
           child: TabBarView(
             controller: _controller,
             children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: mes,
-              ),
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: categoria,
-              ),
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: pessoal,
-              ),
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: historico,
-              ),
+              tabPanel(mes),
+              tabPanel(categoria),
+              tabPanel(pessoal),
+              tabPanel(historico),
             ],
           ),
         ),

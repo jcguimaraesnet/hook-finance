@@ -40,7 +40,7 @@ class CategoriaTable extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 6, top: 4, bottom: 8),
               child: Text(
-                'Cartão compartilhado (por categoria)',
+                'Cartão compartilhado por categoria (R\$)',
                 style: theme.textTheme.titleSmall,
               ),
             ),
@@ -59,12 +59,12 @@ class CategoriaTable extends StatelessWidget {
                         style: headerStyle,
                         border: Border(bottom: borderSide)),
                     _Cell(
-                        text: 'Valor (R\$)',
+                        text: 'Valor',
                         style: headerStyle,
                         align: TextAlign.right,
                         border: Border(bottom: borderSide)),
                     _Cell(
-                        text: 'Compart. (R\$)',
+                        text: 'Compart.',
                         style: headerStyle,
                         align: TextAlign.right,
                         border: Border(bottom: borderSide)),

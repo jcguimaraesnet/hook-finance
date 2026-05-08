@@ -35,13 +35,21 @@ class DetalhePage extends ConsumerWidget {
         .where((p) => byPerson.containsKey(p))
         .toList();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const StickyHeader(),
-          const SizedBox(height: 12),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(monthDataProvider);
+        try {
+          await ref.read(monthDataProvider(currentMonth).future);
+        } catch (_) {}
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const StickyHeader(),
+            const SizedBox(height: 12),
           if (loading)
             ...List.generate(
               3,
@@ -139,7 +147,8 @@ class DetalhePage extends ConsumerWidget {
                 ),
               );
             }),
-        ],
+          ],
+        ),
       ),
     );
   }

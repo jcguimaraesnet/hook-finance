@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/auth_provider.dart';
+import '../../state/data_providers.dart';
 import '../acerto/acerto_page.dart';
 import '../consulta/consulta_page.dart';
 import '../detalhe/detalhe_page.dart';
@@ -32,12 +33,23 @@ class _AppShellState extends ConsumerState<AppShell> {
     AcertoPage(),
   ];
 
+  void _refresh() {
+    ref.invalidate(monthDataProvider);
+    ref.invalidate(historicalSummaryProvider);
+    ref.invalidate(lastEntriesProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_destinations[_index].label),
+        title: const Text('Hook Finance'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Atualizar',
+            onPressed: _refresh,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',

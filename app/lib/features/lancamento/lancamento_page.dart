@@ -19,30 +19,43 @@ class LancamentoPage extends ConsumerWidget {
     final lastAsync = ref.watch(lastEntriesProvider(10));
     final monthAsync = ref.watch(monthDataProvider(null));
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const StickyHeader(disabled: true),
-          const SizedBox(height: 12),
-          if (lastAsync.isLoading && !lastAsync.hasValue)
-            ...List.generate(
-              3,
-              (_) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(8),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(lastEntriesProvider);
+        ref.invalidate(monthDataProvider);
+        try {
+          await Future.wait([
+            ref.read(lastEntriesProvider(10).future),
+            ref.read(monthDataProvider(null).future),
+          ]);
+        } catch (_) {}
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const StickyHeader(disabled: true),
+            const SizedBox(height: 12),
+            if (lastAsync.isLoading && !lastAsync.hasValue)
+              ...List.generate(
+                3,
+                (_) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-            )
-          else
-            ..._buildEntries(context, ref, lastAsync.value, monthAsync.value),
-        ],
+              )
+            else
+              ..._buildEntries(context, ref, lastAsync.value, monthAsync.value),
+          ],
+        ),
       ),
     );
   }

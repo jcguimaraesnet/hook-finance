@@ -24,31 +24,40 @@ class AcertoPage extends ConsumerWidget {
       AcertoCard(person: Person.dani, rows: rows, loading: loading),
     ];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const StickyHeader(),
-          const SizedBox(height: 12),
-          if (isTablet)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: cards[0]),
-                const SizedBox(width: 12),
-                Expanded(child: cards[1]),
-              ],
-            )
-          else
-            Column(
-              children: [
-                cards[0],
-                const SizedBox(height: 12),
-                cards[1],
-              ],
-            ),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(monthDataProvider);
+        try {
+          await ref.read(monthDataProvider(currentMonth).future);
+        } catch (_) {}
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const StickyHeader(),
+            const SizedBox(height: 12),
+            if (isTablet)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 12),
+                  Expanded(child: cards[1]),
+                ],
+              )
+            else
+              Column(
+                children: [
+                  cards[0],
+                  const SizedBox(height: 12),
+                  cards[1],
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
