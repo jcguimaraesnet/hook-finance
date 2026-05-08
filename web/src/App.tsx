@@ -12,6 +12,25 @@ import { AcertoPage } from "@/pages/AcertoPage";
 
 export default function App() {
   const token = useAppStore((s) => s.token);
+
+  // Spec: docs/specs/state/persistence.md — expiração absoluta de 15min.
+  // Se o token foi gravado no localStorage antes do timeout, deslogamos no
+  // boot e em ticks de 30s.
+  useEffect(() => {
+    function checkExpiry() {
+      const store = useAppStore.getState();
+      if (store.token && store.isExpired()) {
+        store.signOut();
+        if (window.location.search !== "?expired=1") {
+          window.location.replace(window.location.pathname + "?expired=1");
+        }
+      }
+    }
+    checkExpiry();
+    const id = setInterval(checkExpiry, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   if (!token) return <LoginPage />;
   return <AppShell />;
 }

@@ -2,6 +2,8 @@
     <!-- Necessária para chamadas HTTP em release. O manifest de debug já tem,
          mas o de release herda só este. Sem isso o dio falha com "connection error". -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- local_auth (BiometricPrompt) — Spec: docs/specs/state/persistence.md -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="hook_finance"
         android:name="${applicationName}"

@@ -3,10 +3,15 @@ import { useAppStore } from "@/store/useAppStore";
 import { validateToken } from "@/api/client";
 
 export function LoginPage() {
-  const setToken = useAppStore((s) => s.setToken);
+  const signIn = useAppStore((s) => s.signIn);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Mostra mensagem de sessão expirada quando vem da SessionExpiryGuard.
+  const expired =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("expired");
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -23,7 +28,11 @@ export function LoginPage() {
       setError("Token inválido.");
       return;
     }
-    setToken(v);
+    signIn(v);
+    // Limpa querystring ?expired=1 ao entrar com sucesso.
+    if (expired) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }
 
   return (
@@ -33,6 +42,11 @@ export function LoginPage() {
         className="bg-white border border-border rounded-xl p-6 grid gap-3 w-full max-w-[360px]"
       >
         <h2 className="text-lg font-semibold text-fg m-0">hook-finance</h2>
+        {expired && !error && (
+          <p className="text-muted text-sm m-0">
+            Sessão expirada após 15 minutos. Entre novamente.
+          </p>
+        )}
         <label htmlFor="token" className="text-sm text-muted">
           Token
         </label>

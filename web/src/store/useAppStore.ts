@@ -5,10 +5,16 @@ export type Page = "consulta" | "detalhe" | "lancamento" | "acerto";
 export type Tab = "mes" | "categoria" | "pessoal" | "historico";
 export type Person = "Julio" | "Dani";
 
+/** Spec: docs/specs/state/persistence.md — PWA usa expiração absoluta de 15min. */
+export const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+
 interface AppState {
   // Auth
   token: string | null;
-  setToken: (t: string | null) => void;
+  loginAt: number | null;
+  signIn: (token: string) => void;
+  signOut: () => void;
+  isExpired: () => boolean;
 
   // Navigation
   activePage: Page;
@@ -29,9 +35,17 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
-      setToken: (t) => set({ token: t }),
+      loginAt: null,
+      signIn: (token) => set({ token, loginAt: Date.now() }),
+      signOut: () => set({ token: null, loginAt: null }),
+      isExpired: () => {
+        const { token, loginAt } = get();
+        if (!token) return false;
+        if (!loginAt) return true; // token persistido legado sem timestamp
+        return Date.now() - loginAt > SESSION_TIMEOUT_MS;
+      },
 
       activePage: "consulta",
       setActivePage: (p) => set({ activePage: p }),
@@ -51,6 +65,7 @@ export const useAppStore = create<AppState>()(
       // Não persistir allMonths (recarregado a cada sessão).
       partialize: (s) => ({
         token: s.token,
+        loginAt: s.loginAt,
         activePage: s.activePage,
         activeTab: s.activeTab,
         acertoPixJulio: s.acertoPixJulio,

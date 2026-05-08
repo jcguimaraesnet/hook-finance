@@ -2,6 +2,8 @@
 //
 // Login: usuário fornece o WEBHOOK_TOKEN. URL do backend é hardcoded em
 // `lib/api/config.dart` via String.fromEnvironment.
+// Checkbox opcional de biometria — quando marcado, próxima abertura pede
+// biometria antes de auto-logar.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,12 +22,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   late final TextEditingController _tokenCtrl;
   bool _busy = false;
   String? _error;
+  bool _useBiometric = false;
+  bool _biometricAvailable = false;
 
   @override
   void initState() {
     super.initState();
     final config = ref.read(authProvider).config;
     _tokenCtrl = TextEditingController(text: config.token);
+    _useBiometric = config.biometricEnabled;
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final ok = await ref.read(authProvider.notifier).isBiometricAvailable();
+    if (!mounted) return;
+    setState(() {
+      _biometricAvailable = ok;
+      if (!ok) _useBiometric = false;
+    });
   }
 
   @override
@@ -40,7 +55,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _error = null;
     });
-    final result = await ref.read(authProvider.notifier).signIn(_tokenCtrl.text);
+    final result = await ref.read(authProvider.notifier).signIn(
+          _tokenCtrl.text,
+          useBiometric: _useBiometric,
+        );
     if (!mounted) return;
     setState(() => _busy = false);
     if (!result.ok) {
@@ -51,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('hook-finance')),
+      appBar: AppBar(title: const Text('Hook Finance')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -84,6 +102,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     validator: (v) =>
                         (v?.trim().isEmpty ?? true) ? 'Informe o token' : null,
                   ),
+                  if (_biometricAvailable)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: const Text('Próximo login por biometria'),
+                      subtitle: Text(
+                        'Usa digital/face do device para reabrir.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                      value: _useBiometric,
+                      onChanged: _busy
+                          ? null
+                          : (v) => setState(() => _useBiometric = v ?? false),
+                    ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     Text(

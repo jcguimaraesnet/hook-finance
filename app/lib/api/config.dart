@@ -15,28 +15,40 @@ const String kApiBase = String.fromEnvironment(
 
 class ApiConfig {
   final String token;
+  final bool biometricEnabled;
 
-  const ApiConfig({required this.token});
+  const ApiConfig({required this.token, this.biometricEnabled = false});
 
   String get apiBase => kApiBase;
   bool get isConfigured => token.isNotEmpty;
+
+  ApiConfig copyWith({String? token, bool? biometricEnabled}) => ApiConfig(
+        token: token ?? this.token,
+        biometricEnabled: biometricEnabled ?? this.biometricEnabled,
+      );
 }
 
 const _keyToken = 'hook_finance.token';
+const _keyBiometric = 'hook_finance.biometric_enabled';
 
 Future<ApiConfig> loadConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  return ApiConfig(token: prefs.getString(_keyToken) ?? '');
+  return ApiConfig(
+    token: prefs.getString(_keyToken) ?? '',
+    biometricEnabled: prefs.getBool(_keyBiometric) ?? false,
+  );
 }
 
 Future<void> saveConfig(ApiConfig config) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_keyToken, config.token);
+  await prefs.setBool(_keyBiometric, config.biometricEnabled);
 }
 
 Future<void> clearConfig() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove(_keyToken);
+  await prefs.remove(_keyBiometric);
   // Limpa chave legada (Onda 4 antes do hardcode).
   await prefs.remove('hook_finance.api_base');
 }
