@@ -17,37 +17,44 @@ class HookFinanceApp extends ConsumerStatefulWidget {
 }
 
 class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
+  late final _AuthListenable _authListenable;
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
-    _router = _buildRouter();
+    _authListenable = _AuthListenable(ref);
+    _router = GoRouter(
+      initialLocation: '/login',
+      refreshListenable: _authListenable,
+      redirect: (context, state) {
+        final auth = ref.read(authProvider);
+        if (!auth.ready) return null;
+        final atLogin = state.matchedLocation == '/login';
+        if (auth.isAuthed && atLogin) return '/consulta';
+        if (!auth.isAuthed && !atLogin) return '/login';
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: '/login',
+          builder: (_, _) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/consulta',
+          builder: (_, _) => const AppShell(),
+        ),
+      ],
+    );
     Future.microtask(() => ref.read(authProvider.notifier).hydrate());
   }
 
-  GoRouter _buildRouter() => GoRouter(
-        initialLocation: '/login',
-        refreshListenable: _AuthListenable(ref),
-        redirect: (context, state) {
-          final auth = ref.read(authProvider);
-          if (!auth.ready) return null;
-          final atLogin = state.matchedLocation == '/login';
-          if (auth.isAuthed && atLogin) return '/consulta';
-          if (!auth.isAuthed && !atLogin) return '/login';
-          return null;
-        },
-        routes: [
-          GoRoute(
-            path: '/login',
-            builder: (_, _) => const LoginScreen(),
-          ),
-          GoRoute(
-            path: '/consulta',
-            builder: (_, _) => const AppShell(),
-          ),
-        ],
-      );
+  @override
+  void dispose() {
+    _authListenable.dispose();
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +67,22 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
   }
 }
 
+/// Bridge entre Riverpod e go_router: dispara `notifyListeners` sempre que
+/// authProvider muda. Usa `listenManual` (chamável fora de build); `ref.listen`
+/// não funciona aqui porque exige contexto de build do Consumer.
 class _AuthListenable extends ChangeNotifier {
-  _AuthListenable(this._ref) {
-    _ref.listen<AuthState>(authProvider, (_, _) => notifyListeners());
+  _AuthListenable(WidgetRef ref) {
+    _sub = ref.listenManual<AuthState>(
+      authProvider,
+      (_, _) => notifyListeners(),
+    );
   }
-  final WidgetRef _ref;
+
+  late final ProviderSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
 }
