@@ -134,14 +134,19 @@ class _Hero extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'R\$ ${formatMoney(total)}',
-                    style: BloomTypography.display(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.05,
-                      letterSpacing: -0.6,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'R\$ ${formatMoney(total)}',
+                      maxLines: 1,
+                      style: BloomTypography.display(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.05,
+                        letterSpacing: -0.6,
+                      ),
                     ),
                   ),
                 ],

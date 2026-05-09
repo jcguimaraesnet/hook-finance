@@ -96,13 +96,22 @@ void main() {
   });
 
   group('previousMonthOf', () {
-    test('mês comum', () {
+    test('MM/YYYY — mês comum', () {
       expect(previousMonthOf('06/2026'), '05/2026');
       expect(previousMonthOf('11/2025'), '10/2025');
     });
 
-    test('janeiro vira dezembro do ano anterior', () {
+    test('MM/YYYY — janeiro vira dezembro do ano anterior', () {
       expect(previousMonthOf('01/2026'), '12/2025');
+    });
+
+    test('DD/MM/YYYY — preserva o dia', () {
+      expect(previousMonthOf('06/06/2026'), '06/05/2026');
+      expect(previousMonthOf('15/03/2026'), '15/02/2026');
+    });
+
+    test('DD/MM/YYYY — janeiro vira 12 do ano anterior, com dia', () {
+      expect(previousMonthOf('06/01/2026'), '06/12/2025');
     });
 
     test('formato inválido → null', () {

@@ -32,35 +32,6 @@ class BloomShapes extends StatelessWidget {
               alignment: Alignment.center,
             ),
           ),
-          // Quadrado pink rotacionado
-          Positioned(
-            top: 380,
-            right: 30,
-            child: Transform.rotate(
-              angle: 20 * 3.14159265 / 180,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: BloomColors.pink.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-          // Bolinha violeta
-          Positioned(
-            top: 120,
-            left: 30,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: BloomColors.violet.withValues(alpha: 0.7),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
         ],
       ),
     );

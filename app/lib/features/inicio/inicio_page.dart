@@ -32,6 +32,7 @@ class InicioPage extends ConsumerStatefulWidget {
 
 class _InicioPageState extends ConsumerState<InicioPage> {
   int? _selectedSegment;
+  bool _refreshing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -51,17 +52,43 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final prev = bucketsForPerson(prevRows, person);
     final deltas = bucketDeltas(current: cur, previous: prev);
 
+    final totalCartao = rows
+        .where((r) => r.origem == 'Cartão')
+        .fold<double>(0, (s, r) => s + r.valor);
+
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
     Future<void> onRefresh() async {
+      if (_refreshing) return;
+      setState(() => _refreshing = true);
+      final messenger = ScaffoldMessenger.of(context);
       ref.invalidate(monthDataProvider);
+      ref.invalidate(previousMonthDataProvider);
       ref.invalidate(historicalSummaryProvider);
       ref.invalidate(lastEntriesProvider);
+      String? error;
       try {
-        await ref.read(monthDataProvider(currentMonth).future);
-      } catch (_) {
-        // Ignora — o erro será exibido pelos próprios consumers.
+        await Future.wait<void>([
+          ref.read(monthDataProvider(currentMonth).future),
+          ref.read(lastEntriesProvider(2).future),
+        ]);
+      } catch (e) {
+        error = '$e';
       }
+      if (!mounted) return;
+      setState(() => _refreshing = false);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(error == null
+              ? 'Atualizado'
+              : 'Falha ao atualizar: $error'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor:
+              error == null ? BloomColors.ink : BloomColors.bad,
+        ),
+      );
     }
 
     return RefreshIndicator(
@@ -73,7 +100,10 @@ class _InicioPageState extends ConsumerState<InicioPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _TopAppBar(onRefresh: onRefresh),
+            _TopAppBar(
+              onRefresh: onRefresh,
+              refreshing: _refreshing,
+            ),
             const SizedBox(height: 6),
             _Greeting(
               person: person,
@@ -83,6 +113,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
             _HeroCard(
               person: person,
               buckets: cur,
+              totalCartao: totalCartao,
               selectedIdx: _selectedSegment,
               onSelect: (i) => setState(() => _selectedSegment = i),
               loading: loading && rows.isEmpty,
@@ -123,7 +154,8 @@ class _InicioPageState extends ConsumerState<InicioPage> {
 
 class _TopAppBar extends ConsumerWidget {
   final Future<void> Function() onRefresh;
-  const _TopAppBar({required this.onRefresh});
+  final bool refreshing;
+  const _TopAppBar({required this.onRefresh, required this.refreshing});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,7 +166,7 @@ class _TopAppBar extends ConsumerWidget {
           const BloomLogo(size: 32),
           const SizedBox(width: 10),
           Text(
-            'hook',
+            'Hook Finance',
             style: BloomTypography.display(
               fontSize: 16,
               letterSpacing: -0.3,
@@ -145,6 +177,7 @@ class _TopAppBar extends ConsumerWidget {
             icon: Icons.refresh,
             onTap: onRefresh,
             tooltip: 'Atualizar',
+            busy: refreshing,
           ),
           const SizedBox(width: 8),
           _IconBtn(
@@ -162,10 +195,12 @@ class _IconBtn extends StatelessWidget {
   final IconData icon;
   final FutureOr<void> Function() onTap;
   final String tooltip;
+  final bool busy;
   const _IconBtn({
     required this.icon,
     required this.onTap,
     required this.tooltip,
+    this.busy = false,
   });
 
   @override
@@ -175,7 +210,7 @@ class _IconBtn extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => onTap(),
+          onTap: busy ? null : () => onTap(),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             width: 36,
@@ -186,7 +221,16 @@ class _IconBtn extends StatelessWidget {
               border: Border.all(color: BloomColors.border, width: 1),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, size: 16, color: BloomColors.ink),
+            child: busy
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: BloomColors.violet,
+                    ),
+                  )
+                : Icon(icon, size: 16, color: BloomColors.ink),
           ),
         ),
       ),
@@ -253,6 +297,7 @@ class _Greeting extends StatelessWidget {
 class _HeroCard extends StatelessWidget {
   final Person person;
   final PersonBuckets buckets;
+  final double totalCartao;
   final int? selectedIdx;
   final ValueChanged<int?> onSelect;
   final bool loading;
@@ -261,6 +306,7 @@ class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.person,
     required this.buckets,
+    required this.totalCartao,
     required this.selectedIdx,
     required this.onSelect,
     required this.loading,
@@ -320,10 +366,10 @@ class _HeroCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('TOTAL PESSOAL',
+                        Text('CARTÃO GERAL',
                             style: BloomTypography.kicker()),
                         Text(
-                          'R\$ ${formatMoney(buckets.total)}',
+                          'R\$ ${formatMoney(totalCartao)}',
                           style: BloomTypography.display(
                             fontSize: 22,
                             letterSpacing: -0.5,

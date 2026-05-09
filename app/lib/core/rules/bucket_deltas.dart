@@ -67,15 +67,28 @@ BucketDeltas bucketDeltas({
   );
 }
 
-/// Calcula o mês anterior em formato `MM/YYYY`.
-/// Retorna `null` se o input não está nesse formato.
-String? previousMonthOf(String? mm) {
-  if (mm == null) return null;
-  final parts = mm.split('/');
-  if (parts.length != 2) return null;
-  final m = int.tryParse(parts[0]);
-  final y = int.tryParse(parts[1]);
+/// Calcula o mês anterior preservando o formato de entrada.
+/// Aceita `MM/YYYY` ou `DD/MM/YYYY`. Retorna `null` se o formato for outro.
+String? previousMonthOf(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final parts = raw.split('/');
+  int? m;
+  int? y;
+  String? day;
+  if (parts.length == 2) {
+    m = int.tryParse(parts[0]);
+    y = int.tryParse(parts[1]);
+  } else if (parts.length == 3) {
+    day = parts[0];
+    m = int.tryParse(parts[1]);
+    y = int.tryParse(parts[2]);
+  } else {
+    return null;
+  }
   if (m == null || y == null) return null;
-  if (m == 1) return '12/${y - 1}';
-  return '${(m - 1).toString().padLeft(2, '0')}/$y';
+  final prevMonth = m == 1 ? 12 : m - 1;
+  final prevYear = m == 1 ? y - 1 : y;
+  final mm = prevMonth.toString().padLeft(2, '0');
+  if (day != null) return '$day/$mm/$prevYear';
+  return '$mm/$prevYear';
 }
