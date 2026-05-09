@@ -29,6 +29,7 @@ docs/specs/
 ├── rules/
 │   ├── split-for-person.md         valor que cabe a uma pessoa por linha
 │   ├── bucket-key.md               agrupamento Cartão+rateio → label
+│   ├── bucket-deltas.md            % vs. mês anterior por bucket (Flutter Início)
 │   ├── diff-calculation.md         diff Pix vs Contas+Empregados (PersonCard/AcertoCard)
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
 │   ├── classifier.md               Jaccard sobre histórico (categoria/rateio)
@@ -44,10 +45,13 @@ docs/specs/
 │   ├── rateio-chart.md             Bar chart por rateio
 │   └── historico-chart.md          Linha 12 meses (mobile=6)
 ├── pages/
-│   ├── consulta.md                 4 sub-tabs mobile/tablet; sem sub-tabs ≥750px
-│   ├── detalhe.md                  ordem [Julio,Dani,Alzira]+resto alfabético
-│   ├── lancamento.md               lista + edit modal
-│   └── acerto.md                   toggle Pix Julio; diff condicional
+│   ├── consulta.md                 PWA: 4 sub-tabs mobile/tablet; sem sub-tabs ≥750px
+│   ├── inicio.md                   Flutter (Bloom): visão pessoal + donut + comparativo
+│   ├── compart.md                  Flutter (Bloom): cartão compartilhado por categoria
+│   ├── historico.md                Flutter (Bloom): 6 meses (total + per-pessoa)
+│   ├── detalhe.md                  PWA: accordions; Flutter: drill-down ?person=
+│   ├── lancamento.md               lista + edit modal; Flutter tem tab "+ Novo" stub
+│   └── acerto.md                   PWA: 2 cards; Flutter: D/J selector + 1 tabela
 ├── state/
 │   └── persistence.md              persist (localStorage) vs session (sessionStorage)
 └── responsive/

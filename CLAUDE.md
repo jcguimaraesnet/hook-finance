@@ -15,6 +15,13 @@ Mudanças puramente visuais (Tailwind, layout de widget) podem ir direto no cód
 
 Índice das specs: [docs/specs/README.md](docs/specs/README.md).
 
+## Direção visual (apps)
+
+- **App Flutter (`app/`):** direção **Bloom** — paleta lavanda+menta, bottom-nav 5 abas (Início · Compart · Lançamentos · Histórico · Acerto). Specs: `docs/specs/pages/{inicio,compart,historico,detalhe,lancamento,acerto}.md`.
+- **PWA (`web/`):** IA legada — Consulta com 4 sub-tabs (Mês/Categoria/Pessoal/Histórico) + Detalhe/Lançamento/Acerto. Spec: `docs/specs/pages/consulta.md`.
+
+As IAs diferem intencionalmente: o app prioriza visão pessoal individual; o PWA é mais denso. **Regras de dados** (specs em `rules/`, `data/`, `api/`, `state/`) são as mesmas em ambos.
+
 ## Monorepo (pnpm workspace)
 
 ```
@@ -23,7 +30,7 @@ hook-finance/
 ├── web/                        # PWA React (Vite + TS + Tailwind v4)
 │   ├── src/core/               # Regras de negócio (espelha docs/specs/rules/)
 │   └── api/                    # Azure Function /api/proxy
-├── app/                        # (futuro) Flutter Android/iOS
+├── app/                        # Flutter Android/iOS — direção Bloom
 ├── docs/specs/                 # Fonte da verdade (regras, cards, páginas, API)
 ├── .github/workflows/          # deploy-apps-script.yml, deploy-web.yml
 ├── pnpm-workspace.yaml

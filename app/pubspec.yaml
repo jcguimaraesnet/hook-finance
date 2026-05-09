@@ -2,7 +2,7 @@ name: hook_finance
 description: "hook-finance Flutter app"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.11.5
@@ -20,6 +20,7 @@ dependencies:
   go_router: ^14.6.2
   local_auth: ^2.3.0
   local_auth_android: ^1.0.46
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

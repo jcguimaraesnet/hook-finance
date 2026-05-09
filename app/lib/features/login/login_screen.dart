@@ -2,12 +2,16 @@
 //
 // Login: usuário fornece o WEBHOOK_TOKEN. URL do backend é hardcoded em
 // `lib/api/config.dart` via String.fromEnvironment.
-// Checkbox opcional de biometria — quando marcado, próxima abertura pede
+// Switch opcional de biometria — quando ativo, próxima abertura pede
 // biometria antes de auto-logar.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/auth_provider.dart';
+import '../../theme/bloom_colors.dart';
+import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_logo.dart';
+import '../../widgets/bloom/bloom_shapes.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -67,142 +71,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFFFFF6D6),
-              theme.colorScheme.surface,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _BrandHero(),
-                      const SizedBox(height: 28),
-                      Card(
-                        elevation: 0,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Entrar',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _tokenCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'Token',
-                                  prefixIcon: Icon(Icons.key_outlined),
-                                ),
-                                obscureText: true,
-                                autocorrect: false,
-                                onFieldSubmitted: (_) => _submit(),
-                                validator: (v) =>
-                                    (v?.trim().isEmpty ?? true)
-                                        ? 'Informe o token'
-                                        : null,
-                              ),
-                              if (_biometricAvailable) ...[
-                                const SizedBox(height: 8),
-                                _BiometricToggle(
-                                  value: _useBiometric,
-                                  enabled: !_busy,
-                                  onChanged: (v) =>
-                                      setState(() => _useBiometric = v),
-                                ),
-                              ],
-                              if (_error != null) ...[
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.errorContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.error_outline,
-                                          size: 18,
-                                          color: theme.colorScheme.error),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          _error!,
-                                          style: TextStyle(
-                                            color: theme
-                                                .colorScheme.onErrorContainer,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                height: 48,
-                                child: FilledButton(
-                                  onPressed: _busy ? null : _submit,
-                                  style: FilledButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: _busy
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'Entrar',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            ],
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: BloomColors.screenGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              const Positioned.fill(child: BloomShapes()),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 28, vertical: 24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _BrandHero(),
+                          const SizedBox(height: 36),
+                          _LoginCard(
+                            tokenCtrl: _tokenCtrl,
+                            busy: _busy,
+                            error: _error,
+                            biometricAvailable: _biometricAvailable,
+                            useBiometric: _useBiometric,
+                            onBiometricChanged: (v) =>
+                                setState(() => _useBiometric = v),
+                            onSubmit: _submit,
                           ),
-                        ),
+                          const SizedBox(height: 18),
+                          Text(
+                            'seguro com 256-bit',
+                            textAlign: TextAlign.center,
+                            style: BloomTypography.mono(
+                              fontSize: 11.5,
+                              color: BloomColors.muted,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Controle financeiro pessoal',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -210,50 +126,171 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// Logo + nome do app na parte superior da tela.
 class _BrandHero extends StatelessWidget {
   const _BrandHero();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4D35E),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFF4D35E).withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              '\$',
-              style: TextStyle(
-                fontSize: 56,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF2A1F00),
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
+        const BloomLogo(size: 72),
+        const SizedBox(height: 18),
         Text(
           'Hook Finance',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
+          textAlign: TextAlign.center,
+          style: BloomTypography.display(
+            fontSize: 34,
+            letterSpacing: -0.8,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Controle financeiro pessoal · do casal',
+          textAlign: TextAlign.center,
+          style: BloomTypography.geist(
+            fontSize: 13,
+            color: BloomColors.muted,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LoginCard extends StatelessWidget {
+  final TextEditingController tokenCtrl;
+  final bool busy;
+  final String? error;
+  final bool biometricAvailable;
+  final bool useBiometric;
+  final ValueChanged<bool> onBiometricChanged;
+  final VoidCallback onSubmit;
+
+  const _LoginCard({
+    required this.tokenCtrl,
+    required this.busy,
+    required this.error,
+    required this.biometricAvailable,
+    required this.useBiometric,
+    required this.onBiometricChanged,
+    required this.onSubmit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: BloomColors.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: BloomColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: BloomColors.violet.withValues(alpha: 0.10),
+            blurRadius: 40,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Bem-vindo',
+              style: BloomTypography.display(
+                  fontSize: 20, letterSpacing: -0.4)),
+          const SizedBox(height: 2),
+          Text(
+            'Use seu token para entrar',
+            style: BloomTypography.geist(
+                fontSize: 12, color: BloomColors.muted),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'TOKEN',
+            style: BloomTypography.kicker(),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: BloomColors.bg3,
+              border: Border.all(color: BloomColors.border, width: 1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.vpn_key_outlined,
+                    size: 18, color: BloomColors.violet),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: tokenCtrl,
+                    obscureText: true,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 14),
+                      hintText: '••••••••••••',
+                    ),
+                    style: BloomTypography.mono(
+                      fontSize: 14,
+                      letterSpacing: 1,
+                    ),
+                    onFieldSubmitted: (_) => onSubmit(),
+                    validator: (v) => (v?.trim().isEmpty ?? true)
+                        ? 'Informe o token'
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (biometricAvailable) ...[
+            const SizedBox(height: 14),
+            _BiometricToggle(
+              value: useBiometric,
+              enabled: !busy,
+              onChanged: onBiometricChanged,
+            ),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: BloomColors.bad.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline,
+                      size: 18, color: BloomColors.bad),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      error!,
+                      style: BloomTypography.geist(
+                          fontSize: 13, color: BloomColors.bad),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          _GradientButton(
+            busy: busy,
+            onPressed: onSubmit,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -271,34 +308,139 @@ class _BiometricToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       onTap: enabled ? () => onChanged(!value) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Checkbox(
-              value: value,
-              onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.fingerprint,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
+            _PillSwitch(value: value, onChanged: enabled ? onChanged : null),
+            const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                'Próximo login por biometria',
-                style: theme.textTheme.bodyMedium,
+              child: RichText(
+                text: TextSpan(
+                  style: BloomTypography.geist(
+                    fontSize: 12.5,
+                    color: BloomColors.inkSoft,
+                  ),
+                  children: const [
+                    TextSpan(text: 'Próximo login por '),
+                    TextSpan(
+                      text: 'biometria',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Icon(Icons.fingerprint,
+                size: 18, color: BloomColors.muted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PillSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const _PillSwitch({required this.value, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onChanged == null ? null : () => onChanged!(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 38,
+        height: 22,
+        decoration: BoxDecoration(
+          color: value
+              ? BloomColors.violet
+              : const Color(0xFFD9D6F0),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 180),
+              top: 2,
+              left: value ? 18 : 2,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x26000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GradientButton extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onPressed;
+
+  const _GradientButton({required this.busy, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: busy ? null : onPressed,
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [BloomColors.violet, BloomColors.sky],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: BloomColors.violet.withValues(alpha: 0.33),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  'Entrar →',
+                  style: BloomTypography.display(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.2,
+                  ),
+                ),
         ),
       ),
     );

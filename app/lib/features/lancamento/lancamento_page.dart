@@ -1,184 +1,448 @@
 // Spec: docs/specs/pages/lancamento.md
+// Lançamentos (Bloom) — 2 tabs: lista (10 últimos) + Novo (form stub).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/format/money.dart';
-import '../../core/rules/parcela.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
-import '../../widgets/sticky_header.dart';
+import '../../theme/bloom_colors.dart';
+import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_card.dart';
+import '../../widgets/bloom/recent_entry_row.dart';
+import '../../widgets/bloom/screen_header.dart';
 import 'edit_dialog.dart';
 
-class LancamentoPage extends ConsumerWidget {
+class LancamentoPage extends ConsumerStatefulWidget {
   const LancamentoPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final lastAsync = ref.watch(lastEntriesProvider(10));
-    final monthAsync = ref.watch(monthDataProvider(null));
+  ConsumerState<LancamentoPage> createState() => _LancamentoPageState();
+}
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(lastEntriesProvider);
-        ref.invalidate(monthDataProvider);
-        try {
-          await Future.wait([
-            ref.read(lastEntriesProvider(10).future),
-            ref.read(monthDataProvider(null).future),
-          ]);
-        } catch (_) {}
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const StickyHeader(disabled: true),
-            const SizedBox(height: 12),
-            if (lastAsync.isLoading && !lastAsync.hasValue)
-              ...List.generate(
-                3,
-                (_) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              )
-            else
-              ..._buildEntries(context, ref, lastAsync.value, monthAsync.value),
-          ],
-        ),
+enum _Tab { edit, novo }
+
+class _LancamentoPageState extends ConsumerState<LancamentoPage> {
+  _Tab _tab = _Tab.edit;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ScreenHeader(title: 'Lançamento'),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: _TabSwitcher(
+              tab: _tab,
+              onChange: (t) => setState(() => _tab = t),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (_tab == _Tab.edit)
+            const _EditList()
+          else
+            _NovoForm(onCancel: () => setState(() => _tab = _Tab.edit)),
+        ],
       ),
     );
   }
+}
 
-  List<Widget> _buildEntries(
-    BuildContext context,
-    WidgetRef ref,
-    LastEntriesResponse? response,
-    MonthDataResponse? monthData,
-  ) {
-    final entries = response?.entries ?? const <Entry>[];
-    if (entries.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          child: Center(
-            child: Text(
-              'Sem lançamentos.',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+class _TabSwitcher extends StatelessWidget {
+  final _Tab tab;
+  final ValueChanged<_Tab> onChange;
+
+  const _TabSwitcher({required this.tab, required this.onChange});
+
+  @override
+  Widget build(BuildContext context) {
+    Widget btn(_Tab t, String label) {
+      final active = tab == t;
+      return Expanded(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => onChange(t),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? BloomColors.ink : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                label,
+                style: BloomTypography.geist(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: active ? Colors.white : BloomColors.inkSoft,
+                ),
               ),
             ),
           ),
         ),
-      ];
+      );
     }
-    return [
-      for (final e in entries) ...[
-        _EntryTile(
-          entry: e,
-          onTap: () => _openEdit(context, ref, e, monthData?.rows ?? const []),
-        ),
-        const SizedBox(height: 8),
-      ],
-    ];
-  }
 
-  Future<void> _openEdit(
-    BuildContext context,
-    WidgetRef ref,
-    Entry entry,
-    List<ExpenseRow> rowsForCategoria,
-  ) async {
-    final api = ref.read(apiProvider);
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (_) => EditDialog(
-        entry: entry,
-        rowsForCategoriaSuggestions: rowsForCategoria,
-        api: api,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: BloomColors.card,
+        border: Border.all(color: BloomColors.border, width: 1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          btn(_Tab.edit, 'Lançamentos'),
+          btn(_Tab.novo, '+ Novo'),
+        ],
       ),
     );
-    if (saved == true) {
-      ref.invalidate(lastEntriesProvider);
-      ref.invalidate(monthDataProvider);
-    }
   }
 }
 
-class _EntryTile extends StatelessWidget {
-  final Entry entry;
-  final VoidCallback onTap;
+class _EditList extends ConsumerWidget {
+  const _EditList();
 
-  const _EntryTile({required this.entry, required this.onTap});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastAsync = ref.watch(lastEntriesProvider(10));
+    final monthAsync = ref.watch(monthDataProvider(null));
+    final entries = lastAsync.value?.entries ?? const <Entry>[];
+    final loading = lastAsync.isLoading && !lastAsync.hasValue;
+
+    Future<void> openEdit(Entry e) async {
+      final api = ref.read(apiProvider);
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (_) => EditDialog(
+          entry: e,
+          rowsForCategoriaSuggestions:
+              monthAsync.value?.rows ?? const <ExpenseRow>[],
+          api: api,
+        ),
+      );
+      if (saved == true) {
+        ref.invalidate(lastEntriesProvider);
+        ref.invalidate(monthDataProvider);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  'ÚLTIMOS 10 · TOQUE PARA EDITAR',
+                  style: BloomTypography.kicker(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          BloomCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            borderRadius: BorderRadius.circular(22),
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: BloomColors.violet),
+                    ),
+                  )
+                : entries.isEmpty
+                    ? Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            'Sem lançamentos.',
+                            style: BloomTypography.geist(
+                              fontSize: 12,
+                              color: BloomColors.muted,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          for (var i = 0; i < entries.length; i++)
+                            RecentEntryRow(
+                              entry: entries[i],
+                              showDivider: i > 0,
+                              onTap: () => openEdit(entries[i]),
+                            ),
+                        ],
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NovoForm extends StatefulWidget {
+  final VoidCallback onCancel;
+  const _NovoForm({required this.onCancel});
+
+  @override
+  State<_NovoForm> createState() => _NovoFormState();
+}
+
+class _NovoFormState extends State<_NovoForm> {
+  static const _cats = [
+    'Mercado',
+    'Restaurante',
+    'Farmácia',
+    'Transporte',
+    'Casa',
+    'Pessoal',
+    'Viagem',
+    'Presente',
+  ];
+
+  String _cat = 'Mercado';
+  String _paid = 'Cartão';
+  String _split = 'Metade';
+  final _descCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSave() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Criação manual ainda não implementada. '
+          'Lançamentos chegam pelo webhook do Apps Script.',
+        ),
+        backgroundColor: BloomColors.ink,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final totalP = parcelaTotal(entry.parcela);
-
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [BloomColors.violet, BloomColors.sky],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: BloomColors.violet.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'VALOR',
+                  style: BloomTypography.geist(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.85),
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      'R\$',
+                      style: BloomTypography.geist(
+                        fontSize: 18,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '0,00',
+                      style: BloomTypography.display(
+                        fontSize: 46,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Stub — chega pelo webhook',
+                  style: BloomTypography.geist(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _FieldLabel(label: 'ESTABELECIMENTO'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _descCtrl,
+            decoration: const InputDecoration(
+              hintText: 'Ex: Mercado Extra',
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _FieldLabel(label: 'CATEGORIA'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              Text(
-                '${entry.dataRef} · ${entry.origem}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
+              for (final c in _cats)
+                _ChoiceChip(
+                  label: c,
+                  active: _cat == c,
+                  onTap: () => setState(() => _cat = c),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel(label: 'FORMA'),
+                    const SizedBox(height: 6),
+                    _Segmented(
+                      options: const ['Cartão', 'Pix'],
+                      selected: _paid,
+                      onChange: (v) => setState(() => _paid = v),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      entry.descricao,
-                      style: theme.textTheme.titleSmall,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel(label: 'DIVISÃO'),
+                    const SizedBox(height: 6),
+                    _Segmented(
+                      options: const ['Metade', 'Julio', 'Dani'],
+                      selected: _split,
+                      onChange: (v) => setState(() => _split = v),
+                      compact: true,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'R\$ ${formatMoney(entry.valor)}',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  if (entry.categoria.isNotEmpty)
-                    _Pill(text: entry.categoria),
-                  if (entry.rateio.isNotEmpty) _Pill(text: entry.rateio),
-                  if (totalP > 1)
-                    _Pill(
-                      text: entry.parcela,
-                      bg: const Color(0xFFF4D35E),
-                      fg: const Color(0xFF262626),
-                      bold: true,
-                    ),
-                ],
+                  ],
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 18),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _onSave,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: BloomColors.ink,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Salvar lançamento',
+                  style: BloomTypography.display(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String label;
+  const _FieldLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(label, style: BloomTypography.kicker());
+  }
+}
+
+class _ChoiceChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ChoiceChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+          decoration: BoxDecoration(
+            color: active ? BloomColors.ink : BloomColors.card,
+            borderRadius: BorderRadius.circular(999),
+            border: active
+                ? null
+                : Border.all(color: BloomColors.border, width: 1),
+          ),
+          child: Text(
+            label,
+            style: BloomTypography.geist(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: active ? Colors.white : BloomColors.inkSoft,
+            ),
           ),
         ),
       ),
@@ -186,35 +450,68 @@ class _EntryTile extends StatelessWidget {
   }
 }
 
-class _Pill extends StatelessWidget {
-  final String text;
-  final Color? bg;
-  final Color? fg;
-  final bool bold;
+class _Segmented extends StatelessWidget {
+  final List<String> options;
+  final String selected;
+  final ValueChanged<String> onChange;
+  final bool compact;
 
-  const _Pill({
-    required this.text,
-    this.bg,
-    this.fg,
-    this.bold = false,
+  const _Segmented({
+    required this.options,
+    required this.selected,
+    required this.onChange,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: bg ?? const Color(0xFFF0ECE2),
-        borderRadius: BorderRadius.circular(999),
+        color: BloomColors.card,
+        border: Border.all(color: BloomColors.border, width: 1),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        text,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: fg ?? theme.colorScheme.onSurfaceVariant,
-          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
-        ),
+      child: Row(
+        children: [
+          for (final o in options)
+            Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onChange(o),
+                  borderRadius: BorderRadius.circular(9),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected == o
+                          ? BloomColors.ink
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      _shortLabel(o),
+                      style: BloomTypography.geist(
+                        fontSize: compact ? 11 : 12,
+                        color: selected == o
+                            ? Colors.white
+                            : BloomColors.inkSoft,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  String _shortLabel(String o) => switch (o) {
+        'Metade' => '½',
+        'Julio' => 'Júlio',
+        _ => o,
+      };
 }
+

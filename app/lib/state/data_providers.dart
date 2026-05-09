@@ -3,6 +3,7 @@
 // Equivalente Flutter dos hooks Tanstack Query do PWA. Cache via Riverpod.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/rules/bucket_deltas.dart';
 import '../core/types.dart';
 import 'auth_provider.dart';
 
@@ -12,7 +13,8 @@ final currentMonthProvider = StateProvider<String?>((_) => null);
 /// Lista de meses disponíveis (descendente). Recarregado a cada sessão.
 final allMonthsProvider = StateProvider<List<String>>((_) => const []);
 
-/// Toggle do Pix do Júlio em Acerto. Persistido (parte da auth/store global futura).
+/// Toggle do Pix do Júlio em Acerto. Quando true, expande mostrando todas as
+/// Pix dele (não filtra por `acerto == 'Sim'`). Sessão.
 final acertoPixJulioProvider = StateProvider<bool>((_) => false);
 
 /// monthData(month) — equivale a queryKey ["monthData", month].
@@ -45,3 +47,19 @@ void invalidateAfterMutation(Ref ref) {
   ref.invalidate(monthDataProvider);
   ref.invalidate(lastEntriesProvider);
 }
+
+/// Mês anterior ao `currentMonth` (formato `MM/YYYY`). `null` se indeterminado.
+final previousMonthProvider = Provider<String?>((ref) {
+  final cur = ref.watch(currentMonthProvider);
+  return previousMonthOf(cur);
+});
+
+/// Atalho para `monthData(previousMonth)`.
+final previousMonthDataProvider =
+    FutureProvider<MonthDataResponse?>((ref) async {
+  final prev = ref.watch(previousMonthProvider);
+  if (prev == null) return null;
+  // Reusa o cache via `monthDataProvider(prev)`.
+  final api = ref.watch(apiProvider);
+  return api.getMonthData(month: prev);
+});

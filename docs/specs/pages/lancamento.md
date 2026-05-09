@@ -1,11 +1,13 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-08
 ---
 
 # Lançamento — lista das últimas entradas + edit modal
 
 Página com as 10 últimas linhas inseridas na planilha, em ordem de inserção (mais recente primeiro). Cada item abre um modal de edição.
+
+> **Flutter (Bloom)** adiciona uma segunda aba `+ Novo` com form (UI-only/stub — sem API de criação). PWA não tem essa aba.
 
 ## Contexto
 
@@ -26,6 +28,12 @@ A página de Lançamento monta uma instância **própria** do StickyHeader com `
 - Mantém os 3 tiles (Total geral, Total cartão, Total parcelado) calculados sobre essa fatura.
 
 Razão: editar um lançamento só faz sentido se você está vendo a fatura corrente (lançamentos novos vão sempre nela). Permitir mudar o filtro de mês confundiria.
+
+### Tabs (Flutter, Bloom)
+
+Apenas no Flutter:
+- **`Lançamentos`** (default) — listagem (descrita abaixo).
+- **`+ Novo`** — form com hero gradient para valor + chips de categoria + segmented controls (Cartão/Pix · ½/Júlio/Dani) + campo descrição. Botão "Salvar lançamento" presente mas **stub** (no-op até backend ganhar endpoint de criação). Webhook continua sendo o caminho real de criação.
 
 ### Lista de entries
 
@@ -98,7 +106,7 @@ Display: `{parcela}x` no centro do stepper. Abaixo: `Total da compra: R$ {format
 - **PWA:** [web/src/pages/LancamentoPage.tsx](../../../web/src/pages/LancamentoPage.tsx) + [web/src/components/EditModal.tsx](../../../web/src/components/EditModal.tsx).
 - **Hooks:** [useLastEntries.ts](../../../web/src/hooks/useLastEntries.ts) — `useLastEntries`, `useUpdateEntry`, `useDeleteEntry`.
 - **Após Onda 2:** parcela math em `EditModal` move helpers para `core/rules/parcela.ts`. JSX permanece.
-- **Flutter:** `app/lib/features/lancamento/` (Onda 5). `Dialog` para o modal; mesma math.
+- **Flutter:** [app/lib/features/lancamento/lancamento_page.dart](../../../app/lib/features/lancamento/lancamento_page.dart) com 2 tabs (`Lançamentos` + `+ Novo` stub); `Dialog` para edit modal; mesma math.
 
 ## Specs relacionadas
 

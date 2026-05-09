@@ -1,11 +1,14 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-08
 ---
 
 # Detalhe — despesas pessoais por pessoa
 
-Página que lista despesas de **Cartão pessoal** (não compartilhadas) do mês corrente, agrupadas por pessoa, em accordions colapsáveis.
+Página que lista despesas de **Cartão pessoal** (não compartilhadas) do mês corrente.
+
+- **PWA:** todas as pessoas em accordions colapsáveis na mesma página.
+- **Flutter (Bloom):** drill-down a partir do donut da [Início](inicio.md) — recebe `?person=julio|dani`, mostra apenas a pessoa clicada com toggle Júlio/Dani no topo para trocar.
 
 ## Contexto
 
@@ -39,11 +42,18 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 
 ### Render
 
-Cada grupo é um `<details>` (accordion) colapsado:
+**PWA:** cada grupo é um `<details>` (accordion) colapsado:
 
 - **Summary:** nome (`Julio`/`Dani`/...) + total `R$ X` à direita.
 - **Body** (quando expandido): tabela com colunas Data | Descrição | Valor.
   - Itens ordenados por `dataRef` **descendente** (mais recente primeiro).
+
+**Flutter (Bloom):** página single-person (a passada via `?person=`):
+
+- Header `ScreenHeader` com kicker "Despesas pessoais" + título "<Person> · <mês>" + `MonthSelector`.
+- Person pills Júlio/Dani — tap troca a query e re-renderiza.
+- Card "Cartão pessoal" com valor display + `% do total` da pessoa (do bucket `pessoal`).
+- Lista de lançamentos `RecentEntryRow` filtrada (mais recente primeiro) ou mensagem "Sem lançamentos pessoais este mês".
 
 ### Loading / vazio
 
@@ -61,7 +71,7 @@ Cada grupo é um `<details>` (accordion) colapsado:
 
 - **PWA:** [web/src/pages/DetalhePage.tsx](../../../web/src/pages/DetalhePage.tsx)
 - **Após Onda 2:** `PREFERRED_ORDER` move para `core/constants.ts`. Filtro fica inline (regra simples, sem reuso fora dessa página).
-- **Flutter:** `app/lib/features/detalhe/` (Onda 5). Usar `ExpansionTile` para o accordion.
+- **Flutter:** [app/lib/features/detalhe/detalhe_page.dart](../../../app/lib/features/detalhe/detalhe_page.dart) — drill-down de [inicio.md](inicio.md) via `?person=julio|dani`. Sem accordion (single-person view).
 
 ## Specs relacionadas
 

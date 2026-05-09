@@ -1,9 +1,11 @@
-// Spec: docs/specs/pages/consulta.md (entry route)
+// Spec: docs/specs/pages/inicio.md (entry route)
 // Spec: docs/specs/state/persistence.md (auth gate)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'core/types.dart';
+import 'features/detalhe/detalhe_page.dart';
 import 'features/login/login_screen.dart';
 import 'features/shell/app_shell.dart';
 import 'state/auth_provider.dart';
@@ -31,7 +33,7 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
         final auth = ref.read(authProvider);
         if (!auth.ready) return null;
         final atLogin = state.matchedLocation == '/login';
-        if (auth.isAuthed && atLogin) return '/consulta';
+        if (auth.isAuthed && atLogin) return '/';
         if (!auth.isAuthed && !atLogin) return '/login';
         return null;
       },
@@ -41,8 +43,19 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
           builder: (_, _) => const LoginScreen(),
         ),
         GoRoute(
-          path: '/consulta',
+          path: '/',
           builder: (_, _) => const AppShell(),
+          routes: [
+            GoRoute(
+              path: 'detalhe',
+              builder: (_, state) {
+                final p = state.uri.queryParameters['person'];
+                final initial =
+                    p == 'dani' ? Person.dani : Person.julio;
+                return DetalhePage(initialPerson: initial);
+              },
+            ),
+          ],
         ),
       ],
     );

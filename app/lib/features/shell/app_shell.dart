@@ -1,13 +1,18 @@
-// Spec: docs/specs/pages/* (shell que hospeda as 4 páginas)
+// Spec: docs/specs/pages/{inicio,compart,lancamento,historico,acerto}.md
+// Shell do app — gradient background + IndexedStack p/ preservar estado entre as 5 abas.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
+import '../../state/nav_provider.dart';
+import '../../widgets/bloom/bloom_bottom_nav.dart';
+import '../../widgets/bloom/bloom_screen.dart';
 import '../acerto/acerto_page.dart';
-import '../consulta/consulta_page.dart';
-import '../detalhe/detalhe_page.dart';
+import '../compart/compart_page.dart';
+import '../historico/historico_page.dart';
+import '../inicio/inicio_page.dart';
 import '../lancamento/lancamento_page.dart';
+import '../../core/types.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -17,55 +22,56 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int _index = 0;
-
-  static const _destinations = [
-    (icon: Icons.dashboard_outlined, label: 'Consulta'),
-    (icon: Icons.list_alt_outlined, label: 'Detalhe'),
-    (icon: Icons.add_circle_outline, label: 'Lançamento'),
-    (icon: Icons.handshake_outlined, label: 'Acerto'),
-  ];
-
   static const _pages = <Widget>[
-    ConsultaPage(),
-    DetalhePage(),
+    InicioPage(),
+    CompartPage(),
     LancamentoPage(),
+    HistoricoPage(),
     AcertoPage(),
   ];
 
-  void _refresh() {
-    ref.invalidate(monthDataProvider);
-    ref.invalidate(historicalSummaryProvider);
-    ref.invalidate(lastEntriesProvider);
+  @override
+  void initState() {
+    super.initState();
+
+    // Hidrata currentMonth automaticamente quando a primeira monthData chegar.
+    ref.listenManual<AsyncValue<MonthDataResponse>>(
+      monthDataProvider(null),
+      (_, next) {
+        next.whenData((d) {
+          final cur = ref.read(currentMonthProvider);
+          if (cur == null && d.month != null) {
+            ref.read(currentMonthProvider.notifier).state = d.month;
+          }
+        });
+      },
+      fireImmediately: true,
+    );
+
+    // Hidrata allMonths quando historicalSummary chegar.
+    ref.listenManual<AsyncValue<HistoricalSummaryResponse>>(
+      historicalSummaryProvider,
+      (_, next) {
+        next.whenData((d) {
+          if (d.months.isNotEmpty) {
+            ref.read(allMonthsProvider.notifier).state = d.months;
+          }
+        });
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hook Finance'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Atualizar',
-            onPressed: _refresh,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sair',
-            onPressed: () => ref.read(authProvider.notifier).signOut(),
-          ),
-        ],
+    final tab = ref.watch(activeTabProvider);
+    final index = BloomTab.values.indexOf(tab);
+    return BloomScreen(
+      bottomNav: BloomBottomNav(
+        active: tab,
+        onChange: (t) => ref.read(activeTabProvider.notifier).state = t,
       ),
-      body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          for (final d in _destinations)
-            NavigationDestination(icon: Icon(d.icon), label: d.label),
-        ],
-      ),
+      child: IndexedStack(index: index, children: _pages),
     );
   }
 }

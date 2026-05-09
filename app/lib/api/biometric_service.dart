@@ -17,6 +17,9 @@ class BiometricService {
       return available.isNotEmpty;
     } on PlatformException {
       return false;
+    } on MissingPluginException {
+      // Web/desktop sem plugin nativo — biometria não suportada.
+      return false;
     }
   }
 
@@ -31,6 +34,8 @@ class BiometricService {
         ),
       );
     } on PlatformException {
+      return false;
+    } on MissingPluginException {
       return false;
     }
   }

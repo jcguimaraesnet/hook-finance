@@ -42,3 +42,45 @@ String brDateToMMYYYY(String brDate) {
   if (parts.length != 3) return brDate;
   return '${parts[1]}/${parts[2]}';
 }
+
+const _monthsCapitalizedPt = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
+
+/// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "Mês, YYYY" (pt-BR capitalizado).
+/// Ex: "06/05/2026" -> "Maio, 2026"; "05/2026" -> "Maio, 2026".
+String monthYearLong(String? raw) {
+  if (raw == null || raw.isEmpty) return '—';
+  final parts = raw.split('/');
+  int? m;
+  String? y;
+  if (parts.length == 3) {
+    m = int.tryParse(parts[1]);
+    y = parts[2];
+  } else if (parts.length == 2) {
+    m = int.tryParse(parts[0]);
+    y = parts[1];
+  }
+  if (m == null || y == null || m < 1 || m > 12) return raw;
+  return '${_monthsCapitalizedPt[m - 1]}, $y';
+}
+
+/// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "MM/YYYY".
+String mmYYYY(String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  final parts = raw.split('/');
+  if (parts.length == 3) return '${parts[1]}/${parts[2]}';
+  if (parts.length == 2) return raw;
+  return raw;
+}

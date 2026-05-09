@@ -1,11 +1,15 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-08
 ---
 
-# Consulta — página principal
+# Consulta — página principal (PWA)
 
-Página default ao logar. Mostra resumo do mês corrente em 4 sub-tabs: Mês, Categoria, Pessoal, Histórico.
+Página default ao logar **no PWA**. Mostra resumo do mês corrente em 4 sub-tabs: Mês, Categoria, Pessoal, Histórico.
+
+> **Flutter (Bloom IA)** dissolve essa página em 4 destinos top-level:
+> [Início](inicio.md) · [Compart](compart.md) · [Lançamentos](lancamento.md) · [Histórico](historico.md).
+> Esta spec descreve apenas o comportamento do PWA.
 
 ## Contexto
 
@@ -53,7 +57,7 @@ Quando `historicalSummary` chega, `setAllMonths(historyQ.data.months)`. Dropdown
 
 - **PWA:** [web/src/pages/ConsultaPage.tsx](../../../web/src/pages/ConsultaPage.tsx)
 - **Hooks:** `useMonthData`, `useHistoricalSummary`.
-- **Flutter:** `app/lib/features/consulta/` (Onda 5). Riverpod providers para month/history; `MediaQuery` para detectar PC.
+- **Flutter:** N/A — usa Bloom IA. Ver [inicio.md](inicio.md), [compart.md](compart.md), [historico.md](historico.md).
 
 ## Specs relacionadas
 

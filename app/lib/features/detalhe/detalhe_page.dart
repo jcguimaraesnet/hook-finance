@@ -1,152 +1,165 @@
 // Spec: docs/specs/pages/detalhe.md
+// Drill-down de Início (Bloom IA) — single-person view com ?person=julio|dani.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants.dart';
+import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
+import '../../core/rules/bucket_deltas.dart';
+import '../../core/rules/split_for_person.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
-import '../../widgets/sticky_header.dart';
+import '../../theme/bloom_colors.dart';
+import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_card.dart';
+import '../../widgets/bloom/bloom_screen.dart';
+import '../../widgets/bloom/month_selector.dart';
+import '../../widgets/bloom/recent_entry_row.dart';
+import '../../widgets/bloom/screen_header.dart';
 
-class DetalhePage extends ConsumerWidget {
-  const DetalhePage({super.key});
+class DetalhePage extends ConsumerStatefulWidget {
+  final Person? initialPerson;
+  const DetalhePage({super.key, this.initialPerson});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  ConsumerState<DetalhePage> createState() => _DetalhePageState();
+}
+
+class _DetalhePageState extends ConsumerState<DetalhePage> {
+  late Person _person;
+
+  @override
+  void initState() {
+    super.initState();
+    _person = widget.initialPerson ?? Person.julio;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentMonth = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(currentMonth));
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final byPerson = <String, _PersonGroup>{};
-    for (final r in rows) {
-      if (r.origem != 'Cartão') continue;
-      if (r.rateio.isEmpty || r.rateio == 'Metade') continue;
-      final g = byPerson.putIfAbsent(r.rateio, () => _PersonGroup());
-      g.total += r.valor;
-      g.items.add(r);
-    }
-    final others = byPerson.keys
-        .where((p) => !kPersonOrder.contains(p))
+    final pessoalRows = rows
+        .where((r) => r.origem == 'Cartão' && r.rateio == _person.name)
         .toList()
-      ..sort();
-    final ordered = [...kPersonOrder, ...others]
-        .where((p) => byPerson.containsKey(p))
-        .toList();
+      ..sort((a, b) =>
+          parseBrDate(b.dataRef).compareTo(parseBrDate(a.dataRef)));
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(monthDataProvider);
-        try {
-          await ref.read(monthDataProvider(currentMonth).future);
-        } catch (_) {}
-      },
+    final buckets = bucketsForPerson(rows, _person);
+    final pessoalPct = buckets.total == 0
+        ? 0.0
+        : buckets.pessoal / buckets.total * 100;
+
+    return BloomScreen(
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const StickyHeader(),
+            ScreenHeader(
+              showBack: true,
+              kicker: 'Despesas pessoais',
+              title: _person.displayName,
+              trailing: const MonthSelector(),
+            ),
             const SizedBox(height: 12),
-          if (loading)
-            ...List.generate(
-              3,
-              (_) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            )
-          else if (ordered.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'Sem despesas pessoais neste mês.',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: _PersonToggle(
+                selected: _person,
+                onChanged: (p) => setState(() => _person = p),
               ),
-            )
-          else
-            ...ordered.map((p) {
-              final group = byPerson[p]!;
-              final items = [...group.items]
-                ..sort((a, b) => b.dataRef.compareTo(a.dataRef));
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ExpansionTile(
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(p,
-                            style:
-                                theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                )),
-                        Text(
-                          'R\$ ${formatMoney(group.total)}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: BloomCard(
+                padding: const EdgeInsets.all(18),
+                child: loading
+                    ? const SizedBox(
+                        height: 60,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                              color: BloomColors.violet),
                         ),
-                      ],
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (final it in items)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 110,
-                                      child: Text(
-                                        it.dataRef,
-                                        style: theme.textTheme.bodySmall,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        it.descricao,
-                                        style: theme.textTheme.bodySmall,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Text(
-                                      formatMoney(it.valor),
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures()
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('CARTÃO PESSOAL',
+                              style: BloomTypography.kicker()),
+                          const SizedBox(height: 2),
+                          Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                'R\$ ${formatMoney(buckets.pessoal)}',
+                                style: BloomTypography.display(
+                                  fontSize: 30,
+                                  letterSpacing: -0.6,
                                 ),
                               ),
-                          ],
-                        ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  '· ${pessoalPct.toStringAsFixed(1).replaceAll('.', ',')}% do total',
+                                  style: BloomTypography.geist(
+                                    fontSize: 11,
+                                    color: BloomColors.muted,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Text(
+                'Lançamentos pessoais (${pessoalRows.length})',
+                style: BloomTypography.display(fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: BloomCard(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 4),
+                child: pessoalRows.isEmpty && !loading
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Text(
+                            'Sem lançamentos pessoais este mês.',
+                            style: BloomTypography.geist(
+                              fontSize: 12,
+                              color: BloomColors.muted,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          for (var i = 0; i < pessoalRows.length; i++)
+                            _DetalheRow(
+                              row: pessoalRows[i],
+                              showDivider: i > 0,
+                              splitForCurrent:
+                                  splitForPerson(pessoalRows[i], _person),
+                            ),
+                        ],
+                      ),
+              ),
+            ),
           ],
         ),
       ),
@@ -154,7 +167,99 @@ class DetalhePage extends ConsumerWidget {
   }
 }
 
-class _PersonGroup {
-  double total = 0;
-  final List<ExpenseRow> items = [];
+class _PersonToggle extends StatelessWidget {
+  final Person selected;
+  final ValueChanged<Person> onChanged;
+
+  const _PersonToggle({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < Person.values.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: _ToggleButton(
+              person: Person.values[i],
+              active: selected == Person.values[i],
+              onTap: () => onChanged(Person.values[i]),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ToggleButton extends StatelessWidget {
+  final Person person;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _ToggleButton({
+    required this.person,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = BloomColors.forPerson(person);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? color : BloomColors.card,
+            borderRadius: BorderRadius.circular(14),
+            border: active
+                ? null
+                : Border.all(color: BloomColors.border, width: 1),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.33),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            person.displayName,
+            style: BloomTypography.geist(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: active ? Colors.white : BloomColors.inkSoft,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetalheRow extends StatelessWidget {
+  final ExpenseRow row;
+  final bool showDivider;
+  final double splitForCurrent;
+
+  const _DetalheRow({
+    required this.row,
+    required this.showDivider,
+    required this.splitForCurrent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RecentEntryRow(
+      entry: row,
+      showDivider: showDivider,
+    );
+  }
 }
