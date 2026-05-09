@@ -28,7 +28,9 @@ class _LancamentoPageState extends ConsumerState<LancamentoPage> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: EdgeInsets.only(
+        bottom: 140 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -184,6 +186,7 @@ class _EditList extends ConsumerWidget {
                               entry: entries[i],
                               showDivider: i > 0,
                               onTap: () => openEdit(entries[i]),
+                              highlightMissing: true,
                             ),
                         ],
                       ),

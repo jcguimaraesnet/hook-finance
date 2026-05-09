@@ -51,7 +51,7 @@ class BloomDonut extends StatelessWidget {
         sel != null ? buckets[sel].value : total;
     final centerSub = sel != null
         ? '${buckets[sel].pct.toStringAsFixed(1).replaceAll('.', ',')}%'
-        : 'R\$ pessoal';
+        : 'pessoal';
 
     return SizedBox(
       width: size,

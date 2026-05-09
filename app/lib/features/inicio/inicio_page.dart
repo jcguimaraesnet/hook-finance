@@ -91,12 +91,15 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       );
     }
 
+    final bottomPad =
+        140 + MediaQuery.of(context).padding.bottom;
+
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: BloomColors.violet,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 100),
+        padding: EdgeInsets.only(bottom: bottomPad),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -366,13 +369,18 @@ class _HeroCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('CARTÃO GERAL',
+                        Text('TOTAL CARTÃO',
                             style: BloomTypography.kicker()),
-                        Text(
-                          'R\$ ${formatMoney(totalCartao)}',
-                          style: BloomTypography.display(
-                            fontSize: 22,
-                            letterSpacing: -0.5,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'R\$ ${formatMoney(totalCartao)}',
+                            maxLines: 1,
+                            style: BloomTypography.display(
+                              fontSize: 22,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -475,9 +483,7 @@ class _SmallTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCartao = rows
-        .where((r) => r.origem == 'Cartão')
-        .fold<double>(0, (s, r) => s + r.valor);
+    final totalGeral = rows.fold<double>(0, (s, r) => s + r.valor);
     final totalParcelado = rows.where((r) {
       final p = r.parcela;
       if (p.isEmpty) return false;
@@ -492,7 +498,7 @@ class _SmallTiles extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _Tile(label: 'Cartão geral', value: totalCartao),
+            child: _Tile(label: 'Total geral', value: totalGeral),
           ),
           const SizedBox(width: 10),
           Expanded(

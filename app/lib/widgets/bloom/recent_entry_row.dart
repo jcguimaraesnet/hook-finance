@@ -10,20 +10,26 @@ class RecentEntryRow extends StatelessWidget {
   final ExpenseRow entry;
   final VoidCallback? onTap;
   final bool showDivider;
+  /// Quando true e o entry tem categoria ou rateio vazios, destaca em vermelho.
+  final bool highlightMissing;
 
   const RecentEntryRow({
     super.key,
     required this.entry,
     this.onTap,
     this.showDivider = true,
+    this.highlightMissing = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final missing = highlightMissing &&
+        (entry.categoria.isEmpty || entry.rateio.isEmpty);
     final initial = entry.descricao.isEmpty
         ? '?'
         : entry.descricao.characters.first.toUpperCase();
-    final tone = _toneFor(entry.rateio);
+    final tone = missing ? BloomColors.bad : _toneFor(entry.rateio);
+    final descColor = missing ? BloomColors.bad : BloomColors.ink;
     final splitLabel = _splitLabel(entry.rateio);
 
     final dateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
@@ -61,6 +67,7 @@ class RecentEntryRow extends StatelessWidget {
                 style: BloomTypography.geist(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
+                  color: descColor,
                 ),
               ),
               const SizedBox(height: 1),
