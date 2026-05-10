@@ -187,13 +187,14 @@ O webhook calcula `SHA-256(title + "\n" + text)` e guarda em `CacheService` por 
 
 ## Dashboard
 
-O dashboard roda como **PWA** em `https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/` (React + Vite + Tailwind v4 hospedado no Azure Static Web Apps). O Apps Script ficou apenas como backend JSON — abrir o `/exec` direto sem `?action=...` retorna `{ok:false,error:"unknown_action"}`.
+O dashboard roda como **PWA Flutter** em `https://polite-mushroom-0d3d07a0f.7.azurestaticapps.net/` (mesmo codebase Flutter que gera o APK Android, hospedado no Azure Static Web Apps via [.github/workflows/deploy-web.yml](.github/workflows/deploy-web.yml)). O Apps Script ficou apenas como backend JSON — abrir o `/exec` direto sem `?action=...` retorna `{ok:false,error:"unknown_action"}`.
 
-- **Auth**: PWA pede o `WEBHOOK_TOKEN` no login. O token é validado por uma chamada GET a `lastEntries(n=1)` antes de ser salvo em `localStorage` (`hook-finance-store.token`).
-- **Comunicação**: a app chama `/api/proxy?action=...` (Azure Function) que repassa para o `/exec` do Apps Script — same-origin, sem CORS no browser.
+- **Direção visual**: Bloom (lavanda + menta), bottom-nav 5 abas (Início · Compart · Lançamentos · Histórico · Acerto). Mesma identidade do APK.
+- **Auth**: pede o `WEBHOOK_TOKEN` no login. O token é validado antes de ser salvo (`SharedPreferences` no Android, `localStorage` no web). Biometria disponível só no APK.
+- **Comunicação**: a app chama `/api/proxy?action=...` (Azure Function em [web/api/proxy/](web/api/proxy/)) que repassa para o `/exec` do Apps Script. Em produção é same-origin (sem CORS no browser); o proxy também envia headers CORS para permitir dev local (`flutter run -d chrome`) sem flags.
 - **Endpoint JSON legado** (debug): `GET <WEB_APP_URL>?action=data&token=<TOKEN>` ainda retorna `{ok, rows[]}`.
-- **Logout**: dentro da PWA, limpe `localStorage` em DevTools → `hook-finance-store` ou esqueça o token e vá direto pro login.
-- **Responsivo**: mobile-first. Em ≥640px nav e os 4 tiles ficam sticky no topo; em ≥750px Consulta exibe todos os painéis simultaneamente (sem sub-tabs).
+- **Logout**: pelo botão dentro do app, ou (debug) limpando storage do navegador.
+- **PWA install**: Chrome/Edge desktop e Safari iOS suportam "Adicionar à Tela de Início" — ícone Bloom + standalone (sem barra do navegador).
 
 ## Comandos úteis
 

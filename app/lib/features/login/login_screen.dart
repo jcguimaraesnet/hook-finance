@@ -5,6 +5,7 @@
 // Switch opcional de biometria — quando ativo, próxima abertura pede
 // biometria antes de auto-logar.
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/auth_provider.dart';
@@ -38,6 +39,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _checkBiometric() async {
+    if (kIsWeb) {
+      setState(() {
+        _biometricAvailable = false;
+        _useBiometric = false;
+      });
+      return;
+    }
     final ok = await ref.read(authProvider.notifier).isBiometricAvailable();
     if (!mounted) return;
     setState(() {

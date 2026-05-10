@@ -4,11 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "web/**"
+      - "app/**"
+      - "web/api/**"
       - ".github/workflows/deploy-web.yml"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "package.json"
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, closed]
@@ -24,18 +22,19 @@ jobs:
         with:
           submodules: true
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: subosito/flutter-action@v2
         with:
-          node-version: "20"
-          cache: pnpm
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
 
-      - name: Install deps
-        run: pnpm install --frozen-lockfile
+      - name: Flutter pub get
+        working-directory: app
+        run: flutter pub get
 
-      - name: Build web
-        run: pnpm --filter hook-finance-web build
+      - name: Build web release
+        working-directory: app
+        run: flutter build web --release
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
@@ -44,7 +43,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_POLITE_MUSHROOM_0D3D07A0F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "web/dist"
+          app_location: "app/build/web"
           api_location: "web/api"
           skip_app_build: true
           skip_api_build: true
@@ -59,4 +58,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_POLITE_MUSHROOM_0D3D07A0F }}
           action: "close"
-          app_location: "web"
+          app_location: "app/build/web"

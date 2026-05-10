@@ -4,11 +4,30 @@
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
 
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "Content-Type",
+  "access-control-max-age": "86400",
+};
+
+function jsonHeaders() {
+  return {
+    "content-type": "application/json; charset=utf-8",
+    ...CORS_HEADERS,
+  };
+}
+
 module.exports = async function (context, req) {
+  if (req.method === "OPTIONS") {
+    context.res = { status: 204, headers: CORS_HEADERS };
+    return;
+  }
+
   if (!APPS_SCRIPT_URL) {
     context.res = {
       status: 500,
-      headers: { "content-type": "application/json; charset=utf-8" },
+      headers: jsonHeaders(),
       body: { ok: false, error: "proxy_misconfigured" },
     };
     return;
@@ -24,7 +43,7 @@ module.exports = async function (context, req) {
       const r = await fetch(target.toString(), { redirect: "follow" });
       context.res = {
         status: r.status,
-        headers: { "content-type": "application/json; charset=utf-8" },
+        headers: jsonHeaders(),
         body: await r.text(),
       };
       return;
@@ -40,7 +59,7 @@ module.exports = async function (context, req) {
       });
       context.res = {
         status: r.status,
-        headers: { "content-type": "application/json; charset=utf-8" },
+        headers: jsonHeaders(),
         body: await r.text(),
       };
       return;
@@ -48,14 +67,14 @@ module.exports = async function (context, req) {
 
     context.res = {
       status: 405,
-      headers: { "content-type": "application/json; charset=utf-8" },
+      headers: jsonHeaders(),
       body: { ok: false, error: "method_not_allowed" },
     };
   } catch (err) {
     context.log.error("proxy failed", err);
     context.res = {
       status: 502,
-      headers: { "content-type": "application/json; charset=utf-8" },
+      headers: jsonHeaders(),
       body: {
         ok: false,
         error: "proxy_failed",

@@ -1,11 +1,11 @@
 {
-    "name": "hook_finance",
-    "short_name": "hook_finance",
+    "name": "Hook Finance",
+    "short_name": "Hook",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "hook-finance Flutter app",
+    "background_color": "#F0EEFF",
+    "theme_color": "#6E5CE7",
+    "description": "Controle financeiro para casais",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
