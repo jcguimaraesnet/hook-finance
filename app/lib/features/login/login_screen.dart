@@ -146,7 +146,7 @@ class _BrandHero extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Controle financeiro pessoal · do casal',
+          'Controle financeiro para casais',
           textAlign: TextAlign.center,
           style: BloomTypography.geist(
             fontSize: 13,

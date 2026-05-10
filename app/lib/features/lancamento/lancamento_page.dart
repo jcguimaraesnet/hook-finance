@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
+import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_bottom_nav.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
@@ -29,12 +31,20 @@ class _LancamentoPageState extends ConsumerState<LancamentoPage> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        bottom: 140 + MediaQuery.of(context).padding.bottom,
+        bottom: 70 + MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ScreenHeader(title: 'Lançamento'),
+          Consumer(
+            builder: (context, ref, _) => ScreenHeader(
+              title: 'Últimos lançamentos',
+              showBack: true,
+              onBack: () => ref
+                  .read(activeTabProvider.notifier)
+                  .state = BloomTab.inicio,
+            ),
+          ),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -517,4 +527,5 @@ class _Segmented extends StatelessWidget {
         _ => o,
       };
 }
+
 

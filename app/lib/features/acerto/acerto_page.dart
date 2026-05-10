@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
-import '../../core/rules/bucket_deltas.dart';
 import '../../core/rules/diff_calculation.dart';
 import '../../core/rules/split_for_person.dart';
 import '../../core/types.dart';
@@ -32,7 +31,23 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
     final rows = monthAsync.value?.rows ?? const <ExpenseRow>[];
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
-    final daniBuckets = bucketsForPerson(rows, Person.dani);
+    // Total Pessoal da Dani — mesmo cálculo da tabela em _PersonAcertoCard:
+    // cartao(compart) + cartao(pessoal) + pix(acerto=='Sim'). Diferente do
+    // bucketsForPerson.total porque este último inclui TODAS as Pix.
+    final daniCartaoCompart = rows
+        .where((r) => r.origem == 'Cartão' && r.rateio == 'Metade')
+        .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
+    final daniCartaoPessoal = rows
+        .where((r) => r.origem == 'Cartão' && r.rateio == Person.dani.name)
+        .fold<double>(0, (s, r) => s + splitForPerson(r, Person.dani));
+    final daniPixAcerto = rows
+        .where((r) =>
+            r.origem == 'Pix (contas)' &&
+            r.rateio == Person.dani.name &&
+            r.acerto == 'Sim')
+        .fold<double>(0, (s, r) => s + r.valor);
+    final daniTotalPessoal =
+        daniCartaoCompart + daniCartaoPessoal + daniPixAcerto;
 
     Future<void> onRefresh() async {
       ref.invalidate(monthDataProvider);
@@ -47,7 +62,7 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
-          bottom: 140 + MediaQuery.of(context).padding.bottom,
+          bottom: 70 + MediaQuery.of(context).padding.bottom,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,11 +73,7 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
               trailing: MonthSelector(),
             ),
             const SizedBox(height: 12),
-            _Hero(
-              total: daniBuckets.total,
-              selected: _selected,
-              onSelect: (p) => setState(() => _selected = p),
-            ),
+            _Hero(total: daniTotalPessoal),
             const SizedBox(height: 14),
             if (loading)
               const Padding(
@@ -78,6 +89,10 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
                 child: _PersonAcertoCard(
                   person: _selected,
                   rows: rows,
+                  onSwap: () => setState(() {
+                    _selected =
+                        _selected == Person.dani ? Person.julio : Person.dani;
+                  }),
                 ),
               ),
           ],
@@ -89,14 +104,8 @@ class _AcertoPageState extends ConsumerState<AcertoPage> {
 
 class _Hero extends StatelessWidget {
   final double total;
-  final Person selected;
-  final ValueChanged<Person> onSelect;
 
-  const _Hero({
-    required this.total,
-    required this.selected,
-    required this.onSelect,
-  });
+  const _Hero({required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -119,122 +128,35 @@ class _Hero extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'DANI TRANSFERE PARA JÚLIO',
-                    style: BloomTypography.geist(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.85),
-                      letterSpacing: 0.4,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'R\$ ${formatMoney(total)}',
-                      maxLines: 1,
-                      style: BloomTypography.display(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.05,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                  ),
-                ],
+            Text(
+              'DANI TRANSFERE PARA JÚLIO',
+              style: BloomTypography.geist(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.85),
+                letterSpacing: 0.4,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 12),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _PersonOrb(
-                  letter: 'D',
-                  active: selected == Person.dani,
-                  invertedActive: true,
-                  onTap: () => onSelect(Person.dani),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'R\$ ${formatMoney(total)}',
+                maxLines: 1,
+                style: BloomTypography.display(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.05,
+                  letterSpacing: -0.6,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(
-                    '↔',
-                    style: BloomTypography.geist(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ),
-                _PersonOrb(
-                  letter: 'J',
-                  active: selected == Person.julio,
-                  invertedActive: false,
-                  onTap: () => onSelect(Person.julio),
-                ),
-              ],
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PersonOrb extends StatelessWidget {
-  final String letter;
-  final bool active;
-  final bool invertedActive;
-  final VoidCallback onTap;
-
-  const _PersonOrb({
-    required this.letter,
-    required this.active,
-    required this.invertedActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final inverted = invertedActive;
-    final bg = inverted
-        ? Colors.white.withValues(alpha: 0.25)
-        : Colors.white;
-    final fg = inverted ? Colors.white : BloomColors.violet;
-    final activeBorder = active
-        ? Border.all(
-            color: inverted ? Colors.white : BloomColors.violet,
-            width: 2,
-          )
-        : Border.all(color: Colors.transparent, width: 2);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: bg,
-          shape: BoxShape.circle,
-          border: activeBorder,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          letter,
-          style: BloomTypography.display(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: fg,
-            height: 1,
-          ),
         ),
       ),
     );
@@ -244,8 +166,13 @@ class _PersonOrb extends StatelessWidget {
 class _PersonAcertoCard extends ConsumerWidget {
   final Person person;
   final List<ExpenseRow> rows;
+  final VoidCallback onSwap;
 
-  const _PersonAcertoCard({required this.person, required this.rows});
+  const _PersonAcertoCard({
+    required this.person,
+    required this.rows,
+    required this.onSwap,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -322,15 +249,43 @@ class _PersonAcertoCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    person.displayName,
-                    style: BloomTypography.display(
-                      fontSize: 17,
-                      letterSpacing: -0.3,
+                Text(
+                  person.displayName,
+                  style: BloomTypography.display(
+                    fontSize: 17,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onSwap,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Tooltip(
+                      message: 'Trocar pessoa',
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: personColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: personColor.withValues(alpha: 0.30),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.swap_horiz,
+                          size: 16,
+                          color: personColor,
+                        ),
+                      ),
                     ),
                   ),
                 ),
+                const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -401,56 +356,71 @@ class _PersonAcertoCard extends ConsumerWidget {
             value: cartaoPessoal,
             total: total,
           ),
-          // Pix subheader — clicável apenas para Júlio (expande/recolhe)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
-            child: InkWell(
-              onTap: isJulio
-                  ? () => ref
-                      .read(acertoPixJulioProvider.notifier)
-                      .state = !pixExpanded
-                  : null,
-              child: Container(
-                padding: const EdgeInsets.only(bottom: 3),
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                        color: BloomColors.divider, width: 1),
+          // Linha "Contas" — mesma identidade visual de Cartão (compart/pessoal),
+          // mostrando o subtotal Pix. Para Júlio, clicável (toggle expandir).
+          InkWell(
+            onTap: isJulio
+                ? () => ref
+                    .read(acertoPixJulioProvider.notifier)
+                    .state = !pixExpanded
+                : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 18, vertical: 9),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          'Contas',
+                          style: BloomTypography.geist(
+                            fontSize: 12.5,
+                            color: BloomColors.ink,
+                          ),
+                        ),
+                        if (isJulio) ...[
+                          const SizedBox(width: 2),
+                          Icon(
+                            pixExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            size: 16,
+                            color: BloomColors.muted,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Pix · Contas',
-                      style: BloomTypography.geist(
-                        fontSize: 11,
-                        color: BloomColors.inkSoft,
-                        fontWeight: FontWeight.w600,
-                      ).copyWith(
-                        decoration:
-                            isJulio ? TextDecoration.underline : null,
-                        decorationColor: BloomColors.divider,
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      formatMoney(pixSubtotal),
+                      textAlign: TextAlign.right,
+                      style: BloomTypography.mono(
+                        fontSize: 12,
+                        color: BloomColors.ink,
                       ),
                     ),
-                    if (isJulio) ...[
-                      const SizedBox(width: 6),
-                      Icon(
-                        pixExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        size: 14,
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '${(total == 0 ? 0 : pixSubtotal / total * 100).toStringAsFixed(1).replaceAll('.', ',')}%',
+                      textAlign: TextAlign.right,
+                      style: BloomTypography.mono(
+                        fontSize: 10.5,
                         color: BloomColors.muted,
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           if (pixRows.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(38, 6, 18, 12),
               child: Text(
                 'Sem Pix de acerto.',
                 style: BloomTypography.geist(
@@ -466,24 +436,9 @@ class _PersonAcertoCard extends ConsumerWidget {
                 value: r.valor,
                 total: pixSubtotal,
                 small: true,
+                indent: 20,
               ),
-          // Subtotal Pix
-          Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: BloomColors.divider, width: 1),
-              ),
-            ),
-            child: _DataRow(
-              label: 'Subtotal Pix',
-              labelStyle: BloomTypography.geist(
-                fontSize: 12,
-                color: BloomColors.inkSoft,
-              ).copyWith(fontStyle: FontStyle.italic),
-              value: pixSubtotal,
-              total: total,
-            ),
-          ),
+          const SizedBox(height: 6),
           // Total Pessoal
           Container(
             decoration: const BoxDecoration(
@@ -545,25 +500,25 @@ class _PersonAcertoCard extends ConsumerWidget {
 
 class _DataRow extends StatelessWidget {
   final String label;
-  final TextStyle? labelStyle;
   final double value;
   final double total;
   final bool small;
+  final double indent;
 
   const _DataRow({
     required this.label,
     required this.value,
     required this.total,
-    this.labelStyle,
     this.small = false,
+    this.indent = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     final pct = total == 0 ? 0.0 : (value / total) * 100;
     return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: 18, vertical: small ? 7 : 9),
+      padding: EdgeInsets.fromLTRB(
+          18 + indent, small ? 5 : 9, 18, small ? 5 : 9),
       child: Row(
         children: [
           Expanded(
@@ -571,11 +526,10 @@ class _DataRow extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: labelStyle ??
-                  BloomTypography.geist(
-                    fontSize: small ? 12 : 12.5,
-                    color: small ? BloomColors.inkSoft : BloomColors.ink,
-                  ),
+              style: BloomTypography.geist(
+                fontSize: small ? 12 : 12.5,
+                color: small ? BloomColors.inkSoft : BloomColors.ink,
+              ),
             ),
           ),
           SizedBox(

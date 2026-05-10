@@ -76,6 +76,24 @@ String monthYearLong(String? raw) {
   return '${_monthsCapitalizedPt[m - 1]}, $y';
 }
 
+/// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "mês de YYYY" (pt-BR lowercase).
+/// Ex: "06/05/2026" -> "maio de 2026"; "05/2026" -> "maio de 2026".
+String monthYearShort(String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  final parts = raw.split('/');
+  int? m;
+  String? y;
+  if (parts.length == 3) {
+    m = int.tryParse(parts[1]);
+    y = parts[2];
+  } else if (parts.length == 2) {
+    m = int.tryParse(parts[0]);
+    y = parts[1];
+  }
+  if (m == null || y == null || m < 1 || m > 12) return raw;
+  return '${_monthNamesPt[m - 1]} de $y';
+}
+
 /// Aceita "DD/MM/YYYY" ou "MM/YYYY" e retorna "MM/YYYY".
 String mmYYYY(String? raw) {
   if (raw == null || raw.isEmpty) return '';

@@ -20,7 +20,6 @@ import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/bloom_donut.dart';
 import '../../widgets/bloom/bloom_logo.dart';
 import '../../widgets/bloom/month_selector.dart';
-import '../../widgets/bloom/person_pill.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
 
 class InicioPage extends ConsumerStatefulWidget {
@@ -51,10 +50,6 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     final cur = person == Person.julio ? juCur : daCur;
     final prev = bucketsForPerson(prevRows, person);
     final deltas = bucketDeltas(current: cur, previous: prev);
-
-    final totalCartao = rows
-        .where((r) => r.origem == 'Cartão')
-        .fold<double>(0, (s, r) => s + r.valor);
 
     final loading = monthAsync.isLoading && !monthAsync.hasValue;
 
@@ -92,13 +87,12 @@ class _InicioPageState extends ConsumerState<InicioPage> {
     }
 
     final bottomPad =
-        140 + MediaQuery.of(context).padding.bottom;
+        70 + MediaQuery.of(context).padding.bottom;
 
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: BloomColors.violet,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(bottom: bottomPad),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,40 +104,41 @@ class _InicioPageState extends ConsumerState<InicioPage> {
             const SizedBox(height: 6),
             _Greeting(
               person: person,
-              monthLabel: monthYearLong(currentMonth),
+              onSwap: () {
+                ref.read(selectedPersonProvider.notifier).state =
+                    person.other;
+                setState(() => _selectedSegment = null);
+              },
             ),
             const SizedBox(height: 14),
             _HeroCard(
               person: person,
               buckets: cur,
-              totalCartao: totalCartao,
               selectedIdx: _selectedSegment,
               onSelect: (i) => setState(() => _selectedSegment = i),
               loading: loading && rows.isEmpty,
-              onSeeDetail: () =>
-                  context.push('/detalhe?person=${person.name.toLowerCase()}'),
             ),
             const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: PersonPills(
-                selected: person,
-                onChanged: (p) {
-                  ref.read(selectedPersonProvider.notifier).state = p;
-                  setState(() => _selectedSegment = null);
-                },
-                totalForPerson: (p) =>
-                    p == Person.julio ? juCur.total : daCur.total,
-              ),
+            _SmallTiles(
+              rows: rows,
+              personalTotal: cur.total,
+              personColor: BloomColors.forPerson(person),
             ),
-            const SizedBox(height: 14),
-            _SmallTiles(rows: rows),
+            const SizedBox(height: 12),
+            _QuickLinks(
+              onPersonalTap: () => context
+                  .push('/detalhe?person=${person.name.toLowerCase()}'),
+              onCompartTap: () => ref
+                  .read(activeTabProvider.notifier)
+                  .state = BloomTab.compart,
+            ),
             const SizedBox(height: 14),
             _ComparativeCard(
               cur: cur,
               prev: prev,
               deltas: deltas,
               hasPrev: prevAsync.hasValue && prevAsync.value != null,
+              currentLabel: currentMonth ?? '',
               previousLabel: ref.watch(previousMonthProvider) ?? '',
             ),
             const SizedBox(height: 18),
@@ -243,55 +238,92 @@ class _IconBtn extends StatelessWidget {
 
 class _Greeting extends StatelessWidget {
   final Person person;
-  final String monthLabel;
-  const _Greeting({required this.person, required this.monthLabel});
+  final VoidCallback onSwap;
+  const _Greeting({required this.person, required this.onSwap});
 
   @override
   Widget build(BuildContext context) {
+    final personColor = BloomColors.forPerson(person);
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          RichText(
-            text: TextSpan(
-              style: BloomTypography.geist(
-                  fontSize: 13, color: BloomColors.muted),
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const TextSpan(text: 'Olá, '),
-                TextSpan(
-                  text: person.displayName,
-                  style: BloomTypography.geist(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                Text(
+                  'Olá, ',
+                  style: BloomTypography.display(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.4,
+                    color: BloomColors.muted,
+                    height: 1,
                   ),
                 ),
-                const TextSpan(text: ' ✿'),
+                Text(
+                  person.displayName,
+                  style: BloomTypography.display(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _SwapPersonButton(
+                  personColor: personColor,
+                  onTap: onSwap,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  monthLabel,
-                  style: BloomTypography.display(
-                    fontSize: 30,
-                    letterSpacing: -0.8,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: MonthSelector(),
-              ),
-            ],
-          ),
+          const MonthSelector(),
         ],
+      ),
+    );
+  }
+}
+
+class _SwapPersonButton extends StatelessWidget {
+  final Color personColor;
+  final VoidCallback onTap;
+  const _SwapPersonButton({
+    required this.personColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Trocar pessoa',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: personColor.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: personColor.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.swap_horiz,
+              size: 20,
+              color: personColor,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -300,27 +332,76 @@ class _Greeting extends StatelessWidget {
 class _HeroCard extends StatelessWidget {
   final Person person;
   final PersonBuckets buckets;
-  final double totalCartao;
   final int? selectedIdx;
   final ValueChanged<int?> onSelect;
   final bool loading;
-  final VoidCallback onSeeDetail;
 
   const _HeroCard({
     required this.person,
     required this.buckets,
-    required this.totalCartao,
     required this.selectedIdx,
     required this.onSelect,
     required this.loading,
-    required this.onSeeDetail,
   });
+
+  static const _summaryColors = [
+    BloomColors.violet, // compart
+    BloomColors.mint,   // pessoal
+    BloomColors.sky,    // contas
+  ];
+
+  Widget _buildSummary({
+    required List<DonutBucket> donutBuckets,
+    required List<Color> colors,
+  }) {
+    final sel = selectedIdx;
+    final kicker = sel == null
+        ? 'TOTAL PESSOAL'
+        : donutBuckets[sel].label.toUpperCase().replaceAll('.', '');
+    final value = sel == null ? buckets.total : donutBuckets[sel].value;
+    final valueColor =
+        sel == null ? BloomColors.ink : _summaryColors[sel];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          kicker,
+          style: BloomTypography.kicker(
+            color: sel == null ? null : valueColor,
+          ),
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'R\$ ${formatMoney(value)}',
+            maxLines: 1,
+            style: BloomTypography.display(
+              fontSize: 22,
+              letterSpacing: -0.5,
+              color: valueColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < donutBuckets.length; i++)
+          _BucketLine(
+            color: colors[i],
+            label: donutBuckets[i].label,
+            pct: donutBuckets[i].pct,
+            dim: sel != null && sel != i,
+            onTap: () => onSelect(sel == i ? null : i),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final donutBuckets = [
       DonutBucket(
-        label: 'Compart.',
+        label: 'Compartilhado',
         value: buckets.compart,
         pct: buckets.total == 0 ? 0 : buckets.compart / buckets.total * 100,
       ),
@@ -366,50 +447,9 @@ class _HeroCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('TOTAL CARTÃO',
-                            style: BloomTypography.kicker()),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'R\$ ${formatMoney(totalCartao)}',
-                            maxLines: 1,
-                            style: BloomTypography.display(
-                              fontSize: 22,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        for (var i = 0; i < donutBuckets.length; i++)
-                          _BucketLine(
-                            color: colors[i],
-                            label: donutBuckets[i].label,
-                            pct: donutBuckets[i].pct,
-                            dim: selectedIdx != null && selectedIdx != i,
-                            onTap: () =>
-                                onSelect(selectedIdx == i ? null : i),
-                          ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: onSeeDetail,
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(
-                              'Ver pessoal →',
-                              style: BloomTypography.geist(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                                color: BloomColors.violet,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: _buildSummary(
+                      donutBuckets: donutBuckets,
+                      colors: colors,
                     ),
                   ),
                 ],
@@ -479,11 +519,20 @@ class _BucketLine extends StatelessWidget {
 
 class _SmallTiles extends StatelessWidget {
   final List<ExpenseRow> rows;
-  const _SmallTiles({required this.rows});
+  final double personalTotal;
+  final Color personColor;
+  const _SmallTiles({
+    required this.rows,
+    required this.personalTotal,
+    required this.personColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final totalGeral = rows.fold<double>(0, (s, r) => s + r.valor);
+    final totalCartao = rows
+        .where((r) => r.origem == 'Cartão')
+        .fold<double>(0, (s, r) => s + r.valor);
     final totalParcelado = rows.where((r) {
       final p = r.parcela;
       if (p.isEmpty) return false;
@@ -493,18 +542,150 @@ class _SmallTiles extends StatelessWidget {
       return t > 1;
     }).fold<double>(0, (s, r) => s + r.valor);
 
+    final pessoalPct =
+        totalGeral == 0 ? null : personalTotal / totalGeral * 100;
+    final parceladoPct =
+        totalCartao == 0 ? null : totalParcelado / totalCartao * 100;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _Tile(
+                  label: 'Total geral',
+                  value: totalGeral,
+                  icon: Icons.account_balance_wallet_outlined,
+                  accent: BloomColors.ink,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _Tile(
+                  label: 'Total pessoal',
+                  value: personalTotal,
+                  pct: pessoalPct,
+                  icon: Icons.person_outline,
+                  accent: personColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _Tile(
+                  label: 'Total cartão',
+                  value: totalCartao,
+                  icon: Icons.credit_card_outlined,
+                  accent: BloomColors.sky,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _Tile(
+                  label: 'Parcelado',
+                  value: totalParcelado,
+                  pct: parceladoPct,
+                  icon: Icons.payments_outlined,
+                  accent: BloomColors.amber,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickLinks extends StatelessWidget {
+  final VoidCallback onPersonalTap;
+  final VoidCallback onCompartTap;
+  const _QuickLinks({
+    required this.onPersonalTap,
+    required this.onCompartTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Row(
         children: [
           Expanded(
-            child: _Tile(label: 'Total geral', value: totalGeral),
+            child: _LinkPill(
+              icon: Icons.person_outline,
+              label: 'Ver pessoal',
+              onTap: onPersonalTap,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _Tile(label: 'Parcelado', value: totalParcelado),
+            child: _LinkPill(
+              icon: Icons.credit_card_outlined,
+              label: 'Ver compartilhado',
+              onTap: onCompartTap,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LinkPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _LinkPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: BloomColors.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: BloomColors.border, width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 14, color: BloomColors.violet),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: BloomTypography.geist(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: BloomColors.violet,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward,
+                size: 12,
+                color: BloomColors.violet,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -513,21 +694,105 @@ class _SmallTiles extends StatelessWidget {
 class _Tile extends StatelessWidget {
   final String label;
   final double value;
-  const _Tile({required this.label, required this.value});
+  final double? pct;
+  final IconData? icon;
+  final Color accent;
+
+  const _Tile({
+    required this.label,
+    required this.value,
+    required this.accent,
+    this.pct,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BloomCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      borderRadius: BorderRadius.circular(18),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        // Gradient sutil top→bottom: 7% → 1% da cor accent. Cria profundidade
+        // sem comprometer legibilidade do valor escuro.
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withValues(alpha: 0.07),
+            accent.withValues(alpha: 0.015),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.18),
+          width: 1,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.toUpperCase(), style: BloomTypography.kicker()),
-          const SizedBox(height: 2),
-          Text(
-            'R\$ ${formatMoney(value)}',
-            style: BloomTypography.display(fontSize: 18, letterSpacing: -0.4),
+          Row(
+            children: [
+              if (icon != null) ...[
+                Container(
+                  width: 22,
+                  height: 22,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 13, color: accent),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: BloomTypography.kicker(
+                    color: accent.withValues(alpha: 0.78),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (pct != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${pct!.toStringAsFixed(1).replaceAll('.', ',')}%',
+                    style: BloomTypography.mono(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 28,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'R\$ ${formatMoney(value)}',
+                maxLines: 1,
+                style: BloomTypography.display(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -535,11 +800,12 @@ class _Tile extends StatelessWidget {
   }
 }
 
-class _ComparativeCard extends StatelessWidget {
+class _ComparativeCard extends ConsumerWidget {
   final PersonBuckets cur;
   final PersonBuckets prev;
   final BucketDeltas deltas;
   final bool hasPrev;
+  final String currentLabel;
   final String previousLabel;
 
   const _ComparativeCard({
@@ -547,14 +813,15 @@ class _ComparativeCard extends StatelessWidget {
     required this.prev,
     required this.deltas,
     required this.hasPrev,
+    required this.currentLabel,
     required this.previousLabel,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cols = [
       _Col(
-        label: 'Compart.',
+        label: 'Compartilhado',
         color: BloomColors.violet,
         value: cur.compart,
         delta: deltas.compart,
@@ -573,38 +840,72 @@ class _ComparativeCard extends StatelessWidget {
       ),
     ];
 
+    final curLabelLong = monthYearLong(currentLabel);
+    final prevLabelLong = monthYearLong(previousLabel);
+    final subtitle = hasPrev
+        ? '$curLabelLong vs $prevLabelLong'
+        : curLabelLong;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: BloomCard(
-        padding: const EdgeInsets.all(14),
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Expanded(
-                  child: Text(
-                    hasPrev
-                        ? 'COMPARAÇÃO VS. ${previousLabel.toUpperCase()}'
-                        : 'BUCKETS',
-                    style: BloomTypography.kicker(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  'Comparação',
+                  style: BloomTypography.display(fontSize: 14),
                 ),
-                if (hasPrev)
-                  Text(
-                    'variação %',
-                    style: BloomTypography.mono(
-                      fontSize: 10,
-                      color: BloomColors.muted,
+              ),
+              if (hasPrev)
+                InkWell(
+                  onTap: () => ref
+                      .read(activeTabProvider.notifier)
+                      .state = BloomTab.historico,
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Ver histórico',
+                          style: BloomTypography.geist(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: BloomColors.violet,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.arrow_forward,
+                          size: 12,
+                          color: BloomColors.violet,
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          BloomCard(
+            padding: const EdgeInsets.all(14),
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subtitle,
+                  style: BloomTypography.kicker(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
             const SizedBox(height: 10),
             IntrinsicHeight(
               child: Row(
@@ -621,8 +922,10 @@ class _ComparativeCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -667,9 +970,15 @@ class _Col extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 3),
-          Text(
-            'R\$ ${_compact(value)}',
-            style: BloomTypography.display(fontSize: 15, letterSpacing: -0.3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'R\$ ${formatMoney(value)}',
+              maxLines: 1,
+              style: BloomTypography.display(
+                  fontSize: 15, letterSpacing: -0.3),
+            ),
           ),
           const SizedBox(height: 5),
           if (delta != null)
@@ -713,13 +1022,6 @@ class _DeltaBadge extends StatelessWidget {
   }
 }
 
-String _compact(double v) {
-  if (v.abs() >= 1000) {
-    final k = v / 1000;
-    return '${k.toStringAsFixed(1).replaceAll('.', ',')}k';
-  }
-  return formatMoney(v);
-}
 
 class _RecentEntriesSection extends ConsumerWidget {
   final AsyncValue<LastEntriesResponse> asyncLast;

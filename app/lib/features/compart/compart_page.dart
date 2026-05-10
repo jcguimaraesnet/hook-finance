@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
+import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_bottom_nav.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/month_selector.dart';
 import '../../widgets/bloom/screen_header.dart';
@@ -40,8 +42,18 @@ class CompartPage extends ConsumerWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final grandTotal = categories.fold<double>(0, (s, c) => s + c.value);
-    final grandCompart =
-        categories.fold<double>(0, (s, c) => s + c.compart);
+    final compartFull = rows
+        .where((r) => r.origem == 'Cartão' && r.rateio == 'Metade')
+        .fold<double>(0, (s, r) => s + r.valor);
+    final compartHalf = compartFull / 2;
+    final totalParcelado = rows.where((r) {
+      final p = r.parcela;
+      if (p.isEmpty) return false;
+      final parts = p.split('/');
+      if (parts.length != 2) return false;
+      final t = int.tryParse(parts[1]) ?? 1;
+      return t > 1;
+    }).fold<double>(0, (s, r) => s + r.valor);
     final maxValue = categories.isEmpty
         ? 0.0
         : categories.map((c) => c.value).reduce((a, b) => a > b ? a : b);
@@ -59,78 +71,61 @@ class CompartPage extends ConsumerWidget {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
-          bottom: 140 + MediaQuery.of(context).padding.bottom,
+          bottom: 70 + MediaQuery.of(context).padding.bottom,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ScreenHeader(
+            ScreenHeader(
               kicker: 'Cartão compartilhado',
               title: 'Por categoria',
-              trailing: MonthSelector(),
+              trailing: const MonthSelector(),
+              showBack: true,
+              onBack: () => ref
+                  .read(activeTabProvider.notifier)
+                  .state = BloomTab.inicio,
             ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: BloomCard(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      borderRadius: BorderRadius.circular(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('TOTAL CARTÃO',
-                              style: BloomTypography.kicker()),
-                          const SizedBox(height: 2),
-                          Text(
-                            'R\$ ${formatMoney(grandTotal)}',
-                            style: BloomTypography.display(
-                                fontSize: 18, letterSpacing: -0.4),
-                          ),
-                        ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Tile(
+                          label: 'TOTAL CARTÃO',
+                          value: grandTotal,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _Tile(
+                          label: 'PARCELADO',
+                          value: totalParcelado,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            BloomColors.violet.withValues(alpha: 0.08),
-                            BloomColors.sky.withValues(alpha: 0.08),
-                          ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Tile(
+                          label: 'COMPARTILHADO',
+                          value: compartFull,
+                          highlighted: true,
                         ),
-                        border: Border.all(
-                          color: BloomColors.violet.withValues(alpha: 0.15),
-                          width: 1,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _Tile(
+                          label: 'COMPARTILHADO / 2',
+                          value: compartHalf,
+                          highlighted: true,
                         ),
-                        borderRadius: BorderRadius.circular(18),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'COMPARTILHADO',
-                            style: BloomTypography.kicker(
-                                color: BloomColors.violet),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'R\$ ${formatMoney(grandCompart)}',
-                            style: BloomTypography.display(
-                                fontSize: 18, letterSpacing: -0.4),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -208,6 +203,79 @@ class CompartPage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final String label;
+  final double value;
+  final bool highlighted;
+  const _Tile({
+    required this.label,
+    required this.value,
+    this.highlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padding =
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 12);
+    final radius = BorderRadius.circular(18);
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: BloomTypography.kicker(
+            color: highlighted ? BloomColors.violet : null,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'R\$ ${formatMoney(value)}',
+            maxLines: 1,
+            style: BloomTypography.display(
+              fontSize: 18,
+              letterSpacing: -0.4,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (highlighted) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              BloomColors.violet.withValues(alpha: 0.08),
+              BloomColors.sky.withValues(alpha: 0.08),
+            ],
+          ),
+          border: Border.all(
+            color: BloomColors.violet.withValues(alpha: 0.15),
+            width: 1,
+          ),
+          borderRadius: radius,
+        ),
+        child: body,
+      );
+    }
+    return BloomCard(
+      padding: padding,
+      borderRadius: radius,
+      child: body,
     );
   }
 }

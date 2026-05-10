@@ -3,7 +3,6 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../core/format/money.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
 
@@ -40,19 +39,9 @@ class BloomDonut extends StatelessWidget {
     BloomColors.mint,   // pessoal
     BloomColors.sky,    // contas
   ];
-  static const _labels = ['Compart.', 'Pessoal', 'Contas'];
 
   @override
   Widget build(BuildContext context) {
-    final sel = selectedIdx;
-    final centerColor = sel != null ? _colors[sel] : BloomColors.ink;
-    final centerLabel = sel != null ? _labels[sel] : person;
-    final centerValue =
-        sel != null ? buckets[sel].value : total;
-    final centerSub = sel != null
-        ? '${buckets[sel].pct.toStringAsFixed(1).replaceAll('.', ',')}%'
-        : 'pessoal';
-
     return SizedBox(
       width: size,
       height: size,
@@ -76,40 +65,14 @@ class BloomDonut extends StatelessWidget {
             ),
           ),
           IgnorePointer(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  centerLabel,
-                  style: BloomTypography.geist(
-                    fontSize: 11,
-                    fontWeight: sel != null
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                    color: sel != null
-                        ? centerColor
-                        : BloomColors.muted,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'R\$ ${formatMoney(centerValue)}',
-                  style: BloomTypography.display(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: centerColor,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  centerSub,
-                  style: BloomTypography.mono(
-                    fontSize: 10,
-                    color: BloomColors.muted,
-                  ),
-                ),
-              ],
+            child: Text(
+              person,
+              style: BloomTypography.display(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
+                height: 1,
+              ),
             ),
           ),
         ],

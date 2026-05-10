@@ -16,12 +16,12 @@ class MonthSelector extends ConsumerWidget {
     final current = ref.watch(currentMonthProvider);
     final monthAsync = ref.watch(monthDataProvider(current));
     final raw = current ?? monthAsync.value?.month;
-    final display = mmYYYY(raw);
+    final display = monthYearLong(raw);
 
     final disabled = months.isEmpty;
 
     return _PillButton(
-      label: display.isEmpty ? '— ▾' : '$display ▾',
+      label: display == '—' ? '— ▾' : '$display ▾',
       onTap: disabled
           ? null
           : () async {

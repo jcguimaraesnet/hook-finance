@@ -8,8 +8,10 @@ import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
+import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
+import '../../widgets/bloom/bloom_bottom_nav.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/screen_header.dart';
 
@@ -43,14 +45,18 @@ class _HistoricoPageState extends ConsumerState<HistoricoPage> {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
-          bottom: 140 + MediaQuery.of(context).padding.bottom,
+          bottom: 70 + MediaQuery.of(context).padding.bottom,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ScreenHeader(
+            ScreenHeader(
               kicker: 'Histórico',
               title: 'Últimos 6 meses',
+              showBack: true,
+              onBack: () => ref
+                  .read(activeTabProvider.notifier)
+                  .state = BloomTab.inicio,
             ),
             const SizedBox(height: 12),
             if (loading)
@@ -275,7 +281,9 @@ class _BarsChart extends StatelessWidget {
                 if (i < 0 || i >= months.length) return const SizedBox();
                 // Alterna: mostra apenas índices pares (0, 2, 4) — exceto se
                 // for o último mês, sempre exibido.
-                final showIt = i % 2 == 0 || i == lastIdx;
+                // Mostra labels alternadas, ancorando no último mês.
+                // Para 6 meses (lastIdx=5): exibe i ∈ {1,3,5}.
+                final showIt = (lastIdx - i) % 2 == 0;
                 if (!showIt) return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -473,8 +481,10 @@ class _PersonalLines extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        minX: 0,
-        maxX: (months.length - 1).toDouble(),
+        // Margem horizontal extra (-0.4 / lastIdx+0.4) pra labels do eixo X
+        // não vazarem nas extremidades do card.
+        minX: -0.4,
+        maxX: (months.length - 1).toDouble() + 0.4,
         minY: min - (max - min) * 0.1,
         maxY: max + (max - min) * 0.15,
         gridData: const FlGridData(show: false),
@@ -489,10 +499,19 @@ class _PersonalLines extends StatelessWidget {
                 List.filled(spots.length, null),
           ),
           touchCallback: (event, response) {
-            if (event is FlTapUpEvent &&
-                response?.lineBarSpots != null &&
-                response!.lineBarSpots!.isNotEmpty) {
-              onSelect(response.lineBarSpots!.first.x.toInt());
+            // Atualiza enquanto o usuário arrasta o dedo (ou o mouse).
+            // FlTapDownEvent → começa; FlPanUpdateEvent → enquanto arrasta;
+            // FlTapUpEvent / FlPanEndEvent → mantém a última seleção.
+            final spots = response?.lineBarSpots;
+            if (spots == null || spots.isEmpty) return;
+            final isInteraction = event is FlTapDownEvent ||
+                event is FlPanStartEvent ||
+                event is FlPanUpdateEvent ||
+                event is FlTapUpEvent ||
+                event is FlLongPressMoveUpdate ||
+                event is FlPointerHoverEvent;
+            if (isInteraction) {
+              onSelect(spots.first.x.toInt());
             }
           },
         ),
@@ -511,7 +530,9 @@ class _PersonalLines extends StatelessWidget {
               getTitlesWidget: (v, meta) {
                 final i = v.toInt();
                 if (i < 0 || i >= months.length) return const SizedBox();
-                final showIt = i % 2 == 0 || i == lastIdx;
+                // Mostra labels alternadas, ancorando no último mês.
+                // Para 6 meses (lastIdx=5): exibe i ∈ {1,3,5}.
+                final showIt = (lastIdx - i) % 2 == 0;
                 if (!showIt) return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -590,9 +611,14 @@ class _MiniTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            'R\$ ${moneyK(value)}',
-            style: BloomTypography.display(fontSize: 16),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'R\$ ${formatMoney(value)}',
+              maxLines: 1,
+              style: BloomTypography.display(fontSize: 16),
+            ),
           ),
         ],
       ),
