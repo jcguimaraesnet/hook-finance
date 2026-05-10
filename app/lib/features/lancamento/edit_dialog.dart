@@ -168,10 +168,10 @@ class _EditDialogState extends State<EditDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: _busy
-                        ? null
-                        : () => Navigator.of(context).pop(false),
+                    icon: const Icon(Icons.delete_outline),
+                    color: theme.colorScheme.error,
+                    tooltip: 'Excluir lançamento',
+                    onPressed: _busy ? null : _delete,
                   ),
                 ],
               ),
@@ -234,20 +234,12 @@ class _EditDialogState extends State<EditDialog> {
               Row(
                 children: [
                   OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: _busy ? null : _delete,
-                    child: const Text('Excluir'),
-                  ),
-                  const Spacer(),
-                  TextButton(
                     onPressed: _busy
                         ? null
                         : () => Navigator.of(context).pop(false),
                     child: const Text('Cancelar'),
                   ),
-                  const SizedBox(width: 8),
+                  const Spacer(),
                   FilledButton(
                     onPressed: _busy ? null : _save,
                     child: Text(_busy ? 'Salvando...' : 'Salvar'),

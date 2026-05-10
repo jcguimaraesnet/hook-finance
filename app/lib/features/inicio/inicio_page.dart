@@ -86,8 +86,12 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       );
     }
 
-    final bottomPad =
-        70 + MediaQuery.of(context).padding.bottom;
+    // Bottom padding zero (apenas safe-area). O conteúdo se estende sob a
+    // bottom-nav (extendBody=true). Scroll só fica disponível quando algum
+    // item — tipicamente o segundo lançamento — fica parcialmente coberto
+    // pela nav. Se tudo couber acima da nav, ScrollPhysics default não
+    // permite rolar.
+    final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -102,14 +106,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
               refreshing: _refreshing,
             ),
             const SizedBox(height: 6),
-            _Greeting(
-              person: person,
-              onSwap: () {
-                ref.read(selectedPersonProvider.notifier).state =
-                    person.other;
-                setState(() => _selectedSegment = null);
-              },
-            ),
+            _Greeting(person: person),
             const SizedBox(height: 14),
             _HeroCard(
               person: person,
@@ -121,8 +118,13 @@ class _InicioPageState extends ConsumerState<InicioPage> {
             const SizedBox(height: 14),
             _SmallTiles(
               rows: rows,
-              personalTotal: cur.total,
-              personColor: BloomColors.forPerson(person),
+              selectedPerson: person,
+              julioTotal: juCur.total,
+              daniTotal: daCur.total,
+              onSelectPerson: (p) {
+                ref.read(selectedPersonProvider.notifier).state = p;
+                setState(() => _selectedSegment = null);
+              },
             ),
             const SizedBox(height: 12),
             _QuickLinks(
@@ -238,12 +240,10 @@ class _IconBtn extends StatelessWidget {
 
 class _Greeting extends StatelessWidget {
   final Person person;
-  final VoidCallback onSwap;
-  const _Greeting({required this.person, required this.onSwap});
+  const _Greeting({required this.person});
 
   @override
   Widget build(BuildContext context) {
-    final personColor = BloomColors.forPerson(person);
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       child: Row(
@@ -273,57 +273,11 @@ class _Greeting extends StatelessWidget {
                     height: 1,
                   ),
                 ),
-                const SizedBox(width: 10),
-                _SwapPersonButton(
-                  personColor: personColor,
-                  onTap: onSwap,
-                ),
               ],
             ),
           ),
           const MonthSelector(),
         ],
-      ),
-    );
-  }
-}
-
-class _SwapPersonButton extends StatelessWidget {
-  final Color personColor;
-  final VoidCallback onTap;
-  const _SwapPersonButton({
-    required this.personColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Trocar pessoa',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: personColor.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: personColor.withValues(alpha: 0.25),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              Icons.swap_horiz,
-              size: 20,
-              color: personColor,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -444,6 +398,8 @@ class _HeroCard extends StatelessWidget {
                     person: person.displayName,
                     selectedIdx: selectedIdx,
                     onSelect: onSelect,
+                    size: 140,
+                    stroke: 15,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -519,17 +475,21 @@ class _BucketLine extends StatelessWidget {
 
 class _SmallTiles extends StatelessWidget {
   final List<ExpenseRow> rows;
-  final double personalTotal;
-  final Color personColor;
+  final Person selectedPerson;
+  final double julioTotal;
+  final double daniTotal;
+  final ValueChanged<Person> onSelectPerson;
+
   const _SmallTiles({
     required this.rows,
-    required this.personalTotal,
-    required this.personColor,
+    required this.selectedPerson,
+    required this.julioTotal,
+    required this.daniTotal,
+    required this.onSelectPerson,
   });
 
   @override
   Widget build(BuildContext context) {
-    final totalGeral = rows.fold<double>(0, (s, r) => s + r.valor);
     final totalCartao = rows
         .where((r) => r.origem == 'Cartão')
         .fold<double>(0, (s, r) => s + r.valor);
@@ -542,8 +502,6 @@ class _SmallTiles extends StatelessWidget {
       return t > 1;
     }).fold<double>(0, (s, r) => s + r.valor);
 
-    final pessoalPct =
-        totalGeral == 0 ? null : personalTotal / totalGeral * 100;
     final parceladoPct =
         totalCartao == 0 ? null : totalParcelado / totalCartao * 100;
 
@@ -554,21 +512,20 @@ class _SmallTiles extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _Tile(
-                  label: 'Total geral',
-                  value: totalGeral,
-                  icon: Icons.account_balance_wallet_outlined,
-                  accent: BloomColors.ink,
+                child: _PersonTile(
+                  person: Person.julio,
+                  total: julioTotal,
+                  selected: selectedPerson == Person.julio,
+                  onTap: () => onSelectPerson(Person.julio),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _Tile(
-                  label: 'Total pessoal',
-                  value: personalTotal,
-                  pct: pessoalPct,
-                  icon: Icons.person_outline,
-                  accent: personColor,
+                child: _PersonTile(
+                  person: Person.dani,
+                  total: daniTotal,
+                  selected: selectedPerson == Person.dani,
+                  onTap: () => onSelectPerson(Person.dani),
                 ),
               ),
             ],
@@ -577,12 +534,7 @@ class _SmallTiles extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _Tile(
-                  label: 'Total cartão',
-                  value: totalCartao,
-                  icon: Icons.credit_card_outlined,
-                  accent: BloomColors.sky,
-                ),
+                child: _Tile(label: 'Total cartão', value: totalCartao),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -590,8 +542,6 @@ class _SmallTiles extends StatelessWidget {
                   label: 'Parcelado',
                   value: totalParcelado,
                   pct: parceladoPct,
-                  icon: Icons.payments_outlined,
-                  accent: BloomColors.amber,
                 ),
               ),
             ],
@@ -695,106 +645,170 @@ class _Tile extends StatelessWidget {
   final String label;
   final double value;
   final double? pct;
-  final IconData? icon;
-  final Color accent;
+  const _Tile({required this.label, required this.value, this.pct});
 
-  const _Tile({
-    required this.label,
-    required this.value,
-    required this.accent,
-    this.pct,
-    this.icon,
+  @override
+  Widget build(BuildContext context) {
+    return BloomCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      borderRadius: BorderRadius.circular(18),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: BloomTypography.kicker(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 24,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'R\$ ${formatMoney(value)}',
+                    maxLines: 1,
+                    style: BloomTypography.display(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (pct != null)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: BloomColors.violet.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${pct!.toStringAsFixed(1).replaceAll('.', ',')}%',
+                  style: BloomTypography.mono(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: BloomColors.violet,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonTile extends StatelessWidget {
+  final Person person;
+  final double total;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PersonTile({
+    required this.person,
+    required this.total,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        // Gradient sutil top→bottom: 7% → 1% da cor accent. Cria profundidade
-        // sem comprometer legibilidade do valor escuro.
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.07),
-            accent.withValues(alpha: 0.015),
-          ],
-        ),
+    final personColor = BloomColors.forPerson(person);
+    final initial = person == Person.julio ? 'J' : 'D';
+    final fg = selected ? Colors.white : BloomColors.ink;
+    final fgMuted =
+        selected ? Colors.white.withValues(alpha: 0.65) : BloomColors.muted;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.18),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? BloomColors.ink : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: selected
+                ? null
+                : Border.all(color: BloomColors.border, width: 1),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: BloomColors.ink.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
             children: [
-              if (icon != null) ...[
-                Container(
-                  width: 22,
-                  height: 22,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, size: 13, color: accent),
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: personColor,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
                 child: Text(
-                  label.toUpperCase(),
-                  style: BloomTypography.kicker(
-                    color: accent.withValues(alpha: 0.78),
+                  initial,
+                  style: BloomTypography.display(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (pct != null) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '${pct!.toStringAsFixed(1).replaceAll('.', ',')}%',
-                    style: BloomTypography.mono(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: accent,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      person.displayName,
+                      style: BloomTypography.geist(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: fg,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'R\$ ${formatMoney(total)}',
+                        maxLines: 1,
+                        style: BloomTypography.mono(
+                          fontSize: 11,
+                          color: fgMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 28,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'R\$ ${formatMoney(value)}',
-                maxLines: 1,
-                style: BloomTypography.display(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

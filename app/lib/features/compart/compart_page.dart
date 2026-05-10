@@ -6,10 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/money.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
-import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
-import '../../widgets/bloom/bloom_bottom_nav.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/month_selector.dart';
 import '../../widgets/bloom/screen_header.dart';
@@ -76,14 +74,10 @@ class CompartPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScreenHeader(
+            const ScreenHeader(
               kicker: 'Cartão compartilhado',
               title: 'Por categoria',
-              trailing: const MonthSelector(),
-              showBack: true,
-              onBack: () => ref
-                  .read(activeTabProvider.notifier)
-                  .state = BloomTab.inicio,
+              trailing: MonthSelector(),
             ),
             const SizedBox(height: 12),
             Padding(

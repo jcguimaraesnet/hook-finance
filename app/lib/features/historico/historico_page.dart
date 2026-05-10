@@ -8,10 +8,8 @@ import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
-import '../../state/nav_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
-import '../../widgets/bloom/bloom_bottom_nav.dart';
 import '../../widgets/bloom/bloom_card.dart';
 import '../../widgets/bloom/screen_header.dart';
 
@@ -50,13 +48,9 @@ class _HistoricoPageState extends ConsumerState<HistoricoPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScreenHeader(
+            const ScreenHeader(
               kicker: 'Histórico',
               title: 'Últimos 6 meses',
-              showBack: true,
-              onBack: () => ref
-                  .read(activeTabProvider.notifier)
-                  .state = BloomTab.inicio,
             ),
             const SizedBox(height: 12),
             if (loading)
@@ -481,10 +475,10 @@ class _PersonalLines extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        // Margem horizontal extra (-0.4 / lastIdx+0.4) pra labels do eixo X
-        // não vazarem nas extremidades do card.
-        minX: -0.4,
-        maxX: (months.length - 1).toDouble() + 0.4,
+        // Margem horizontal extra (-0.7 / lastIdx+0.7) pra labels do eixo X
+        // não vazarem nas extremidades do card. 0.4 era insuficiente.
+        minX: -0.7,
+        maxX: (months.length - 1).toDouble() + 0.7,
         minY: min - (max - min) * 0.1,
         maxY: max + (max - min) * 0.15,
         gridData: const FlGridData(show: false),
@@ -528,9 +522,13 @@ class _PersonalLines extends StatelessWidget {
               reservedSize: 18,
               interval: 1,
               getTitlesWidget: (v, meta) {
-                final i = v.toInt();
+                final i = v.round();
                 if (i < 0 || i >= months.length) return const SizedBox();
-                // Mostra labels alternadas, ancorando no último mês.
+                // Só renderiza quando v é "praticamente" um inteiro — evita
+                // duplicação na borda direita por causa do minX/maxX expandido
+                // (fl_chart gera ticks em 5.3 e 5.7 que ambos viram i=5).
+                if ((v - i).abs() > 0.05) return const SizedBox();
+                // Alterna labels ancorando no último mês.
                 // Para 6 meses (lastIdx=5): exibe i ∈ {1,3,5}.
                 final showIt = (lastIdx - i) % 2 == 0;
                 if (!showIt) return const SizedBox();
