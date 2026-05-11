@@ -177,6 +177,9 @@ class UpdateEntryFields {
   final String categoria;
   final String rateio;
   final String parcela;
+  final String data;       // "DD/MM/YYYY"
+  final String dataRef;    // "DD/MM/YYYY HH:MM"
+  final String origem;     // enum
 
   const UpdateEntryFields({
     required this.descricao,
@@ -184,6 +187,9 @@ class UpdateEntryFields {
     required this.categoria,
     required this.rateio,
     required this.parcela,
+    required this.data,
+    required this.dataRef,
+    required this.origem,
   });
 
   Map<String, dynamic> toJson() => {
@@ -192,6 +198,9 @@ class UpdateEntryFields {
         'categoria': categoria,
         'rateio': rateio,
         'parcela': parcela,
+        'data': data,
+        'dataRef': dataRef,
+        'origem': origem,
       };
 }
 

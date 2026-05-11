@@ -3,9 +3,18 @@
 
 import 'package:flutter/material.dart';
 import '../../api/endpoints.dart';
+import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/parcela.dart';
 import '../../core/types.dart';
+
+const List<String> _origemOptions = [
+  'Cartão',
+  'Pix (contas)',
+  'Pessoal',
+  'Empregados',
+  'Contas',
+];
 
 class EditDialog extends StatefulWidget {
   final Entry entry;
@@ -30,6 +39,9 @@ class _EditDialogState extends State<EditDialog> {
   late String _rateio;
   late int _parcela;
   late double _originalTotal;
+  late DateTime _data;
+  late DateTime _dataRef;
+  late String _origem;
   bool _busy = false;
   String? _error;
 
@@ -46,6 +58,9 @@ class _EditDialogState extends State<EditDialog> {
     _categoriaCtrl = TextEditingController(text: e.categoria);
     _rateio = e.rateio;
     _parcela = initialTotal;
+    _data = parseBrDate(e.data);
+    _dataRef = parseBrDateTime(e.dataRef);
+    _origem = e.origem;
   }
 
   @override
@@ -76,6 +91,59 @@ class _EditDialogState extends State<EditDialog> {
     setState(() {});
   }
 
+  Future<void> _pickData() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _data.year < 2000 ? DateTime.now() : _data,
+      firstDate: DateTime(2020, 1, 1),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (picked != null && mounted) {
+      setState(() => _data = picked);
+    }
+  }
+
+  Future<void> _pickDataRefDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dataRef.year < 2000 ? DateTime.now() : _dataRef,
+      firstDate: DateTime(2020, 1, 1),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _dataRef = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _dataRef.hour,
+          _dataRef.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _pickDataRefTime() async {
+    final initial = _dataRef.year < 2000
+        ? TimeOfDay.now()
+        : TimeOfDay(hour: _dataRef.hour, minute: _dataRef.minute);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _dataRef = DateTime(
+          _dataRef.year,
+          _dataRef.month,
+          _dataRef.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+    }
+  }
+
   Future<void> _save() async {
     setState(() {
       _busy = true;
@@ -88,6 +156,9 @@ class _EditDialogState extends State<EditDialog> {
         categoria: _categoriaCtrl.text.trim(),
         rateio: _rateio,
         parcela: _parcela > 1 ? '1/$_parcela' : '',
+        data: formatBrDate(_data),
+        dataRef: formatBrDateTime(_dataRef),
+        origem: _origem,
       );
       final r = await widget.api.updateEntry(widget.entry.row, fields);
       if (!mounted) return;
@@ -150,6 +221,13 @@ class _EditDialogState extends State<EditDialog> {
     }.toList()
       ..sort();
 
+    // Se a origem cru da planilha não está no enum (legado), incluir como item
+    // extra com prefixo "(?)" para o usuário corrigir sem perder o valor.
+    final origemItems = <String>[..._origemOptions];
+    if (_origem.isNotEmpty && !origemItems.contains(_origem)) {
+      origemItems.add(_origem);
+    }
+
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
@@ -176,13 +254,37 @@ class _EditDialogState extends State<EditDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              _ReadOnlyField(
-                  label: 'Data de referência',
-                  value: widget.entry.dataRef.isEmpty ? '—' : widget.entry.dataRef),
+              _PickerField(
+                label: 'Mês Fatura',
+                value: _data.year < 2000
+                    ? '— (toque para escolher)'
+                    : monthYearShort(formatBrDate(_data)),
+                onTap: _busy ? null : _pickData,
+              ),
               const SizedBox(height: 12),
-              _ReadOnlyField(
-                  label: 'Origem',
-                  value: widget.entry.origem.isEmpty ? '—' : widget.entry.origem),
+              _DataRefField(
+                value: _dataRef,
+                onPickDate: _busy ? null : _pickDataRefDate,
+                onPickTime: _busy ? null : _pickDataRefTime,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue:
+                    origemItems.contains(_origem) ? _origem : null,
+                decoration: const InputDecoration(labelText: 'Origem'),
+                items: [
+                  for (final o in origemItems)
+                    DropdownMenuItem(
+                      value: o,
+                      child: Text(
+                        _origemOptions.contains(o) ? o : '(?) $o',
+                      ),
+                    ),
+                ],
+                onChanged: _busy
+                    ? null
+                    : (v) => setState(() => _origem = v ?? ''),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: _descricaoCtrl,
@@ -272,7 +374,6 @@ class _CategoriaField extends StatelessWidget {
       onSelected: (v) => controller.text = v,
       fieldViewBuilder:
           (context, fieldController, focusNode, onFieldSubmitted) {
-        // Sincroniza nosso controller "real" com o controller do Autocomplete.
         fieldController.text = controller.text;
         fieldController.addListener(() {
           if (controller.text != fieldController.text) {
@@ -373,11 +474,16 @@ class _ParcelaField extends StatelessWidget {
   }
 }
 
-class _ReadOnlyField extends StatelessWidget {
+class _PickerField extends StatelessWidget {
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
-  const _ReadOnlyField({required this.label, required this.value});
+  const _PickerField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -392,15 +498,108 @@ class _ReadOnlyField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0ECE2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0ECE2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(value, style: theme.textTheme.bodyMedium),
+                ),
+                const Icon(Icons.calendar_today_outlined, size: 18),
+              ],
+            ),
           ),
-          child: Text(value, style: theme.textTheme.bodyMedium),
+        ),
+      ],
+    );
+  }
+}
+
+class _DataRefField extends StatelessWidget {
+  final DateTime value;
+  final VoidCallback? onPickDate;
+  final VoidCallback? onPickTime;
+
+  const _DataRefField({
+    required this.value,
+    required this.onPickDate,
+    required this.onPickTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isInvalid = value.year < 2000;
+    final dateLabel = isInvalid ? '—' : formatBrDate(value);
+    final timeLabel = isInvalid
+        ? '--:--'
+        : '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
+    Widget chip({
+      required IconData icon,
+      required String label,
+      required VoidCallback? onTap,
+    }) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0ECE2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(label, style: theme.textTheme.bodyMedium),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Data Referência',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            chip(
+              icon: Icons.calendar_today_outlined,
+              label: dateLabel,
+              onTap: onPickDate,
+            ),
+            const SizedBox(width: 8),
+            chip(
+              icon: Icons.access_time,
+              label: timeLabel,
+              onTap: onPickTime,
+            ),
+          ],
         ),
       ],
     );
