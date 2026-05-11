@@ -355,7 +355,10 @@ function updateEntry(token, row, fields) {
 
   // Colunas: A=data(1), B=dataRef(2), C=descricao(3), D=valor(4), E=origem(5),
   // F=categoria(6), G=rateio(7), I=parcela(9)
-  sheet.getRange(row, 1).setValue(data);
+  // Força TEXT na col A pra evitar auto-parse de "DD/MM/YYYY" como datetime.
+  const dataCell = sheet.getRange(row, 1);
+  dataCell.setNumberFormat("@");
+  dataCell.setValue(data);
 
   // Força TEXT na col B pra evitar auto-parse pra datetime do Sheets.
   const dataRefCell = sheet.getRange(row, 2);
