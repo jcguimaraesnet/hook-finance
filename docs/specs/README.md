@@ -54,8 +54,10 @@ docs/specs/
 │   └── acerto.md                   PWA: 2 cards; Flutter: D/J selector + 1 tabela
 ├── state/
 │   └── persistence.md              persist (localStorage) vs session (sessionStorage)
-└── responsive/
-    └── breakpoints.md              640px / 750px (web). Flutter usa MediaQuery.
+├── responsive/
+│   └── breakpoints.md              640px / 750px (web). Flutter usa MediaQuery.
+└── features/
+    └── captura-notificacoes.md     Captura de notif. de apps externos (Android, Flutter)
 ```
 
 ## Como ler um spec

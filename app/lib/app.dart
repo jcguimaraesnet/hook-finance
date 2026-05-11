@@ -7,8 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'core/types.dart';
 import 'features/detalhe/detalhe_page.dart';
 import 'features/login/login_screen.dart';
+import 'features/settings/settings_page.dart';
 import 'features/shell/app_shell.dart';
 import 'state/auth_provider.dart';
+import 'state/notification_capture_provider.dart';
 import 'theme/theme.dart';
 
 class HookFinanceApp extends ConsumerStatefulWidget {
@@ -55,11 +57,21 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
                 return DetalhePage(initialPerson: initial);
               },
             ),
+            GoRoute(
+              path: 'settings',
+              builder: (_, _) => const SettingsPage(),
+            ),
           ],
         ),
       ],
     );
-    Future.microtask(() => ref.read(authProvider.notifier).hydrate());
+    Future.microtask(() async {
+      await ref.read(authProvider.notifier).hydrate();
+      await ref.read(notificationCaptureProvider.notifier).hydrate();
+      // Força criação do controller: ele assina o stream de notificações
+      // e reage a mudanças de config. Sem read, o Provider lazy nunca roda.
+      ref.read(notificationCaptureControllerProvider);
+    });
   }
 
   @override

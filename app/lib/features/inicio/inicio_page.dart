@@ -181,6 +181,12 @@ class _TopAppBar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           _IconBtn(
+            icon: Icons.settings_outlined,
+            onTap: () => context.push('/settings'),
+            tooltip: 'Configurações',
+          ),
+          const SizedBox(width: 8),
+          _IconBtn(
             icon: Icons.logout,
             onTap: () => ref.read(authProvider.notifier).signOut(),
             tooltip: 'Sair',

@@ -1,9 +1,21 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
     <!-- Necessária para chamadas HTTP em release. O manifest de debug já tem,
          mas o de release herda só este. Sem isso o dio falha com "connection error". -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- local_auth (BiometricPrompt) — Spec: docs/specs/state/persistence.md -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- installed_apps — listar pacotes instalados no app picker da tela de Configurações.
+         Sensível: Google Play exige justificativa. Distribuição via APK direto não tem barreira. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission"/>
+    <!-- notification_listener_service — usuário concede via Settings → Acesso à notificação.
+         A declaração do <service> é mergeada automaticamente pelo plugin. -->
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                     tools:ignore="ProtectedPermissions"/>
+    <!-- Foreground service permission (necessária para Android 14+ ao rodar o listener
+         em background isolate). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <application
         android:label="Hook Finance"
         android:name="${applicationName}"
@@ -35,6 +47,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- NotificationListenerService — usuário concede em Settings → Acesso à
+             notificação. Sem isso, o stream do plugin não emite eventos.
+             Spec: docs/specs/features/captura-notificacoes.md -->
+        <service
+            android:label="Hook Finance Notification Listener"
+            android:name="notification.listener.service.NotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
