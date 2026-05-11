@@ -24,31 +24,67 @@ enum _Tab { edit, novo }
 
 class _LancamentoPageState extends ConsumerState<LancamentoPage> {
   _Tab _tab = _Tab.edit;
+  bool _refreshing = false;
+
+  Future<void> _onRefresh() async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    ref.invalidate(lastEntriesProvider);
+    ref.invalidate(monthDataProvider);
+    String? error;
+    try {
+      await Future.wait<void>([
+        ref.read(lastEntriesProvider(10).future),
+        ref.read(monthDataProvider(null).future),
+      ]);
+    } catch (e) {
+      error = '$e';
+    }
+    if (!mounted) return;
+    setState(() => _refreshing = false);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+            error == null ? 'Atualizado' : 'Falha ao atualizar: $error'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor:
+            error == null ? BloomColors.ink : BloomColors.bad,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        bottom: 70 + MediaQuery.of(context).padding.bottom,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const ScreenHeader(title: 'Últimos lançamentos'),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            child: _TabSwitcher(
-              tab: _tab,
-              onChange: (t) => setState(() => _tab = t),
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: BloomColors.violet,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(
+          bottom: 70 + MediaQuery.of(context).padding.bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const ScreenHeader(title: 'Últimos lançamentos'),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: _TabSwitcher(
+                tab: _tab,
+                onChange: (t) => setState(() => _tab = t),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          if (_tab == _Tab.edit)
-            const _EditList()
-          else
-            _NovoForm(onCancel: () => setState(() => _tab = _Tab.edit)),
-        ],
+            const SizedBox(height: 14),
+            if (_tab == _Tab.edit)
+              const _EditList()
+            else
+              _NovoForm(onCancel: () => setState(() => _tab = _Tab.edit)),
+          ],
+        ),
       ),
     );
   }
