@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-11
 ---
 
 # API endpoints
@@ -34,9 +34,42 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 
 | `body.action` | Body extra | Resposta | Descrição |
 |---|---|---|---|
+| `addEntry` | `fields: { data?, dataRef?, descricao, valor, origem, categoria?, rateio?, cardLast4?, parcela?, acerto? }` | `{ ok, row }` | Insere uma nova linha no **topo** (row 2) da planilha. `row` na resposta é sempre `2` (1-indexed). Não há dedup. |
 | `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela }` | `{ ok, row }` | Edita colunas C(3), D(4), F(6), G(7), I(9). **Não** edita A, B, E, H, J. |
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
+
+#### `addEntry` — detalhes
+
+Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurchase_`, não classifica via `Classifier`, não dispara `appendMonthlyFixedIfNeeded_`. O cliente é responsável por enviar todos os campos prontos.
+
+**Campos obrigatórios**:
+- `descricao` (string, não-vazia após trim)
+- `valor` (number; aceita negativo para estornos/ajustes)
+- `origem` (string ∈ `Cartão` \| `Pix (contas)` \| `Pessoal` \| `Empregados` \| `Contas`)
+
+**Campos opcionais** (default em `""`, exceto datas):
+- `data` (string `DD/MM/YYYY`) — default: hoje no TZ do script.
+- `dataRef` (string `DD/MM/YYYY` ou `DD/MM/YYYY HH:MM`) — default: agora no TZ do script.
+- `categoria` (string livre)
+- `rateio` (string ∈ `""` \| `Julio` \| `Dani` \| `Metade` \| `Alzira`)
+- `cardLast4` (string, 4 dígitos esperados mas não validado)
+- `parcela` (string vazia OU `"X/Y"` onde X,Y são dígitos)
+- `acerto` (string vazia OU `"Sim"`)
+
+**Erros**:
+- `unauthorized` — token inválido.
+- `missing_descricao` / `missing_valor` / `missing_origem` — campo obrigatório vazio/ausente.
+- `invalid_valor` — `valor` não é número.
+- `invalid_origem` / `invalid_rateio` / `invalid_acerto` — fora do enum.
+- `invalid_parcela` — string não vazia que não casa `^\d+\/\d+$`.
+- `lock_timeout` — `LockService` não conseguiu lock em 10s.
+- `sheet_not_found` — `SHEET_NAME` não existe na planilha.
+
+**Comportamento**:
+- Insere no **topo** via `insertRowsBefore(2, 1)` + `setValues`, mantendo a convenção do webhook (linha 2 = mais recente). Sem reorder por data — o cliente que decide se faz sentido inserir no topo um lançamento antigo.
+- Força `setNumberFormat("@")` na coluna I (Parcela) antes do `setValue` (mesmo cuidado que `updateEntry`).
+- Usa `LockService.getScriptLock()` com timeout 10s (mesmo padrão do webhook) pra serializar inserções concorrentes.
 
 ### Estrutura de `Row` (resposta de `monthData`)
 
@@ -75,7 +108,9 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 - **`updateEntry`/`deleteEntry` com `row < 2`:** `{ ok: false, error: "invalid_row" }`.
 - **`updateEntry`/`deleteEntry` com `row > lastRow`:** `{ ok: false, error: "row_out_of_range" }`.
 - **`historicalSummary` quando há menos que 12 meses:** retorna o que houver, do mais antigo ao mais recente.
-- **Parcela:** `updateEntry` força `setNumberFormat("@")` na célula antes de gravar para impedir Sheets auto-parsear `"1/3"` como data.
+- **Parcela:** `updateEntry` e `addEntry` forçam `setNumberFormat("@")` na célula antes de gravar para impedir Sheets auto-parsear `"1/3"` como data.
+- **`addEntry` em sheet vazia (só headers):** insere na linha 2 normalmente; retorna `{ ok: true, row: 2 }`.
+- **`addEntry` sem dedup:** o caller pode criar duplicatas. O dedup de 5min do webhook não se aplica.
 
 ## Performance
 

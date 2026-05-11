@@ -29,6 +29,8 @@ function doPost(e) {
 
   // Caminho REST.
   switch (body.action) {
+    case "addEntry":
+      return jsonResponse_(addEntry(body.token, body.fields));
     case "updateEntry":
       return jsonResponse_(updateEntry(body.token, body.row, body.fields));
     case "deleteEntry":
@@ -248,6 +250,88 @@ function getLastEntries(token, n) {
   }));
 
   return { ok: true, entries: entries };
+}
+
+// Enums aceitos por addEntry. Espelha o spec em docs/specs/data/despesas-sheet.md.
+const ADD_ENTRY_ORIGEMS = ["Cartão", "Pix (contas)", "Pessoal", "Empregados", "Contas"];
+const ADD_ENTRY_RATEIOS = ["", "Julio", "Dani", "Metade", "Alzira"];
+const ADD_ENTRY_PARCELA_RE = /^\d+\/\d+$/;
+
+function addEntry(token, fields) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+  fields = fields || {};
+
+  const descricao = String(fields.descricao || "").trim();
+  if (!descricao) return { ok: false, error: "missing_descricao" };
+
+  const valorRaw = fields.valor;
+  if (valorRaw === undefined || valorRaw === null || valorRaw === "") {
+    return { ok: false, error: "missing_valor" };
+  }
+  const valor = Number(valorRaw);
+  if (isNaN(valor)) return { ok: false, error: "invalid_valor" };
+
+  const origem = String(fields.origem || "").trim();
+  if (!origem) return { ok: false, error: "missing_origem" };
+  if (ADD_ENTRY_ORIGEMS.indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
+
+  const rateio = String(fields.rateio || "").trim();
+  if (ADD_ENTRY_RATEIOS.indexOf(rateio) < 0) return { ok: false, error: "invalid_rateio" };
+
+  const parcela = String(fields.parcela || "").trim();
+  if (parcela && !ADD_ENTRY_PARCELA_RE.test(parcela)) {
+    return { ok: false, error: "invalid_parcela" };
+  }
+
+  const acerto = String(fields.acerto || "").trim();
+  if (acerto && acerto !== "Sim") return { ok: false, error: "invalid_acerto" };
+
+  const tz = Session.getScriptTimeZone();
+  const now = new Date();
+  const data = String(fields.data || Utilities.formatDate(now, tz, "dd/MM/yyyy")).trim();
+  const dataRef = String(
+    fields.dataRef || Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm"),
+  ).trim();
+  const categoria = String(fields.categoria || "").trim();
+  const cardLast4 = String(fields.cardLast4 || "").trim();
+
+  const lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(10000)) {
+      return { ok: false, error: "lock_timeout" };
+    }
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) return { ok: false, error: "sheet_not_found" };
+
+    insertRowsAtTop_(sheet, [[
+      data,
+      dataRef,
+      descricao,
+      valor,
+      origem,
+      categoria,
+      rateio,
+      cardLast4,
+      "", // Parcela — preenchida abaixo com setNumberFormat("@") protegido.
+      acerto,
+    ]]);
+    if (parcela) {
+      const parcelaCell = sheet.getRange(2, 9);
+      parcelaCell.setNumberFormat("@");
+      parcelaCell.setValue(parcela);
+    }
+
+    return { ok: true, row: 2 };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (_) {
+      // ignora
+    }
+  }
 }
 
 function updateEntry(token, row, fields) {
