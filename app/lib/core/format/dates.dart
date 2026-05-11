@@ -102,3 +102,42 @@ String mmYYYY(String? raw) {
   if (parts.length == 2) return raw;
   return raw;
 }
+
+/// "DD/MM/YYYY HH:MM" -> DateTime. Inválido -> DateTime(1970).
+DateTime parseBrDateTime(String s) {
+  final parts = s.split(' ');
+  if (parts.length != 2) return DateTime.fromMillisecondsSinceEpoch(0);
+  final dateParts = parts[0].split('/');
+  final timeParts = parts[1].split(':');
+  if (dateParts.length != 3 || timeParts.length != 2) {
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  final d = int.tryParse(dateParts[0]);
+  final m = int.tryParse(dateParts[1]);
+  final y = int.tryParse(dateParts[2]);
+  final hh = int.tryParse(timeParts[0]);
+  final mm = int.tryParse(timeParts[1]);
+  if (d == null || m == null || y == null || hh == null || mm == null) {
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime(y, m, d, hh, mm);
+}
+
+String _pad2(int n) => n < 10 ? '0$n' : '$n';
+
+/// DateTime -> "DD/MM/YYYY".
+String formatBrDate(DateTime d) =>
+    '${_pad2(d.day)}/${_pad2(d.month)}/${d.year}';
+
+/// DateTime -> "DD/MM/YYYY HH:MM".
+String formatBrDateTime(DateTime d) =>
+    '${formatBrDate(d)} ${_pad2(d.hour)}:${_pad2(d.minute)}';
+
+/// DateTime -> "agora" / "há N min" / "há Nh" / "há Nd" (pt-BR).
+String relativeTime(DateTime when) {
+  final diff = DateTime.now().difference(when);
+  if (diff.inMinutes < 1) return 'agora';
+  if (diff.inMinutes < 60) return 'há ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'há ${diff.inHours}h';
+  return 'há ${diff.inDays}d';
+}
