@@ -342,15 +342,37 @@ function updateEntry(token, row, fields) {
   if (!sheet) return { ok: false, error: "sheet_not_found" };
   if (row > sheet.getLastRow()) return { ok: false, error: "row_out_of_range" };
   fields = fields || {};
-  // Colunas: C=descricao(3), D=valor(4), F=categoria(6), G=rateio(7), I=parcela(9)
+
+  const data = String(fields.data || "").trim();
+  if (!data) return { ok: false, error: "missing_data" };
+
+  const dataRef = String(fields.dataRef || "").trim();
+  if (!dataRef) return { ok: false, error: "missing_dataRef" };
+
+  const origem = String(fields.origem || "").trim();
+  if (!origem) return { ok: false, error: "missing_origem" };
+  if (ADD_ENTRY_ORIGEMS.indexOf(origem) < 0) return { ok: false, error: "invalid_origem" };
+
+  // Colunas: A=data(1), B=dataRef(2), C=descricao(3), D=valor(4), E=origem(5),
+  // F=categoria(6), G=rateio(7), I=parcela(9)
+  sheet.getRange(row, 1).setValue(data);
+
+  // Força TEXT na col B pra evitar auto-parse pra datetime do Sheets.
+  const dataRefCell = sheet.getRange(row, 2);
+  dataRefCell.setNumberFormat("@");
+  dataRefCell.setValue(dataRef);
+
   sheet.getRange(row, 3).setValue(String(fields.descricao || ""));
   sheet.getRange(row, 4).setValue(Number(fields.valor) || 0);
+  sheet.getRange(row, 5).setValue(origem);
   sheet.getRange(row, 6).setValue(String(fields.categoria || ""));
   sheet.getRange(row, 7).setValue(String(fields.rateio || ""));
-  // Força formato TEXT na col Parcela pra evitar que o Sheets auto-parseie "1/3" como data.
+
+  // Força TEXT na col I (Parcela) pra evitar auto-parse de "1/3" como data.
   const parcelaCell = sheet.getRange(row, 9);
   parcelaCell.setNumberFormat("@");
   parcelaCell.setValue(String(fields.parcela || ""));
+
   return { ok: true, row: row };
 }
 
