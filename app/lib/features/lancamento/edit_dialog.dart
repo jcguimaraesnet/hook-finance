@@ -133,10 +133,11 @@ class _EditDialogState extends State<EditDialog> {
     );
     if (picked != null && mounted) {
       setState(() {
+        final base = _dataRef.year < 2000 ? DateTime.now() : _dataRef;
         _dataRef = DateTime(
-          _dataRef.year,
-          _dataRef.month,
-          _dataRef.day,
+          base.year,
+          base.month,
+          base.day,
           picked.hour,
           picked.minute,
         );
