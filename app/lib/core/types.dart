@@ -195,6 +195,48 @@ class UpdateEntryFields {
       };
 }
 
+class AddEntryFields {
+  final String descricao;
+  final double valor;
+  final String origem;
+  final String? data;
+  final String? dataRef;
+  final String categoria;
+  final String rateio;
+  final String cardLast4;
+  final String parcela;
+  final String acerto;
+
+  const AddEntryFields({
+    required this.descricao,
+    required this.valor,
+    required this.origem,
+    this.data,
+    this.dataRef,
+    this.categoria = '',
+    this.rateio = '',
+    this.cardLast4 = '',
+    this.parcela = '',
+    this.acerto = '',
+  });
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'descricao': descricao,
+      'valor': valor,
+      'origem': origem,
+      'categoria': categoria,
+      'rateio': rateio,
+      'cardLast4': cardLast4,
+      'parcela': parcela,
+      'acerto': acerto,
+    };
+    if (data != null) m['data'] = data;
+    if (dataRef != null) m['dataRef'] = dataRef;
+    return m;
+  }
+}
+
 class MutationResponse {
   final bool ok;
   final String? error;

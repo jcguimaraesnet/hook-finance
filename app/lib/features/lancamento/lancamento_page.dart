@@ -197,52 +197,123 @@ class _EditList extends ConsumerWidget {
   }
 }
 
-class _NovoForm extends StatefulWidget {
+class _NovoForm extends ConsumerStatefulWidget {
   final VoidCallback onCancel;
   const _NovoForm({required this.onCancel});
 
   @override
-  State<_NovoForm> createState() => _NovoFormState();
+  ConsumerState<_NovoForm> createState() => _NovoFormState();
 }
 
-class _NovoFormState extends State<_NovoForm> {
-  static const _cats = [
-    'Mercado',
-    'Restaurante',
-    'Farmácia',
-    'Transporte',
-    'Casa',
-    'Pessoal',
-    'Viagem',
-    'Presente',
-  ];
-
-  String _cat = 'Mercado';
-  String _paid = 'Cartão';
-  String _split = 'Metade';
+class _NovoFormState extends ConsumerState<_NovoForm> {
+  final _valorCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _categoriaCtrl = TextEditingController();
+  final _cardCtrl = TextEditingController();
+
+  String _origem = 'Cartão'; // 'Cartão' | 'Pix (contas)'
+  String _rateio = 'Metade';
+  int _parcela = 1;
+  bool _acerto = false;
+  bool _busy = false;
+  String? _error;
 
   @override
   void dispose() {
+    _valorCtrl.dispose();
     _descCtrl.dispose();
+    _categoriaCtrl.dispose();
+    _cardCtrl.dispose();
     super.dispose();
   }
 
-  void _onSave() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Criação manual ainda não implementada. '
-          'Lançamentos chegam pelo webhook do Apps Script.',
-        ),
-        backgroundColor: BloomColors.ink,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  double _readValor() {
+    final raw = _valorCtrl.text.trim().replaceAll('.', '').replaceAll(',', '.');
+    return double.tryParse(raw) ?? 0;
+  }
+
+  void _adjustParcela(int delta) {
+    final next = (_parcela + delta).clamp(1, 99);
+    if (next == _parcela) return;
+    setState(() => _parcela = next);
+  }
+
+  String _humanError(String? code) => switch (code) {
+        'missing_descricao' => 'Informe o estabelecimento.',
+        'missing_valor' => 'Informe o valor.',
+        'invalid_valor' => 'Valor inválido.',
+        'missing_origem' => 'Selecione a forma.',
+        'invalid_origem' => 'Forma inválida.',
+        'invalid_rateio' => 'Divisão inválida.',
+        'invalid_parcela' => 'Parcela inválida.',
+        'invalid_acerto' => 'Acerto inválido.',
+        'lock_timeout' => 'Backend ocupado. Tente de novo.',
+        'unauthorized' => 'Sessão expirada. Faça login.',
+        _ => code ?? 'Erro desconhecido.',
+      };
+
+  Future<void> _save() async {
+    final valor = _readValor();
+    final desc = _descCtrl.text.trim();
+    if (desc.isEmpty) {
+      setState(() => _error = 'Informe o estabelecimento.');
+      return;
+    }
+    if (valor <= 0) {
+      setState(() => _error = 'Informe um valor maior que zero.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = ref.read(apiProvider);
+      final isCartao = _origem == 'Cartão';
+      final fields = AddEntryFields(
+        descricao: desc,
+        valor: valor,
+        origem: _origem,
+        categoria: _categoriaCtrl.text.trim(),
+        rateio: _rateio,
+        cardLast4: isCartao ? _cardCtrl.text.trim() : '',
+        parcela: isCartao && _parcela > 1 ? '1/$_parcela' : '',
+        acerto: !isCartao && _acerto ? 'Sim' : '',
+      );
+      final r = await api.addEntry(fields);
+      if (!mounted) return;
+      if (r.ok) {
+        ref.invalidate(lastEntriesProvider);
+        ref.invalidate(monthDataProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lançamento criado.'),
+            backgroundColor: BloomColors.good,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        widget.onCancel();
+      } else {
+        setState(() => _error = _humanError(r.error));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Erro: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isCartao = _origem == 'Cartão';
+    final monthAsync = ref.watch(monthDataProvider(null));
+    final categorias = <String>{
+      for (final r in monthAsync.value?.rows ?? const <ExpenseRow>[])
+        if (r.categoria.isNotEmpty) r.categoria,
+    }.toList()
+      ..sort();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
@@ -289,25 +360,39 @@ class _NovoFormState extends State<_NovoForm> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '0,00',
-                      style: BloomTypography.display(
-                        fontSize: 46,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1,
-                        letterSpacing: -1,
+                    Expanded(
+                      child: TextField(
+                        controller: _valorCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: BloomTypography.display(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1,
+                          letterSpacing: -1,
+                        ),
+                        cursorColor: Colors.white,
+                        decoration: InputDecoration(
+                          hintText: '0,00',
+                          hintStyle: BloomTypography.display(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.45),
+                            height: 1,
+                            letterSpacing: -1,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Stub — chega pelo webhook',
-                  style: BloomTypography.geist(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
                 ),
               ],
             ),
@@ -321,21 +406,14 @@ class _NovoFormState extends State<_NovoForm> {
               hintText: 'Ex: Mercado Extra',
               isDense: true,
             ),
+            autocorrect: false,
           ),
           const SizedBox(height: 14),
           _FieldLabel(label: 'CATEGORIA'),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final c in _cats)
-                _ChoiceChip(
-                  label: c,
-                  active: _cat == c,
-                  onTap: () => setState(() => _cat = c),
-                ),
-            ],
+          _CategoriaAutocomplete(
+            controller: _categoriaCtrl,
+            options: categorias,
           ),
           const SizedBox(height: 14),
           Row(
@@ -348,8 +426,10 @@ class _NovoFormState extends State<_NovoForm> {
                     const SizedBox(height: 6),
                     _Segmented(
                       options: const ['Cartão', 'Pix'],
-                      selected: _paid,
-                      onChange: (v) => setState(() => _paid = v),
+                      selected: isCartao ? 'Cartão' : 'Pix',
+                      onChange: (v) => setState(() {
+                        _origem = v == 'Pix' ? 'Pix (contas)' : 'Cartão';
+                      }),
                     ),
                   ],
                 ),
@@ -362,9 +442,9 @@ class _NovoFormState extends State<_NovoForm> {
                     _FieldLabel(label: 'DIVISÃO'),
                     const SizedBox(height: 6),
                     _Segmented(
-                      options: const ['Metade', 'Julio', 'Dani'],
-                      selected: _split,
-                      onChange: (v) => setState(() => _split = v),
+                      options: const ['Metade', 'Julio', 'Dani', 'Alzira'],
+                      selected: _rateio,
+                      onChange: (v) => setState(() => _rateio = v),
                       compact: true,
                     ),
                   ],
@@ -372,30 +452,225 @@ class _NovoFormState extends State<_NovoForm> {
               ),
             ],
           ),
+          if (isCartao) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FieldLabel(label: 'PARCELA'),
+                      const SizedBox(height: 6),
+                      _ParcelaStepper(
+                        parcela: _parcela,
+                        onMinus: () => _adjustParcela(-1),
+                        onPlus: () => _adjustParcela(1),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FieldLabel(label: 'CARTÃO (4 dígitos)'),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _cardCtrl,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        decoration: const InputDecoration(
+                          hintText: '0000',
+                          isDense: true,
+                          counterText: '',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => setState(() => _acerto = !_acerto),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Switch.adaptive(
+                      value: _acerto,
+                      onChanged: (v) => setState(() => _acerto = v),
+                      activeThumbColor: BloomColors.violet,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Marcar para o Acerto Final',
+                        style: BloomTypography.geist(
+                          fontSize: 12.5,
+                          color: BloomColors.inkSoft,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: BloomColors.bad.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline,
+                      size: 18, color: BloomColors.bad),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: BloomTypography.geist(
+                        fontSize: 13,
+                        color: BloomColors.bad,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _onSave,
+              onTap: _busy ? null : _save,
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 height: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: BloomColors.ink,
+                  color: _busy ? BloomColors.muted : BloomColors.ink,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Text(
-                  'Salvar lançamento',
-                  style: BloomTypography.display(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.2,
-                  ),
-                ),
+                child: _busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Salvar lançamento',
+                        style: BloomTypography.display(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoriaAutocomplete extends StatelessWidget {
+  final TextEditingController controller;
+  final List<String> options;
+  const _CategoriaAutocomplete({
+    required this.controller,
+    required this.options,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<String>(
+      initialValue: TextEditingValue(text: controller.text),
+      optionsBuilder: (textValue) {
+        if (textValue.text.isEmpty) return options;
+        final q = textValue.text.toLowerCase();
+        return options.where((o) => o.toLowerCase().contains(q));
+      },
+      onSelected: (v) => controller.text = v,
+      fieldViewBuilder:
+          (context, fieldController, focusNode, onFieldSubmitted) {
+        fieldController.text = controller.text;
+        fieldController.addListener(() {
+          if (controller.text != fieldController.text) {
+            controller.text = fieldController.text;
+          }
+        });
+        return TextField(
+          controller: fieldController,
+          focusNode: focusNode,
+          decoration: const InputDecoration(
+            hintText: 'Ex: Alimentação',
+            isDense: true,
+          ),
+          autocorrect: false,
+        );
+      },
+    );
+  }
+}
+
+class _ParcelaStepper extends StatelessWidget {
+  final int parcela;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+
+  const _ParcelaStepper({
+    required this.parcela,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: BloomColors.card,
+        border: Border.all(color: BloomColors.border, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onMinus,
+            icon: const Icon(Icons.remove, size: 18),
+            visualDensity: VisualDensity.compact,
+            color: BloomColors.inkSoft,
+          ),
+          Expanded(
+            child: Text(
+              '${parcela}x',
+              textAlign: TextAlign.center,
+              style: BloomTypography.geist(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: BloomColors.ink,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onPlus,
+            icon: const Icon(Icons.add, size: 18),
+            visualDensity: VisualDensity.compact,
+            color: BloomColors.inkSoft,
           ),
         ],
       ),
@@ -410,46 +685,6 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(label, style: BloomTypography.kicker());
-  }
-}
-
-class _ChoiceChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _ChoiceChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-          decoration: BoxDecoration(
-            color: active ? BloomColors.ink : BloomColors.card,
-            borderRadius: BorderRadius.circular(999),
-            border: active
-                ? null
-                : Border.all(color: BloomColors.border, width: 1),
-          ),
-          child: Text(
-            label,
-            style: BloomTypography.geist(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: active ? Colors.white : BloomColors.inkSoft,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

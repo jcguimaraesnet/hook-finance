@@ -1,13 +1,13 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-05-11
 ---
 
-# Lançamento — lista das últimas entradas + edit modal
+# Lançamento — lista das últimas entradas + edit modal + novo
 
-Página com as 10 últimas linhas inseridas na planilha, em ordem de inserção (mais recente primeiro). Cada item abre um modal de edição.
+Página com as 10 últimas linhas inseridas na planilha, em ordem de inserção (mais recente primeiro). Cada item abre um modal de edição. No Flutter (Bloom), uma segunda aba `+ Novo` permite criar lançamentos manualmente via `addEntry`.
 
-> **Flutter (Bloom)** adiciona uma segunda aba `+ Novo` com form (UI-only/stub — sem API de criação). PWA não tem essa aba.
+> **Flutter (Bloom)**: 2 tabs (`Lançamentos` + `+ Novo`). PWA legada tem só a lista (sem tab Novo).
 
 ## Contexto
 
@@ -33,7 +33,17 @@ Razão: editar um lançamento só faz sentido se você está vendo a fatura corr
 
 Apenas no Flutter:
 - **`Lançamentos`** (default) — listagem (descrita abaixo).
-- **`+ Novo`** — form com hero gradient para valor + chips de categoria + segmented controls (Cartão/Pix · ½/Júlio/Dani) + campo descrição. Botão "Salvar lançamento" presente mas **stub** (no-op até backend ganhar endpoint de criação). Webhook continua sendo o caminho real de criação.
+- **`+ Novo`** — form funcional para criar entradas manualmente via `addEntry`. Hero gradient com `TextField` editável (valor R$). Abaixo:
+  - **Estabelecimento** (TextField, obrigatório).
+  - **Categoria** (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
+  - **Forma** (segmented `Cartão`/`Pix` → mapeia `Pix` → `"Pix (contas)"` no envio).
+  - **Divisão** (segmented `Metade`/`Júlio`/`Dani`/`Alzira` → envia como `rateio`).
+  - **Parcela** (stepper 1..99 — só renderiza se Forma=`Cartão`). Default 1 (à vista).
+  - **Cartão (4 dígitos)** (TextField, só se Forma=`Cartão`).
+  - **Marcar para Acerto Final** (Switch, só se Forma=`Pix`; envia `acerto: "Sim"`).
+  - **Salvar lançamento** → `api.addEntry(...)`. Loading state desabilita botão. Erro (server ou validação local) aparece em pílula vermelha.
+- **Defaults enviados ao backend**: `data` e `dataRef` omitidos → o Apps Script usa hoje/agora no TZ. `categoria` vazia OK. `cardLast4` vazio OK. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
+- **On success**: SnackBar verde "Lançamento criado.", `ref.invalidate(lastEntriesProvider)` + `ref.invalidate(monthDataProvider)`, e `widget.onCancel()` volta pra aba `Lançamentos`.
 
 ### Lista de entries
 

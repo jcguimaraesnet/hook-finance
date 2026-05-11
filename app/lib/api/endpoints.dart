@@ -26,6 +26,11 @@ class ApiEndpoints {
     return LastEntriesResponse.fromJson(r);
   }
 
+  Future<MutationResponse> addEntry(AddEntryFields fields) async {
+    final r = await _client.post('addEntry', {'fields': fields.toJson()});
+    return MutationResponse.fromJson(r);
+  }
+
   Future<MutationResponse> updateEntry(int row, UpdateEntryFields fields) async {
     final r = await _client.post('updateEntry', {
       'row': row,
