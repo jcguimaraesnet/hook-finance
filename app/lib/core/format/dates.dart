@@ -133,6 +133,12 @@ String formatBrDate(DateTime d) =>
 String formatBrDateTime(DateTime d) =>
     '${formatBrDate(d)} ${_pad2(d.hour)}:${_pad2(d.minute)}';
 
+/// Nome do mês em pt-BR capitalizado. 1 = "Janeiro", 12 = "Dezembro".
+String monthNamePt(int month) {
+  if (month < 1 || month > 12) return 'mês $month';
+  return _monthsCapitalizedPt[month - 1];
+}
+
 /// DateTime -> "agora" / "há N min" / "há Nh" / "há Nd" (pt-BR).
 String relativeTime(DateTime when) {
   final diff = DateTime.now().difference(when);

@@ -98,4 +98,17 @@ void main() {
       expect(relativeTime(now.subtract(const Duration(days: 2))), 'há 2d');
     });
   });
+
+  group('monthNamePt', () {
+    test('retorna nome capitalizado em pt-BR', () {
+      expect(monthNamePt(1), 'Janeiro');
+      expect(monthNamePt(5), 'Maio');
+      expect(monthNamePt(12), 'Dezembro');
+    });
+
+    test('fora do range retorna fallback', () {
+      expect(monthNamePt(0), 'mês 0');
+      expect(monthNamePt(13), 'mês 13');
+    });
+  });
 }
