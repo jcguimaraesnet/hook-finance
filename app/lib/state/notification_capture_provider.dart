@@ -15,6 +15,8 @@ import 'package:notification_listener_service/notification_listener_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_provider.dart';
+import 'capture_history_provider.dart';
+import 'capture_log_entry.dart';
 
 class NotificationCaptureState {
   final bool enabled;
@@ -168,6 +170,7 @@ final notificationCaptureControllerProvider = Provider<void>((ref) {
 
 Future<void> _handleEvent(Ref ref, ServiceNotificationEvent event) async {
   final notifier = ref.read(notificationCaptureProvider.notifier);
+  final history = ref.read(captureHistoryProvider.notifier);
   final config = ref.read(notificationCaptureProvider);
 
   if (event.hasRemoved == true) return;
@@ -184,7 +187,20 @@ Future<void> _handleEvent(Ref ref, ServiceNotificationEvent event) async {
   }
   if (title.isEmpty && content.isEmpty) return;
 
+  final ts = DateTime.now().millisecondsSinceEpoch;
   final client = ref.read(apiClientProvider);
+
+  Future<void> log(String status, String? error) {
+    return history.append(CaptureLogEntry(
+      ts: ts,
+      package: event.packageName ?? '',
+      title: title,
+      content: content,
+      status: status,
+      error: error,
+    ));
+  }
+
   try {
     // Backend dispatcha pelo webhook quando body tem title+text (action é
     // ignorada nesse caminho — ver Dashboard.gs doPost). Reusa ApiClient
@@ -194,11 +210,17 @@ Future<void> _handleEvent(Ref ref, ServiceNotificationEvent event) async {
       'text': content,
     });
     if (r['ok'] == true) {
-      await notifier.markCapture(title: title.isEmpty ? '(sem título)' : title);
+      await notifier.markCapture(
+          title: title.isEmpty ? '(sem título)' : title);
+      await log('ok', null);
     } else {
-      notifier.setError('Backend: ${r['error'] ?? 'erro'}');
+      final err = 'Backend: ${r['error'] ?? 'erro'}';
+      notifier.setError(err);
+      await log('error', err);
     }
   } catch (err) {
-    notifier.setError('$err');
+    final s = '$err';
+    notifier.setError(s);
+    await log('error', s);
   }
 }
