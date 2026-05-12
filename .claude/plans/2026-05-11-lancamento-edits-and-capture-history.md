@@ -35,7 +35,7 @@
 - Create: `app/test/state/capture_log_entry_test.dart` — testa serialização.
 
 **Docs:**
-- Modify: `docs/specs/pages/lancamento.md`
+- Modify: `docs/specs/pages/lancamento.md` (incluir paginação na seção de lista — Task 14)
 - Modify: `docs/specs/features/captura-notificacoes.md`
 - Modify: `docs/specs/api/endpoints.md`
 
@@ -1815,6 +1815,208 @@ Expected: No issues found.
 ```bash
 git add app/lib/app.dart app/lib/features/settings/settings_page.dart
 git commit -m "feat(app): rota /settings/captures + botão Ver histórico"
+```
+
+---
+
+## Task 14: Paginação em Lançamentos ("Carregar mais")
+
+Adicionado depois do pedido inicial do usuário. Lista atual mostra fixo as 10 últimas; queremos um botão no final que carrega mais 10 por tap, até o limite de 100.
+
+**Files:**
+- Modify: `app/lib/features/lancamento/lancamento_page.dart`
+
+**Aproveita o backend existente:** `getLastEntries(token, n)` em `Dashboard.gs:218` já aceita qualquer `n` e retorna `min(n, last-1)`. Nada de backend muda. O provider `lastEntriesProvider(n)` (`app/lib/state/data_providers.dart`) é family por `int`, então pedir `lastEntriesProvider(20)`, `lastEntriesProvider(30)`, etc., funciona out-of-the-box (cada `n` é um cache key separado).
+
+### Step 1: Converter `_EditList` em `ConsumerStatefulWidget`
+
+Hoje:
+```dart
+class _EditList extends ConsumerWidget {
+  const _EditList();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) { ... }
+}
+```
+
+Trocar por:
+```dart
+class _EditList extends ConsumerStatefulWidget {
+  const _EditList();
+
+  @override
+  ConsumerState<_EditList> createState() => _EditListState();
+}
+
+class _EditListState extends ConsumerState<_EditList> {
+  static const int _step = 10;
+  static const int _maxLimit = 100;
+  int _limit = _step;
+
+  void _loadMore() {
+    setState(() => _limit = (_limit + _step).clamp(_step, _maxLimit));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // resto da lógica abaixo
+  }
+}
+```
+
+### Step 2: Reescrever `build` do `_EditListState`
+
+Substituir o corpo de `build` (mantendo o mesmo openEdit + layout, só trocando `10` por `_limit` e adicionando o botão).
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final lastAsync = ref.watch(lastEntriesProvider(_limit));
+  final monthAsync = ref.watch(monthDataProvider(null));
+  final entries = lastAsync.value?.entries ?? const <Entry>[];
+  final loading = lastAsync.isLoading && !lastAsync.hasValue;
+
+  // "Tem mais para carregar" = (a) ainda dá pra subir limite, e (b)
+  // o backend devolveu pelo menos `_limit` itens (senão chegamos ao fim).
+  final reachedSheetEnd =
+      lastAsync.hasValue && entries.length < _limit;
+  final atCap = _limit >= _maxLimit;
+  final canLoadMore = !loading && !reachedSheetEnd && !atCap;
+
+  Future<void> openEdit(Entry e) async {
+    final api = ref.read(apiProvider);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => EditDialog(
+        entry: e,
+        rowsForCategoriaSuggestions:
+            monthAsync.value?.rows ?? const <ExpenseRow>[],
+        api: api,
+      ),
+    );
+    if (saved == true) {
+      ref.invalidate(lastEntriesProvider);
+      ref.invalidate(monthDataProvider);
+    }
+  }
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 22),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'ÚLTIMOS ${entries.length} · TOQUE PARA EDITAR',
+                style: BloomTypography.kicker(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        BloomCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          borderRadius: BorderRadius.circular(22),
+          child: loading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                        color: BloomColors.violet),
+                  ),
+                )
+              : entries.isEmpty
+                  ? Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          'Sem lançamentos.',
+                          style: BloomTypography.geist(
+                            fontSize: 12,
+                            color: BloomColors.muted,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        for (var i = 0; i < entries.length; i++)
+                          RecentEntryRow(
+                            entry: entries[i],
+                            showDivider: i > 0,
+                            onTap: () => openEdit(entries[i]),
+                            highlightMissing: true,
+                          ),
+                      ],
+                    ),
+        ),
+        const SizedBox(height: 14),
+        if (canLoadMore)
+          Center(
+            child: TextButton.icon(
+              onPressed: _loadMore,
+              icon: const Icon(Icons.expand_more, size: 18),
+              label: Text('Carregar mais ${_remaining()}'),
+              style: TextButton.styleFrom(
+                foregroundColor: BloomColors.violet,
+              ),
+            ),
+          )
+        else if (atCap)
+          Center(
+            child: Text(
+              'Limite de $_maxLimit lançamentos atingido.',
+              style: BloomTypography.geist(
+                fontSize: 11.5,
+                color: BloomColors.muted,
+              ),
+            ),
+          )
+        else if (reachedSheetEnd && entries.length > _step)
+          Center(
+            child: Text(
+              'Fim da lista.',
+              style: BloomTypography.geist(
+                fontSize: 11.5,
+                color: BloomColors.muted,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+int _remaining() {
+  final remaining = _maxLimit - _limit;
+  return remaining < _step ? remaining : _step;
+}
+```
+
+Notas:
+- `_EditListState` está em `ConsumerState`, então `ref` está disponível como propriedade.
+- Imports atuais do arquivo já cobrem tudo (`flutter_riverpod`, `BloomColors`, `BloomTypography`, `BloomCard`, `RecentEntryRow`, providers, `Entry`/`ExpenseRow`).
+- "Limite atingido" só aparece quando `_limit == 100` (independente de ter chegado no fim do sheet).
+- "Fim da lista" aparece quando o backend devolveu menos itens do que `_limit` e estamos além do limite inicial (ou seja, o usuário já carregou mais pelo menos uma vez). Não aparecer no primeiro carregamento quando há poucos lançamentos é uma escolha consciente: nesse caso o vazio já é óbvio pelo número pequeno de itens.
+
+### Step 3: Verify
+
+```
+cd app && flutter analyze lib/features/lancamento/lancamento_page.dart
+```
+Expected: No issues found.
+
+### Step 4: Commit
+
+```bash
+git add app/lib/features/lancamento/lancamento_page.dart
+git commit -m "feat(app): paginação 10-em-10 (cap 100) em Lançamentos"
 ```
 
 ---
