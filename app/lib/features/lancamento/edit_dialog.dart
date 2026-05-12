@@ -7,6 +7,7 @@ import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/parcela.dart';
 import '../../core/types.dart';
+import '../../widgets/bloom/month_year_picker.dart';
 
 const List<String> _origemOptions = [
   'Cartão',
@@ -92,12 +93,7 @@ class _EditDialogState extends State<EditDialog> {
   }
 
   Future<void> _pickData() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _data.year < 2000 ? DateTime.now() : _data,
-      firstDate: DateTime(2020, 1, 1),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-    );
+    final picked = await showMonthYearPicker(context, initial: _data);
     if (picked != null && mounted) {
       setState(() => _data = picked);
     }

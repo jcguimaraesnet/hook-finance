@@ -3,12 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/format/dates.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
 import '../../widgets/bloom/bloom_card.dart';
+import '../../widgets/bloom/month_year_picker.dart';
 import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
 import 'edit_dialog.dart';
@@ -317,6 +319,21 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
   bool _acerto = false;
   bool _busy = false;
   String? _error;
+  late DateTime _data;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _data = DateTime(now.year, now.month, 6);
+  }
+
+  Future<void> _pickData() async {
+    final picked = await showMonthYearPicker(context, initial: _data);
+    if (picked != null && mounted) {
+      setState(() => _data = picked);
+    }
+  }
 
   @override
   void dispose() {
@@ -374,6 +391,7 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
         descricao: desc,
         valor: valor,
         origem: _origem,
+        data: formatBrDate(_data),
         categoria: _categoriaCtrl.text.trim(),
         rateio: _rateio,
         cardLast4: isCartao ? _cardCtrl.text.trim() : '',
@@ -496,6 +514,13 @@ class _NovoFormState extends ConsumerState<_NovoForm> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 14),
+          _FieldLabel(label: 'MÊS FATURA'),
+          const SizedBox(height: 6),
+          _MonthYearTap(
+            value: monthYearShort(formatBrDate(_data)),
+            onTap: _busy ? null : _pickData,
           ),
           const SizedBox(height: 14),
           _FieldLabel(label: 'ESTABELECIMENTO'),
@@ -853,4 +878,43 @@ class _Segmented extends StatelessWidget {
       };
 }
 
+class _MonthYearTap extends StatelessWidget {
+  final String value;
+  final VoidCallback? onTap;
 
+  const _MonthYearTap({required this.value, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: BloomColors.card,
+            border: Border.all(color: BloomColors.border, width: 1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: BloomTypography.geist(
+                    fontSize: 13,
+                    color: BloomColors.ink,
+                  ),
+                ),
+              ),
+              const Icon(Icons.calendar_today_outlined,
+                  size: 18, color: BloomColors.inkSoft),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
