@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'core/types.dart';
 import 'features/detalhe/detalhe_page.dart';
 import 'features/login/login_screen.dart';
+import 'features/settings/captures_history_page.dart';
 import 'features/settings/settings_page.dart';
 import 'features/shell/app_shell.dart';
 import 'state/auth_provider.dart';
@@ -61,6 +62,10 @@ class _HookFinanceAppState extends ConsumerState<HookFinanceApp> {
             GoRoute(
               path: 'settings',
               builder: (_, _) => const SettingsPage(),
+            ),
+            GoRoute(
+              path: 'settings/captures',
+              builder: (_, _) => const CapturesHistoryPage(),
             ),
           ],
         ),

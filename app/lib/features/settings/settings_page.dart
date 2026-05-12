@@ -9,8 +9,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 
+import '../../core/format/dates.dart';
 import '../../state/notification_capture_provider.dart';
 import '../../theme/bloom_colors.dart';
 import '../../theme/bloom_typography.dart';
@@ -447,7 +449,7 @@ class _StatusCard extends StatelessWidget {
                 child: Text(
                   state.lastCaptureAt == null
                       ? 'Nenhuma captura ainda.'
-                      : 'Última captura: ${_formatRelative(state.lastCaptureAt!)}',
+                      : 'Última captura: ${relativeTime(state.lastCaptureAt!)}',
                   style: BloomTypography.geist(
                     fontSize: 13,
                     color: BloomColors.ink,
@@ -499,16 +501,21 @@ class _StatusCard extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  GoRouter.of(context).go('/settings/captures'),
+              icon: const Icon(Icons.list_alt, size: 18),
+              label: const Text('Ver histórico'),
+              style: TextButton.styleFrom(
+                  foregroundColor: BloomColors.violet),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  String _formatRelative(DateTime when) {
-    final diff = DateTime.now().difference(when);
-    if (diff.inMinutes < 1) return 'agora';
-    if (diff.inMinutes < 60) return 'há ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'há ${diff.inHours}h';
-    return 'há ${diff.inDays}d';
-  }
 }
