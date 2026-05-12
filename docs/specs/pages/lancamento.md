@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-11
+last_updated: 2026-05-12
 ---
 
 # Lançamento — lista das últimas entradas + edit modal + novo
@@ -34,6 +34,7 @@ Razão: editar um lançamento só faz sentido se você está vendo a fatura corr
 Apenas no Flutter:
 - **`Lançamentos`** (default) — listagem (descrita abaixo).
 - **`+ Novo`** — form funcional para criar entradas manualmente via `addEntry`. Hero gradient com `TextField` editável (valor R$). Abaixo:
+  - **Mês Fatura** (pós-2026-05-12) — `_MonthYearTap` que abre `showMonthYearPicker` (dois dropdowns Mês + Ano). Default = mês corrente. Salva sempre com `day=6`. Send: `data: "06/MM/YYYY"`.
   - **Estabelecimento** (TextField, obrigatório).
   - **Categoria** (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
   - **Forma** (segmented `Cartão`/`Pix` → mapeia `Pix` → `"Pix (contas)"` no envio).
@@ -42,7 +43,7 @@ Apenas no Flutter:
   - **Cartão (4 dígitos)** (TextField, só se Forma=`Cartão`).
   - **Marcar para Acerto Final** (Switch, só se Forma=`Pix`; envia `acerto: "Sim"`).
   - **Salvar lançamento** → `api.addEntry(...)`. Loading state desabilita botão. Erro (server ou validação local) aparece em pílula vermelha.
-- **Defaults enviados ao backend**: `data` e `dataRef` omitidos → o Apps Script usa hoje/agora no TZ. `categoria` vazia OK. `cardLast4` vazio OK. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
+- **Defaults enviados ao backend**: `data` sempre enviada (pós-2026-05-12) — `dataRef` omitido → o Apps Script usa agora no TZ. `categoria` vazia OK. `cardLast4` vazio OK. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
 - **On success**: SnackBar verde "Lançamento criado.", `ref.invalidate(lastEntriesProvider)` + `ref.invalidate(monthDataProvider)`, e `widget.onCancel()` volta pra aba `Lançamentos`.
 
 ### Lista de entries
@@ -66,11 +67,18 @@ A lista inicial carrega **10** entradas. Ao final do `BloomCard` da lista, um `T
 
 Implementação:
 - `_editListLimitProvider` (StateProvider<int>, default 10) compartilhado entre `_LancamentoPageState._onRefresh` (pra await na refresh) e `_EditListState` (renderização e botão).
-- Flags do estado: `initialLoading` (sem `hasValue` ainda — mostra spinner no card), `reachedSheetEnd` (`hasValue && !isLoading && entries.length < limit` — esconde botão), `atCap` (`limit >= 100`), `canLoadMore` (`!isLoading && !reachedSheetEnd && !atCap`).
+- Cache `_cachedEntries` em `_EditListState` (pós-2026-05-12): retém a última lista entregue pelo backend. Quando `_limit` muda e o provider novo (`lastEntriesProvider(novoLimit)`) ainda está carregando, `_cachedEntries` é usado como fallback — a lista permanece visível enquanto a nova página chega. Sem flicker de lista pra vazio.
+- Flags do estado:
+  - `initialLoading` = `isLoading && _cachedEntries.isEmpty` — só no primeiríssimo load (mostra spinner grande no card).
+  - `reloading` = `isLoading && _cachedEntries.isNotEmpty` — durante "Carregar mais" subsequente (mostra spinner pequeno no lugar do botão).
+  - `reachedSheetEnd` = `hasValue && !isLoading && entries.length < limit`.
+  - `atCap` = `limit >= 100`.
+  - `canLoadMore` = `!isLoading && !reachedSheetEnd && !atCap`.
 - Fim/cap states:
-  - `canLoadMore=true` → mostra o botão "Carregar mais N" (N = `min(_step, _maxLimit - limit)`).
-  - `atCap=true` → mostra texto "Limite de 100 lançamentos atingido.".
-  - `reachedSheetEnd=true` e `entries.length > 10` → mostra texto "Fim da lista." (suprimido no primeiro carregamento pra evitar mensagem redundante quando a planilha tem poucos lançamentos).
+  - `reloading=true` → spinner pequeno no rodapé (`CircularProgressIndicator` 20x20).
+  - `canLoadMore=true` → botão "Carregar mais N" (N = `min(_step, _maxLimit - limit)`).
+  - `atCap=true` → texto "Limite de 100 lançamentos atingido.".
+  - `reachedSheetEnd=true` e `entries.length > 10` → texto "Fim da lista." (suprimido no primeiro carregamento).
 
 Backend (`lastEntries` em `Dashboard.gs:218`) já aceita qualquer `n` — não precisou mudar. O cache do Riverpod usa `n` como chave de família, então cada incremento é um fetch limpo.
 
@@ -84,7 +92,7 @@ Componente `EditDialog` (Flutter) / `EditModal` (PWA legada).
 
 Ordem dos campos no modal, de cima pra baixo:
 
-1. **Mês Fatura** (col A `data`) — display `monthYearShort(data)` (ex. "maio de 2026"); tap abre `showDatePicker` com `initialDate=parseBrDate(entry.data)` (DateTime(1970) se vazio); a data inteira escolhida é preservada (DD inclusive). Send: `data: "DD/MM/YYYY"`.
+1. **Mês Fatura** (col A `data`) — display `monthYearShort(data)` (ex. "maio de 2026"); tap abre `showMonthYearPicker` (dialog custom com dois `DropdownButtonFormField`s: Mês 1-12 e Ano `[now.year-4 .. now.year+2]`). Após confirmação, `_data = DateTime(year, month, 6)` — dia sempre 06 (pós-2026-05-12; convenção: a coluna Data da planilha guarda o fechamento e o app padroniza dia 06 pra lançamentos UI-driven). Send: `data: "06/MM/YYYY"`.
 2. **Data Referência** (col B `dataRef`) — dois chips lado-a-lado:
    - chip data: `showDatePicker` que preserva hora/minuto atuais.
    - chip hora: `showTimePicker` que preserva ano/mês/dia. Quando `_dataRef` é epoch sentinel (year < 2000), o picker de hora usa `DateTime.now()` como base de data para evitar serializar `"01/01/1970 HH:MM"`.
