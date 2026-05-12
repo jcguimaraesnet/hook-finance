@@ -13,6 +13,8 @@ import '../../widgets/bloom/recent_entry_row.dart';
 import '../../widgets/bloom/screen_header.dart';
 import 'edit_dialog.dart';
 
+final _editListLimitProvider = StateProvider<int>((_) => 10);
+
 class LancamentoPage extends ConsumerStatefulWidget {
   const LancamentoPage({super.key});
 
@@ -30,12 +32,13 @@ class _LancamentoPageState extends ConsumerState<LancamentoPage> {
     if (_refreshing) return;
     setState(() => _refreshing = true);
     final messenger = ScaffoldMessenger.of(context);
+    final currentLimit = ref.read(_editListLimitProvider);
     ref.invalidate(lastEntriesProvider);
     ref.invalidate(monthDataProvider);
     String? error;
     try {
       await Future.wait<void>([
-        ref.read(lastEntriesProvider(10).future),
+        ref.read(lastEntriesProvider(currentLimit).future),
         ref.read(monthDataProvider(null).future),
       ]);
     } catch (e) {
@@ -154,28 +157,33 @@ class _EditList extends ConsumerStatefulWidget {
 class _EditListState extends ConsumerState<_EditList> {
   static const int _step = 10;
   static const int _maxLimit = 100;
-  int _limit = _step;
 
   void _loadMore() {
-    setState(() => _limit = (_limit + _step).clamp(_step, _maxLimit));
+    final current = ref.read(_editListLimitProvider);
+    final next = (current + _step).clamp(_step, _maxLimit);
+    if (next != current) {
+      ref.read(_editListLimitProvider.notifier).state = next;
+    }
   }
 
-  int _remaining() {
-    final remaining = _maxLimit - _limit;
+  int _remaining(int limit) {
+    final remaining = _maxLimit - limit;
     return remaining < _step ? remaining : _step;
   }
 
   @override
   Widget build(BuildContext context) {
-    final lastAsync = ref.watch(lastEntriesProvider(_limit));
+    final limit = ref.watch(_editListLimitProvider);
+    final lastAsync = ref.watch(lastEntriesProvider(limit));
     final monthAsync = ref.watch(monthDataProvider(null));
     final entries = lastAsync.value?.entries ?? const <Entry>[];
-    final loading = lastAsync.isLoading && !lastAsync.hasValue;
 
+    final initialLoading = lastAsync.isLoading && !lastAsync.hasValue;
     final reachedSheetEnd =
-        lastAsync.hasValue && entries.length < _limit;
-    final atCap = _limit >= _maxLimit;
-    final canLoadMore = !loading && !reachedSheetEnd && !atCap;
+        lastAsync.hasValue && !lastAsync.isLoading && entries.length < limit;
+    final atCap = limit >= _maxLimit;
+    final canLoadMore =
+        !lastAsync.isLoading && !reachedSheetEnd && !atCap;
 
     Future<void> openEdit(Entry e) async {
       final api = ref.read(apiProvider);
@@ -216,7 +224,7 @@ class _EditListState extends ConsumerState<_EditList> {
           BloomCard(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             borderRadius: BorderRadius.circular(22),
-            child: loading
+            child: initialLoading
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: Center(
@@ -256,7 +264,7 @@ class _EditListState extends ConsumerState<_EditList> {
               child: TextButton.icon(
                 onPressed: _loadMore,
                 icon: const Icon(Icons.expand_more, size: 18),
-                label: Text('Carregar mais ${_remaining()}'),
+                label: Text('Carregar mais ${_remaining(limit)}'),
                 style: TextButton.styleFrom(
                   foregroundColor: BloomColors.violet,
                 ),
