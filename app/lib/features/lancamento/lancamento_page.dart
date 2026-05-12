@@ -29,6 +29,7 @@ class _LancamentoPageState extends ConsumerState<LancamentoPage> {
   bool _refreshing = false;
 
   Future<void> _onRefresh() async {
+    if (_tab != _Tab.edit) return;
     if (_refreshing) return;
     setState(() => _refreshing = true);
     final messenger = ScaffoldMessenger.of(context);

@@ -146,6 +146,14 @@ class _EditDialogState extends State<EditDialog> {
   }
 
   Future<void> _save() async {
+    if (_data.year < 2000) {
+      setState(() => _error = 'Escolha o Mês Fatura antes de salvar.');
+      return;
+    }
+    if (_dataRef.year < 2000) {
+      setState(() => _error = 'Escolha a Data Referência antes de salvar.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
