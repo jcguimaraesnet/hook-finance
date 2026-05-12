@@ -161,6 +161,11 @@ class _EditListState extends ConsumerState<_EditList> {
   static const int _step = 10;
   static const int _maxLimit = 100;
 
+  // Cache em memória da última lista entregue pelo backend. Mantida visível
+  // durante reload do `lastEntriesProvider(novoLimit)` — evita que o card pisque
+  // pra spinner enquanto o "Carregar mais" busca a próxima página.
+  List<Entry> _cachedEntries = const [];
+
   void _loadMore() {
     final current = ref.read(_editListLimitProvider);
     final next = (current + _step).clamp(_step, _maxLimit);
@@ -179,14 +184,18 @@ class _EditListState extends ConsumerState<_EditList> {
     final limit = ref.watch(_editListLimitProvider);
     final lastAsync = ref.watch(lastEntriesProvider(limit));
     final monthAsync = ref.watch(monthDataProvider(null));
-    final entries = lastAsync.value?.entries ?? const <Entry>[];
 
-    final initialLoading = lastAsync.isLoading && !lastAsync.hasValue;
+    final fresh = lastAsync.value?.entries;
+    if (fresh != null) _cachedEntries = fresh;
+    final entries = fresh ?? _cachedEntries;
+
+    final isLoading = lastAsync.isLoading;
+    final initialLoading = isLoading && _cachedEntries.isEmpty;
+    final reloading = isLoading && _cachedEntries.isNotEmpty;
     final reachedSheetEnd =
-        lastAsync.hasValue && !lastAsync.isLoading && entries.length < limit;
+        lastAsync.hasValue && !isLoading && entries.length < limit;
     final atCap = limit >= _maxLimit;
-    final canLoadMore =
-        !lastAsync.isLoading && !reachedSheetEnd && !atCap;
+    final canLoadMore = !isLoading && !reachedSheetEnd && !atCap;
 
     Future<void> openEdit(Entry e) async {
       final api = ref.read(apiProvider);
@@ -262,7 +271,21 @@ class _EditListState extends ConsumerState<_EditList> {
                       ),
           ),
           const SizedBox(height: 14),
-          if (canLoadMore)
+          if (reloading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: BloomColors.violet,
+                    strokeWidth: 2.2,
+                  ),
+                ),
+              ),
+            )
+          else if (canLoadMore)
             Center(
               child: TextButton.icon(
                 onPressed: _loadMore,
