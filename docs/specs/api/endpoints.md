@@ -35,7 +35,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `body.action` | Body extra | Resposta | Descrição |
 |---|---|---|---|
 | `addEntry` | `fields: { data?, dataRef?, descricao, valor, origem, categoria?, rateio?, cardLast4?, parcela?, acerto? }` | `{ ok, row }` | Insere uma nova linha no **topo** (row 2) da planilha. `row` na resposta é sempre `2` (1-indexed). Não há dedup. |
-| `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela }` | `{ ok, row }` | Edita colunas C(3), D(4), F(6), G(7), I(9). **Não** edita A, B, E, H, J. |
+| `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela, data, dataRef, origem }` | `{ ok, row }` | Edita colunas A(1), B(2), C(3), D(4), E(5), F(6), G(7), I(9). **Não** edita H, J. |
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
@@ -70,6 +70,29 @@ Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurc
 - Insere no **topo** via `insertRowsBefore(2, 1)` + `setValues`, mantendo a convenção do webhook (linha 2 = mais recente). Sem reorder por data — o cliente que decide se faz sentido inserir no topo um lançamento antigo.
 - Força `setNumberFormat("@")` na coluna I (Parcela) antes do `setValue` (mesmo cuidado que `updateEntry`).
 - Usa `LockService.getScriptLock()` com timeout 10s (mesmo padrão do webhook) pra serializar inserções concorrentes.
+
+#### `updateEntry` — detalhes
+
+Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos editáveis (todos obrigatórios na request); a versão pré-2026-05-11 aceitava só 5 (descricao/valor/categoria/rateio/parcela) e mantinha A/B/E inalterados.
+
+**Campos obrigatórios** (todos):
+- `row` (top-level, não em `fields`): linha 1-indexed.
+- `fields.descricao` (string)
+- `fields.valor` (number)
+- `fields.categoria` (string; pode ser vazia)
+- `fields.rateio` (string; pode ser vazia — ver enum em addEntry)
+- `fields.parcela` (string vazia OU `"X/Y"`)
+- `fields.data` (string `DD/MM/YYYY`, não-vazia)
+- `fields.dataRef` (string `DD/MM/YYYY HH:MM`, não-vazia)
+- `fields.origem` (string; mesmo enum de `addEntry`)
+
+**Erros adicionais** (além de `unauthorized`/`invalid_row`/`row_out_of_range`/`sheet_not_found`):
+- `missing_data` / `missing_dataRef` / `missing_origem` — campo vazio ou ausente.
+- `invalid_origem` — `origem` fora do enum.
+
+**Comportamento**:
+- Força `setNumberFormat("@")` nas colunas A (data, evita auto-parse "DD/MM/YYYY" como datetime) e B (dataRef) e I (parcela).
+- Sem `LockService` — assume baixa concorrência em edição manual (diferente do `addEntry`/webhook).
 
 ### Estrutura de `Row` (resposta de `monthData`)
 

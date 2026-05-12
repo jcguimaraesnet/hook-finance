@@ -60,17 +60,45 @@ Cada entry renderiza como um botão (`<button>`):
 
 Click → abre modal com essa entry.
 
+### Paginação (Flutter — pós-2026-05-11)
+
+A lista inicial carrega **10** entradas. Ao final do `BloomCard` da lista, um `TextButton.icon "Carregar mais N"` (cor `BloomColors.violet`, ícone `Icons.expand_more`) carrega mais 10 por tap, até o cap de **100** total.
+
+Implementação:
+- `_editListLimitProvider` (StateProvider<int>, default 10) compartilhado entre `_LancamentoPageState._onRefresh` (pra await na refresh) e `_EditListState` (renderização e botão).
+- Flags do estado: `initialLoading` (sem `hasValue` ainda — mostra spinner no card), `reachedSheetEnd` (`hasValue && !isLoading && entries.length < limit` — esconde botão), `atCap` (`limit >= 100`), `canLoadMore` (`!isLoading && !reachedSheetEnd && !atCap`).
+- Fim/cap states:
+  - `canLoadMore=true` → mostra o botão "Carregar mais N" (N = `min(_step, _maxLimit - limit)`).
+  - `atCap=true` → mostra texto "Limite de 100 lançamentos atingido.".
+  - `reachedSheetEnd=true` e `entries.length > 10` → mostra texto "Fim da lista." (suprimido no primeiro carregamento pra evitar mensagem redundante quando a planilha tem poucos lançamentos).
+
+Backend (`lastEntries` em `Dashboard.gs:218`) já aceita qualquer `n` — não precisou mudar. O cache do Riverpod usa `n` como chave de família, então cada incremento é um fetch limpo.
+
+PWA legada (`web/`) não tem paginação — só os 10 últimos.
+
 ### Modal de edição
 
-Componente `EditModal`:
+Componente `EditDialog` (Flutter) / `EditModal` (PWA legada).
 
-- **Read-only fields:** `Data de referência` (`dataRef`), `Origem`.
-- **Editáveis:**
-  - Descrição (text)
-  - Valor (R$, number step 0.01, inputmode decimal)
-  - Categoria (text + datalist com opções extraídas de `monthData.rows[*].categoria`, dedupe + sort)
-  - Rateio (select: `""`, `"Julio"`, `"Dani"`, `"Metade"`, `"Alzira"`)
-  - Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md))
+**Editáveis (Flutter — após 2026-05-11):**
+
+Ordem dos campos no modal, de cima pra baixo:
+
+1. **Mês Fatura** (col A `data`) — display `monthYearShort(data)` (ex. "maio de 2026"); tap abre `showDatePicker` com `initialDate=parseBrDate(entry.data)` (DateTime(1970) se vazio); a data inteira escolhida é preservada (DD inclusive). Send: `data: "DD/MM/YYYY"`.
+2. **Data Referência** (col B `dataRef`) — dois chips lado-a-lado:
+   - chip data: `showDatePicker` que preserva hora/minuto atuais.
+   - chip hora: `showTimePicker` que preserva ano/mês/dia. Quando `_dataRef` é epoch sentinel (year < 2000), o picker de hora usa `DateTime.now()` como base de data para evitar serializar `"01/01/1970 HH:MM"`.
+   - Send: `dataRef: "DD/MM/YYYY HH:MM"`.
+3. **Origem** (col E) — `DropdownButtonFormField<String>` com `ADD_ENTRY_ORIGEMS` (`Cartão` | `Pix (contas)` | `Pessoal` | `Empregados` | `Contas`). Se `entry.origem` vier fora do enum (legado), é adicionado como item extra prefixado `(?) <valor>` para correção sem perda. Send: `origem`.
+4. Descrição (TextField).
+5. Valor (R$, decimal).
+6. Categoria (Autocomplete; sugestões = `monthData.rows[*].categoria` deduped+sort).
+7. Rateio (Dropdown: `""`, `"Julio"`, `"Dani"`, `"Metade"`, `"Alzira"`).
+8. Parcela (stepper 1..99 — ver [parcela-format.md](../rules/parcela-format.md)).
+
+**Read-only fields:** nenhum (era `Data de referência` + `Origem`; ambos viraram editáveis em 2026-05-11).
+
+**PWA legada (`web/`)** mantém o comportamento antigo com read-only fields. Não tocar — codebase congelado.
 
 #### Parcela math no modal
 
@@ -88,7 +116,8 @@ Display: `{parcela}x` no centro do stepper. Abaixo: `Total da compra: R$ {format
 
 ### Save
 
-- Body: `{ row: entry.row, fields: { descricao: trim, valor, categoria: trim, rateio, parcela: parcela > 1 ? "1/${parcela}" : "" } }`.
+- Body Flutter (pós-2026-05-11): `{ row: entry.row, fields: { descricao, valor, categoria, rateio, parcela, data: "DD/MM/YYYY", dataRef: "DD/MM/YYYY HH:MM", origem } }` — todos obrigatórios. Validados no backend; erros `missing_data`/`missing_dataRef`/`missing_origem`/`invalid_origem`.
+- Body PWA legada: contrato antigo (5 campos), inalterado.
 - Mutation: `useUpdateEntry`. `onSuccess` invalida `["lastEntries"]` e `["monthData"]`.
 - Após sucesso: `onClose()` → fecha modal.
 
