@@ -144,15 +144,38 @@ class _TabSwitcher extends StatelessWidget {
   }
 }
 
-class _EditList extends ConsumerWidget {
+class _EditList extends ConsumerStatefulWidget {
   const _EditList();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final lastAsync = ref.watch(lastEntriesProvider(10));
+  ConsumerState<_EditList> createState() => _EditListState();
+}
+
+class _EditListState extends ConsumerState<_EditList> {
+  static const int _step = 10;
+  static const int _maxLimit = 100;
+  int _limit = _step;
+
+  void _loadMore() {
+    setState(() => _limit = (_limit + _step).clamp(_step, _maxLimit));
+  }
+
+  int _remaining() {
+    final remaining = _maxLimit - _limit;
+    return remaining < _step ? remaining : _step;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lastAsync = ref.watch(lastEntriesProvider(_limit));
     final monthAsync = ref.watch(monthDataProvider(null));
     final entries = lastAsync.value?.entries ?? const <Entry>[];
     final loading = lastAsync.isLoading && !lastAsync.hasValue;
+
+    final reachedSheetEnd =
+        lastAsync.hasValue && entries.length < _limit;
+    final atCap = _limit >= _maxLimit;
+    final canLoadMore = !loading && !reachedSheetEnd && !atCap;
 
     Future<void> openEdit(Entry e) async {
       final api = ref.read(apiProvider);
@@ -181,7 +204,7 @@ class _EditList extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  'ÚLTIMOS 10 · TOQUE PARA EDITAR',
+                  'ÚLTIMOS ${entries.length} · TOQUE PARA EDITAR',
                   style: BloomTypography.kicker(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -227,6 +250,38 @@ class _EditList extends ConsumerWidget {
                         ],
                       ),
           ),
+          const SizedBox(height: 14),
+          if (canLoadMore)
+            Center(
+              child: TextButton.icon(
+                onPressed: _loadMore,
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: Text('Carregar mais ${_remaining()}'),
+                style: TextButton.styleFrom(
+                  foregroundColor: BloomColors.violet,
+                ),
+              ),
+            )
+          else if (atCap)
+            Center(
+              child: Text(
+                'Limite de $_maxLimit lançamentos atingido.',
+                style: BloomTypography.geist(
+                  fontSize: 11.5,
+                  color: BloomColors.muted,
+                ),
+              ),
+            )
+          else if (reachedSheetEnd && entries.length > _step)
+            Center(
+              child: Text(
+                'Fim da lista.',
+                style: BloomTypography.geist(
+                  fontSize: 11.5,
+                  color: BloomColors.muted,
+                ),
+              ),
+            ),
         ],
       ),
     );
