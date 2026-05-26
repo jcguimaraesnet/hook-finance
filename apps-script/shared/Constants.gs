@@ -10,6 +10,7 @@ const ORIGEM = "Cartão";
 const CARDS = {
   "1018": "Julio",
   "9727": "Julio",
+  "2236": "Julio",
   "4750": "Dani",
   "0784": "Dani",
 };

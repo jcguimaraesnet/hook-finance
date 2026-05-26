@@ -1,6 +1,11 @@
 const PURCHASE_RE =
   /Compra.+?final\s+(\d+),.+?R\$\s*(-?[\d.,]+),.+?em\s+(\d{2}\/\d{2}\/\d{2,4}),.+?(\d{2}:\d{2}),\s*em\s+(.+?),\s*aprovada/i;
 
+// Padrão do app novo: title = descrição, text = "... Pagou R$ <valor> em <desc> Crédito Disponível: R$ <limite>".
+// Spec: docs/specs/rules/webhook-parser.md
+const NEW_APP_VALUE_RE = /Pagou\s+R\$\s*(-?[\d.,]+)/i;
+const NEW_APP_CARD_LAST4 = "2236";
+
 // Janela de dedup (segundos). O app de notificação às vezes redispara o mesmo
 // payload 2-3 vezes em poucos segundos; descartamos repetições nesse intervalo.
 const DEDUP_WINDOW_SECONDS = 300;
@@ -40,7 +45,7 @@ function handleWebhookBody_(body) {
       return { ok: false, error: "sheet_not_found" };
     }
 
-    const parsed = parsePurchase_(text);
+    const parsed = parsePurchase_(title, text);
     const refDateTime = parsed.refDate
       ? parsed.refTime
         ? parsed.refDate + " " + parsed.refTime
@@ -94,7 +99,7 @@ function fingerprint_(title, text) {
   return hex;
 }
 
-function parsePurchase_(text) {
+function parsePurchase_(title, text) {
   const empty = {
     refDate: "",
     refTime: "",
@@ -102,6 +107,20 @@ function parsePurchase_(text) {
     value: "",
     cardLast4: "",
   };
+
+  const newAppMatch = text.match(NEW_APP_VALUE_RE);
+  if (newAppMatch) {
+    const tz = Session.getScriptTimeZone();
+    const now = new Date();
+    return {
+      refDate: Utilities.formatDate(now, tz, "dd/MM/yyyy"),
+      refTime: Utilities.formatDate(now, tz, "HH:mm"),
+      description: String(title || "").trim(),
+      value: parseBrazilNumber_(newAppMatch[1]),
+      cardLast4: NEW_APP_CARD_LAST4,
+    };
+  }
+
   const m = text.match(PURCHASE_RE);
   if (!m) return empty;
   return {

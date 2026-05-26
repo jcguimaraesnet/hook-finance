@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-26
 ---
 
 # Card to person — mapping de finais de cartão
@@ -17,10 +17,13 @@ A notificação do banco vem com final do cartão; o titular não. Mapeamento es
 const CARDS = {
   "1018": "Julio",
   "9727": "Julio",
+  "2236": "Julio",
   "4750": "Dani",
   "0784": "Dani",
 };
 ```
+
+> `2236` é hardcodado pelo webhook quando a notificação vem do app novo (padrão `Pagou R$ …`). Ver [../rules/webhook-parser.md](webhook-parser.md).
 
 `cardToPerson(last4) → "Julio" | "Dani" | null`:
 
