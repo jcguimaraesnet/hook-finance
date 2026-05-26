@@ -106,7 +106,7 @@ function newInvoice_(token) {
   const auth = checkToken_(token);
   if (auth) return auth;
 
-  const newClosing = nextInvoiceClosingDate_();
+  const newClosing = newInvoiceClosingDate_();
 
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) {

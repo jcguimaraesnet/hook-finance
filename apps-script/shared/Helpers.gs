@@ -53,6 +53,24 @@ function nextInvoiceClosingDate_() {
   return dd + "/" + mm + "/" + nextYear;
 }
 
+// Fatura "nova" para o gatilho manual (Nova fatura). É a fatura DEPOIS da que
+// está acumulando agora — i.e., um mês após `nextInvoiceClosingDate_()`.
+// Ex.: hoje 26/05/2026 → nextInvoiceClosingDate_=06/06/2026 (acumulando) →
+// newInvoiceClosingDate_=06/07/2026 (ainda não começou).
+// Spec: docs/specs/rules/invoice-closing-date.md
+function newInvoiceClosingDate_() {
+  const current = nextInvoiceClosingDate_();
+  const parts = current.split("/");
+  let mm = parseInt(parts[1], 10) + 1;
+  let yyyy = parseInt(parts[2], 10);
+  if (mm > 12) {
+    mm = 1;
+    yyyy += 1;
+  }
+  const dd = ("0" + INVOICE_CLOSING_DAY).slice(-2);
+  return dd + "/" + ("0" + mm).slice(-2) + "/" + yyyy;
+}
+
 // Acha a fatura anterior (a mais recente com data STRICTLY LESS THAN newClosing).
 // Retorna { closing: "DD/MM/YYYY", rows: [{ rowIndex, values }] } ou null.
 // rowIndex é 1-indexed (linha real na planilha).

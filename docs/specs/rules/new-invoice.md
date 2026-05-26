@@ -22,7 +22,7 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 ### Algoritmo
 
 1. `checkToken_(token)` → 401 se inválido.
-2. `newClosing = nextInvoiceClosingDate_()` (dia 6 do próximo mês relativo a hoje).
+2. `newClosing = newInvoiceClosingDate_()` — fatura **DEPOIS da acumulando** (ver [invoice-closing-date.md](invoice-closing-date.md)). Ex.: hoje 26/05/2026 → `nextInvoiceClosingDate_` retorna `06/06/2026` (acumulando, usada pelo webhook), mas `newInvoiceClosingDate_` retorna `06/07/2026` (a próxima ainda não começou — é essa que Nova fatura cria).
 3. `LockService.getScriptLock().tryLock(10000)` — serializa com webhook + addEntry. Se falhar → `lock_timeout`.
 4. Abrir aba `Despesas`. Se faltar → `sheet_not_found`.
 5. **Dedup:** se qualquer linha tem `formatBrDate_(col A) === newClosing` → `invoice_already_exists` (preserva idempotência semântica).

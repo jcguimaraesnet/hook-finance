@@ -90,7 +90,7 @@ class _InicioPageState extends ConsumerState<InicioPage> {
 
     Future<void> onNovaFatura() async {
       if (_creatingInvoice) return;
-      final closing = nextInvoiceClosingDate();
+      final closing = newInvoiceClosingDate();
       final messenger = ScaffoldMessenger.of(context);
       final confirmed = await showDialog<bool>(
         context: context,
