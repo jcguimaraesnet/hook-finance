@@ -1,5 +1,6 @@
 const SHEET_ID = "1IbxnOnBuhLIj5i8nqepk-Bva1IhmKalyuLXIyN56V8k";
 const SHEET_NAME = "Despesas";
+const FIXED_SHEET_NAME = "despesas-fixas";
 
 const INVOICE_CLOSING_DAY = 6;
 const ORIGEM = "Cartão";

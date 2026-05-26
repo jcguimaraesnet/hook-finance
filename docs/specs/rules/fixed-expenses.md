@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-26
 ---
 
 # Fixed expenses — inserção mensal automática
@@ -23,17 +23,17 @@ O usuário não precisa lançar manualmente despesas que ele sabe que vão acont
 
 ### Bloco inserido
 
-Composto pelo array `FIXED_EXPENSES` em [FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs). Cada item:
+Composto pelo retorno de `loadFixedExpenses_()` em [FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs), que lê e valida a aba [despesas-fixas](../data/despesas-fixas-sheet.md). Cada item retornado:
 
 ```js
 {
   refDay: <1-31>,
   description: <string>,
   value: <number>,
-  origem: "Pix (contas)",
-  categoria: "Contas",
-  rateio: "Julio" | "Dani",
-  acerto?: "Sim",  // se omitido = ""
+  origem: <string>,
+  categoria: <string>,
+  rateio: "Julio" | "Dani" | "Metade" | "Alzira",
+  acerto: "" | "Sim",
 }
 ```
 
@@ -70,25 +70,9 @@ Inserido via `insertRowsBefore(2, block.length)` + `setValues`. Linha azul vai n
 
 ### Lista atual de despesas fixas
 
-| description | refDay | value | rateio | acerto |
-|---|---|---|---|---|
-| Diarista | 6 | 1500 | Dani | |
-| Plano de Saúde (Dani) | 6 | 761,81 | Dani | |
-| Plano de Saúde (Julio) | 6 | 761,81 | Julio | Sim |
-| Mensalidade creche 1/2 | 7 | 1741,40 | Dani | Sim |
-| Mensalidade creche 2/2 | 7 | 1741,40 | Julio | Sim |
-| Ajuda de custo (Creche) | 5 | -620 | Dani | |
-| Claro Internet | 6 | 0,01 | Dani | |
-| Gás | 5 | 120,42 | Dani | Sim |
-| Condomínio 1/2 | 10 | 1550 | Julio | Sim |
-| Condomínio 1/2 | 10 | 0 | Dani | |
-| Energia (débito automático) | 7 | 500 | Dani | |
-| Guia de Previdência Social | 15 | 1300 | Julio | |
-| Guia de Previdência Social (...) | 15 | 1300 | Dani | |
-| Dízimo | 5 | 500 | Julio | |
-| Dízimo | 5 | 500 | Dani | |
+Lista vive na aba `despesas-fixas` da planilha — schema em [../data/despesas-fixas-sheet.md](../data/despesas-fixas-sheet.md). Edição direta no Sheets, sem deploy.
 
-Mudanças nessa lista refletem na próxima fatura inserida. Não retroativo.
+Mudanças refletem na próxima fatura inserida. Não retroativo.
 
 ## Edge cases
 
@@ -96,10 +80,12 @@ Mudanças nessa lista refletem na próxima fatura inserida. Não retroativo.
 - **Primeira compra de uma fatura é a 2ª compra do dia da fatura anterior:** edge raro; o filtro `data === invoiceClosing` casa só pela fatura atual, então o gating funciona.
 - **Refday no fim do mês ausente** (ex.: refDay=31 em fevereiro): hoje gera string `"31/02/yyyy"` (inválido como data, mas válido como string). Funciona porque a col B é tratada como string. Tratamento ideal seria clamp para último dia válido do mês — não está implementado.
 - **`value = 0`** (linha placeholder, ex. `"Condomínio 1/2 (Dani)"`): inserida igual; não polui totais (zero).
+- **Aba `despesas-fixas` ausente, vazia, ou com linha malformada:** `loadFixedExpenses_()` lança erro `despesas-fixas L{N}: ...`. Webhook propaga como 500. A primeira compra de fatura nova não é registrada até a aba ser corrigida.
 
 ## Implementações
 
-- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs)
+- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `loadFixedExpenses_()` (lê/valida aba) e `appendMonthlyFixedIfNeeded_()` (insere bloco). Função one-shot `seedFixedExpenses_()` para popular a aba inicialmente.
+- **Configuração:** aba `despesas-fixas` na planilha — schema em [../data/despesas-fixas-sheet.md](../data/despesas-fixas-sheet.md).
 - **PWA / Flutter:** N/A (write-only do backend).
 
 ## Specs relacionadas
