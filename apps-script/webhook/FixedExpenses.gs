@@ -41,17 +41,20 @@ function loadFixedExpenses_() {
   });
 }
 
-// Monta o bloco "início de fatura" com layout consistente entre webhook e Nova fatura.
-// Layout: [blank, ...parcelaRows, ...fixedRows, blank, blank (vai virar azul), blank].
-// Quando parcelaRows = [] (caso do webhook): [blank, ...fixedRows, blank, blank, blank].
+// Monta o bloco "início de fatura". Chamado pelo gatilho manual `newInvoice_`.
+// Com parcelas: [blank, ...parcelaRows, blank (separador), ...fixedRows, blank, blank (vai virar azul), blank].
+// Sem parcelas: [blank, ...fixedRows, blank, blank, blank].
+// col A das linhas é Date object (não string) — applyInvoiceBlock_ aplica o
+// formato dd/MM/yyyy depois do insert pra garantir display correto.
 // Spec: docs/specs/rules/new-invoice.md, docs/specs/rules/fixed-expenses.md
 function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
   const fixed = loadFixedExpenses_();
+  const closingDate = parseBrDate_(invoiceClosing);
   const [, mm, yyyy] = invoiceClosing.split("/");
   const fixedRows = fixed.map((e) => {
     const dd = ("0" + e.refDay).slice(-2);
     return [
-      invoiceClosing,
+      closingDate,
       dd + "/" + mm + "/" + yyyy,
       e.description,
       e.value,
@@ -65,39 +68,29 @@ function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
   });
   const blank = ["", "", "", "", "", "", "", "", "", ""];
   const safeParcelas = parcelaRows || [];
+  const separator = safeParcelas.length > 0 ? [blank] : [];
   const block = [blank]
     .concat(safeParcelas)
+    .concat(separator)
     .concat(fixedRows)
     .concat([blank, blank, blank]);
   return { block: block, fixedCount: fixedRows.length };
 }
 
-// Aplica o bloco em sheet: insertRowsBefore(2, N) + setValues + linha azul na penúltima.
-// Força setNumberFormat("@") na col I para impedir Sheets auto-parsear "1/3" como data
-// (ver docs/specs/data/despesas-sheet.md). Aplica a toda coluna I do bloco — barato e
-// idempotente, e garante que tanto webhook quanto Nova fatura ficam protegidos.
+// Aplica o bloco em sheet: insertRowsBefore(2, N) + formatos + setValues + linha azul.
+// - col A (Data): força formato dd/MM/yyyy pra exibir Date objects corretamente
+//   (sobrescreve qualquer @ herdado de updateEntry em linhas vizinhas).
+// - col I (Parcela): força @ pra impedir Sheets auto-parsear "1/3" como data
+//   (ver docs/specs/data/despesas-sheet.md).
 // Spec: docs/specs/rules/fixed-expenses.md
 function applyInvoiceBlock_(sheet, block) {
   sheet.insertRowsBefore(2, block.length);
+  sheet.getRange(2, 1, block.length, 1).setNumberFormat("dd/MM/yyyy");
   sheet.getRange(2, 9, block.length, 1).setNumberFormat("@");
   sheet.getRange(2, 1, block.length, 10).setValues(block);
   // Linha azul = penúltima do bloco. Inserido a partir da linha 2,
   // então fica na linha (2 + block.length - 2) = block.length.
   sheet.getRange(block.length, 1, 1, 10).setBackground("#cfe2f3");
-}
-
-function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
-    const exists = rows.some(
-      (r) =>
-        formatBrDate_(r[0]) === invoiceClosing && String(r[4]).trim() === ORIGEM,
-    );
-    if (exists) return;
-  }
-  const { block } = buildInvoiceBlock_(invoiceClosing, []);
-  applyInvoiceBlock_(sheet, block);
 }
 
 // Endpoint manual: insere bloco de fatura + rola parcelas pendentes.

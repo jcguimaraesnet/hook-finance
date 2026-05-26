@@ -46,12 +46,16 @@ function handleWebhookBody_(body) {
         ? parsed.refDate + " " + parsed.refTime
         : parsed.refDate
       : "";
-    const invoiceClosing = nextInvoiceClosingDate_();
-    appendMonthlyFixedIfNeeded_(sheet, invoiceClosing);
+    // Webhook usa SEMPRE a última fatura registrada na planilha. Bloco de fatura
+    // (despesas fixas + linha azul) é criado apenas pelo gatilho manual
+    // "Nova fatura" (ver docs/specs/rules/new-invoice.md). Fallback para
+    // nextInvoiceClosingDate_ só se a planilha estiver vazia (degenerado).
+    const invoiceClosing =
+      latestInvoiceClosingInSheet_(sheet) || nextInvoiceClosingDate_();
     const classification = classifyFromHistory_(sheet, parsed.description);
     insertRowsAtTop_(sheet, [
       [
-        invoiceClosing,
+        parseBrDate_(invoiceClosing),
         refDateTime,
         parsed.description,
         parsed.value,
@@ -63,6 +67,8 @@ function handleWebhookBody_(body) {
         "", // Acerto (não aplicável a compras de Cartão)
       ],
     ]);
+    // Garante formato Date na col A (sobrescreve @ herdado de updateEntry vizinho).
+    sheet.getRange(2, 1, 1, 1).setNumberFormat("dd/MM/yyyy");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };

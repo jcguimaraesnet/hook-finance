@@ -53,6 +53,29 @@ function nextInvoiceClosingDate_() {
   return dd + "/" + mm + "/" + nextYear;
 }
 
+// Retorna a data de fechamento mais recente registrada na col A (string "DD/MM/YYYY"),
+// ou null se a planilha só tiver headers. Usado pelo webhook para alinhar novos
+// lançamentos com a última fatura conhecida (criada por Nova fatura ou prévia),
+// em vez de computar a partir de hoje.
+// Spec: docs/specs/api/webhook.md, docs/specs/rules/invoice-closing-date.md
+function latestInvoiceClosingInSheet_(sheet) {
+  const last = sheet.getLastRow();
+  if (last < 2) return null;
+  const colA = sheet.getRange(2, 1, last - 1, 1).getValues();
+  let bestDate = null;
+  let bestStr = null;
+  for (let i = 0; i < colA.length; i++) {
+    const str = formatBrDate_(colA[i][0]);
+    if (!str) continue;
+    const d = parseBrDate_(str);
+    if (bestDate === null || d > bestDate) {
+      bestDate = d;
+      bestStr = str;
+    }
+  }
+  return bestStr;
+}
+
 // Fatura "nova" para o gatilho manual (Nova fatura). É a fatura DEPOIS da que
 // está acumulando agora — i.e., um mês após `nextInvoiceClosingDate_()`.
 // Ex.: hoje 26/05/2026 → nextInvoiceClosingDate_=06/06/2026 (acumulando) →
@@ -114,15 +137,15 @@ function rolloverParcelaRow_(rowValues, newClosing) {
   const y = parseInt(m[2], 10);
   if (!(x < y)) return null;
   return [
-    newClosing,       // A — fatura nova
-    rowValues[1],     // B — DataRef original (audit trail)
-    rowValues[2],     // C — descrição
-    rowValues[3],     // D — valor
-    rowValues[4],     // E — origem
-    rowValues[5],     // F — categoria
-    rowValues[6],     // G — rateio
-    rowValues[7],     // H — cartão
-    (x + 1) + "/" + y, // I — próxima parcela
-    rowValues[9],     // J — acerto
+    parseBrDate_(newClosing),  // A — fatura nova (Date object, formato dd/MM/yyyy)
+    rowValues[1],              // B — DataRef original (audit trail)
+    rowValues[2],              // C — descrição
+    rowValues[3],              // D — valor
+    rowValues[4],              // E — origem
+    rowValues[5],              // F — categoria
+    rowValues[6],              // G — rateio
+    rowValues[7],              // H — cartão
+    (x + 1) + "/" + y,         // I — próxima parcela
+    rowValues[9],              // J — acerto
   ];
 }

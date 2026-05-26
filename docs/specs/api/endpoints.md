@@ -42,7 +42,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 
 #### `addEntry` — detalhes
 
-Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurchase_`, não classifica via `Classifier`, não dispara `appendMonthlyFixedIfNeeded_`. O cliente é responsável por enviar todos os campos prontos.
+Inserção manual (UI "+ Novo"). Diferente do webhook, não passa por `parsePurchase_` e não classifica via `Classifier`. Bloco de fatura é criado apenas via Nova fatura (ver [../rules/new-invoice.md](../rules/new-invoice.md)); nenhum endpoint o cria automaticamente. O cliente é responsável por enviar todos os campos prontos.
 
 **Campos obrigatórios**:
 - `descricao` (string, não-vazia após trim)
@@ -114,7 +114,7 @@ Gatilho manual da fatura (alternativa ao webhook). Útil quando o iPhone não re
 - `fixed_expenses_failed` — aba `despesas-fixas` malformada. Resposta inclui `detail` com a mensagem original.
 
 **Comportamento:**
-- Bloco inserido no topo (linha 2), mesmo layout do webhook (`appendMonthlyFixedIfNeeded_`) — usam o helper compartilhado `buildInvoiceBlock_`. Parcelas pendentes da fatura anterior são inseridas **acima** das despesas fixas. Linha azul (`#cfe2f3`) marca início da fatura.
+- Bloco inserido no topo (linha 2) via `buildInvoiceBlock_` + `applyInvoiceBlock_`. Parcelas pendentes da fatura anterior são inseridas **acima** das despesas fixas, com um blank separador entre elas. Linha azul (`#cfe2f3`) marca início da fatura.
 - Rollover de parcelas: linhas com col I matching `X/Y` onde `X < Y` viram nova linha com col I = `(X+1)/Y`. Col B (Data Referência) preservada — audit trail. Linhas com parcela malformada (não casa regex, ou `X >= Y`) são puladas silenciosamente.
 - `LockService.getScriptLock()` com timeout 10s.
 

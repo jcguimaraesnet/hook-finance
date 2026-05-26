@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-26
 ---
 
 # Despesas — schema da planilha
@@ -17,7 +17,7 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 
 | # | Letra | Header | Tipo | Notas |
 |---|-------|--------|------|-------|
-| 1 | A | Data | string `DD/MM/YYYY` | Fechamento da fatura. Definido pelo webhook via `nextInvoiceClosingDate_()`. |
+| 1 | A | Data | Date (formato `dd/MM/yyyy`) | Fechamento da fatura. Webhook usa `latestInvoiceClosingInSheet_(sheet)` (mais recente já registrada). Nova fatura usa `newInvoiceClosingDate_()`. Backend sempre escreve `Date` object + force `setNumberFormat("dd/MM/yyyy")`. Reads usam `formatBrDate_` que aceita Date OU string (compatível com linhas legadas). |
 | 2 | B | Data Referência | string `DD/MM/YYYY HH:MM` | Data+hora real da compra (extraída do texto da notificação). |
 | 3 | C | Descrição | string | Estabelecimento. Extraído via `PURCHASE_RE`. |
 | 4 | D | Valor | number | Numérico, com 2 casas. Pode ser negativo (estornos, ajustes). |
@@ -38,7 +38,8 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 ### Inserção
 
 - Webhook insere no **topo** (`insertRowsBefore(2, n)`), não no fim.
-- Despesas fixas (rolling fixed) também inseridas no topo na primeira compra de cada fatura — ver [fixed-expenses.md](../rules/fixed-expenses.md).
+- Bloco de "início de fatura" (despesas fixas + linha azul + rollover de parcelas) é criado **apenas** pelo gatilho manual Nova fatura — ver [../rules/new-invoice.md](../rules/new-invoice.md). Webhook não cria mais bloco; só grava a compra na última fatura existente.
+- Coluna A (Data) é Date object. Force `setNumberFormat("dd/MM/yyyy")` após inserção pra sobrescrever `@` que pode ter sido herdado de `updateEntry` em linha vizinha.
 - O write em coluna `I (Parcela)` deve forçar `setNumberFormat("@")` antes do `setValue` para impedir o Sheets de auto-parsear `"1/3"` como data.
 
 ## Edge cases

@@ -34,11 +34,14 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 
 ### Layout do bloco inserido
 
+Com parcelas roladas:
+
 ```
 [blank]
 [parcela 1]   ← (rolagem da fatura anterior, col I = "X+1/Y")
 ...
 [parcela M]
+[blank]       ← separador entre parcelas e despesas fixas
 [despesa fixa 1]
 ...
 [despesa fixa N]
@@ -47,7 +50,7 @@ POST `body.action === "newInvoice"`. Body: `{ "action": "newInvoice", "token": "
 [blank]
 ```
 
-Quando `parcelaRows = []` (caso do webhook OU primeira fatura sem precedente): layout vira `[blank, ...fixedRows, blank, blank, blank]` — bit-a-bit igual ao gerado por `appendMonthlyFixedIfNeeded_` antes do refactor.
+Sem parcelas (primeira fatura sem precedente): o separador some, e o layout vira `[blank, ...fixedRows, blank, blank, blank]`.
 
 ### Rollover — regras de matching de parcela
 
@@ -81,7 +84,7 @@ Helper `rolloverParcelaRow_(rowValues, newClosing)`:
 
 ## Implementações
 
-- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `newInvoice_`, `buildInvoiceBlock_`, `applyInvoiceBlock_`, `appendMonthlyFixedIfNeeded_` (refatorada para reusar o builder).
+- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `newInvoice_`, `buildInvoiceBlock_`, `applyInvoiceBlock_`.
 - **Helpers:** [apps-script/shared/Helpers.gs](../../../apps-script/shared/Helpers.gs) — `findCurrentInvoice_`, `rolloverParcelaRow_`.
 - **Dispatcher:** [apps-script/dashboard/Dashboard.gs](../../../apps-script/dashboard/Dashboard.gs) — `case "newInvoice"` em `doPost`.
 - **Frontend:** [app/lib/features/inicio/inicio_page.dart](../../../app/lib/features/inicio/inicio_page.dart) — menu hambúrguer + dialog de confirmação. [app/lib/core/rules/invoice_closing.dart](../../../app/lib/core/rules/invoice_closing.dart) — porta Dart de `nextInvoiceClosingDate_()` (preview da data no dialog).
