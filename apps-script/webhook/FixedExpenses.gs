@@ -41,16 +41,11 @@ function loadFixedExpenses_() {
   });
 }
 
-function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
-    const exists = rows.some(
-      (r) =>
-        formatBrDate_(r[0]) === invoiceClosing && String(r[4]).trim() === ORIGEM,
-    );
-    if (exists) return;
-  }
+// Monta o bloco "início de fatura" com layout consistente entre webhook e Nova fatura.
+// Layout: [blank, ...parcelaRows, ...fixedRows, blank, blank (vai virar azul), blank].
+// Quando parcelaRows = [] (caso do webhook): [blank, ...fixedRows, blank, blank, blank].
+// Spec: docs/specs/rules/new-invoice.md, docs/specs/rules/fixed-expenses.md
+function buildInvoiceBlock_(invoiceClosing, parcelaRows) {
   const fixed = loadFixedExpenses_();
   const [, mm, yyyy] = invoiceClosing.split("/");
   const fixedRows = fixed.map((e) => {
@@ -69,14 +64,99 @@ function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
     ];
   });
   const blank = ["", "", "", "", "", "", "", "", "", ""];
-  // Visual top-down dentro do bloco inserido:
-  // [blank, ...fixed, blank, blue blank, blank]
-  const block = [blank].concat(fixedRows).concat([blank, blank, blank]);
+  const safeParcelas = parcelaRows || [];
+  const block = [blank]
+    .concat(safeParcelas)
+    .concat(fixedRows)
+    .concat([blank, blank, blank]);
+  return { block: block, fixedCount: fixedRows.length };
+}
+
+// Aplica o bloco em sheet: insertRowsBefore(2, N) + setValues + linha azul na penúltima.
+// Força setNumberFormat("@") na col I para impedir Sheets auto-parsear "1/3" como data
+// (ver docs/specs/data/despesas-sheet.md). Aplica a toda coluna I do bloco — barato e
+// idempotente, e garante que tanto webhook quanto Nova fatura ficam protegidos.
+// Spec: docs/specs/rules/fixed-expenses.md
+function applyInvoiceBlock_(sheet, block) {
   sheet.insertRowsBefore(2, block.length);
+  sheet.getRange(2, 9, block.length, 1).setNumberFormat("@");
   sheet.getRange(2, 1, block.length, 10).setValues(block);
   // Linha azul = penúltima do bloco. Inserido a partir da linha 2,
   // então fica na linha (2 + block.length - 2) = block.length.
   sheet.getRange(block.length, 1, 1, 10).setBackground("#cfe2f3");
+}
+
+function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    const exists = rows.some(
+      (r) =>
+        formatBrDate_(r[0]) === invoiceClosing && String(r[4]).trim() === ORIGEM,
+    );
+    if (exists) return;
+  }
+  const { block } = buildInvoiceBlock_(invoiceClosing, []);
+  applyInvoiceBlock_(sheet, block);
+}
+
+// Endpoint manual: insere bloco de fatura + rola parcelas pendentes.
+// Spec: docs/specs/rules/new-invoice.md
+function newInvoice_(token) {
+  const auth = checkToken_(token);
+  if (auth) return auth;
+
+  const newClosing = nextInvoiceClosingDate_();
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    return { ok: false, error: "lock_timeout" };
+  }
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) return { ok: false, error: "sheet_not_found" };
+
+    // Dedup: já existe alguma linha com essa data de fechamento?
+    const last = sheet.getLastRow();
+    if (last > 1) {
+      const colA = sheet.getRange(2, 1, last - 1, 1).getValues();
+      for (let i = 0; i < colA.length; i++) {
+        if (formatBrDate_(colA[i][0]) === newClosing) {
+          return { ok: false, error: "invoice_already_exists", invoiceClosing: newClosing };
+        }
+      }
+    }
+
+    // Rollover de parcelas pendentes da fatura anterior.
+    const current = findCurrentInvoice_(sheet, newClosing);
+    const parcelaRows = [];
+    if (current) {
+      for (let i = 0; i < current.rows.length; i++) {
+        const rolled = rolloverParcelaRow_(current.rows[i].values, newClosing);
+        if (rolled) parcelaRows.push(rolled);
+      }
+    }
+
+    let block, fixedCount;
+    try {
+      const built = buildInvoiceBlock_(newClosing, parcelaRows);
+      block = built.block;
+      fixedCount = built.fixedCount;
+    } catch (e) {
+      return { ok: false, error: "fixed_expenses_failed", detail: String(e && e.message ? e.message : e) };
+    }
+
+    applyInvoiceBlock_(sheet, block);
+
+    return {
+      ok: true,
+      invoiceClosing: newClosing,
+      fixedCount: fixedCount,
+      parcelaCount: parcelaRows.length,
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
 }
 
 // One-shot — rodar manualmente no editor do Apps Script para popular a aba

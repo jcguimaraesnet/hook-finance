@@ -93,3 +93,4 @@ Mudanças refletem na próxima fatura inserida. Não retroativo.
 - [../api/webhook.md](../api/webhook.md)
 - [invoice-closing-date.md](invoice-closing-date.md)
 - [../data/despesas-sheet.md](../data/despesas-sheet.md)
+- [new-invoice.md](new-invoice.md) — gatilho manual que reusa `loadFixedExpenses_()` e o helper de bloco.

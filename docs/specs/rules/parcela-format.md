@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-07
+last_updated: 2026-05-26
 ---
 
 # Parcela — formato e helpers
@@ -81,3 +81,4 @@ export function isParcelado(p: unknown): boolean {
 - [../data/despesas-sheet.md](../data/despesas-sheet.md) — col I
 - [../pages/lancamento.md](../pages/lancamento.md) — modal de edição
 - [../api/endpoints.md](../api/endpoints.md) — `updateEntry.fields.parcela` format
+- [new-invoice.md](new-invoice.md) — rollover de parcelas `X/Y` para a próxima fatura.

@@ -260,6 +260,33 @@ class MutationResponse {
       );
 }
 
+class NewInvoiceResponse {
+  final bool ok;
+  final String? error;
+  final String? detail;
+  final String? invoiceClosing;
+  final int? fixedCount;
+  final int? parcelaCount;
+
+  const NewInvoiceResponse({
+    required this.ok,
+    this.error,
+    this.detail,
+    this.invoiceClosing,
+    this.fixedCount,
+    this.parcelaCount,
+  });
+
+  factory NewInvoiceResponse.fromJson(Map<String, dynamic> j) => NewInvoiceResponse(
+        ok: j['ok'] == true,
+        error: j['error'] as String?,
+        detail: j['detail'] as String?,
+        invoiceClosing: j['invoiceClosing'] as String?,
+        fixedCount: (j['fixedCount'] as num?)?.toInt(),
+        parcelaCount: (j['parcelaCount'] as num?)?.toInt(),
+      );
+}
+
 enum Person { julio, dani }
 
 extension PersonX on Person {

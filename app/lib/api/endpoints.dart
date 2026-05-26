@@ -43,4 +43,9 @@ class ApiEndpoints {
     final r = await _client.post('deleteEntry', {'row': row});
     return MutationResponse.fromJson(r);
   }
+
+  Future<NewInvoiceResponse> newInvoice() async {
+    final r = await _client.post('newInvoice', const {});
+    return NewInvoiceResponse.fromJson(r);
+  }
 }

@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-11
+last_updated: 2026-05-26
 ---
 
 # API endpoints
@@ -37,6 +37,7 @@ Apps Script único como backend. Frontend (PWA + Flutter) acessa via `/api/proxy
 | `addEntry` | `fields: { data?, dataRef?, descricao, valor, origem, categoria?, rateio?, cardLast4?, parcela?, acerto? }` | `{ ok, row }` | Insere uma nova linha no **topo** (row 2) da planilha. `row` na resposta é sempre `2` (1-indexed). Não há dedup. |
 | `updateEntry` | `row` (number, 1-indexed), `fields: { descricao, valor, categoria, rateio, parcela, data, dataRef, origem }` | `{ ok, row }` | Edita colunas A(1), B(2), C(3), D(4), E(5), F(6), G(7), I(9). **Não** edita H, J. |
 | `deleteEntry` | `row` (number) | `{ ok }` | Remove a linha. |
+| `newInvoice` | — | `{ ok, invoiceClosing, fixedCount, parcelaCount }` | Cria bloco da próxima fatura. Ver [../rules/new-invoice.md](../rules/new-invoice.md). |
 | `(webhook)` | `title`, `text` | `{ ok }` ou `{ ok: true, deduped: true }` | Caminho legado — ver [webhook.md](webhook.md). |
 
 #### `addEntry` — detalhes
@@ -93,6 +94,31 @@ Atualização de uma linha existente. **Pós-2026-05-11** aceita os 8 campos edi
 **Comportamento**:
 - Força `setNumberFormat("@")` nas colunas A (data, evita auto-parse "DD/MM/YYYY" como datetime) e B (dataRef) e I (parcela).
 - Sem `LockService` — assume baixa concorrência em edição manual (diferente do `addEntry`/webhook).
+
+#### `newInvoice` — detalhes
+
+Gatilho manual da fatura (alternativa ao webhook). Útil quando o iPhone não recebe push de fechamento, ou quando o mês foi sem compras de cartão.
+
+**Sem campos no body** além de `action` e `token`. Backend computa a data de fechamento (`nextInvoiceClosingDate_()`).
+
+**Resposta de sucesso:**
+- `invoiceClosing` (string `DD/MM/YYYY`) — data da fatura criada.
+- `fixedCount` (number) — quantas despesas fixas foram inseridas (vem da aba `despesas-fixas`).
+- `parcelaCount` (number) — quantas parcelas foram roladas da fatura anterior.
+
+**Erros:**
+- `unauthorized` — token inválido.
+- `lock_timeout` — concorrência (webhook rodando simultaneamente).
+- `sheet_not_found` — aba `Despesas` não existe.
+- `invoice_already_exists` — fatura `DD/MM/YYYY` já existe na planilha. Resposta inclui `invoiceClosing` para o cliente exibir.
+- `fixed_expenses_failed` — aba `despesas-fixas` malformada. Resposta inclui `detail` com a mensagem original.
+
+**Comportamento:**
+- Bloco inserido no topo (linha 2), mesmo layout do webhook (`appendMonthlyFixedIfNeeded_`) — usam o helper compartilhado `buildInvoiceBlock_`. Parcelas pendentes da fatura anterior são inseridas **acima** das despesas fixas. Linha azul (`#cfe2f3`) marca início da fatura.
+- Rollover de parcelas: linhas com col I matching `X/Y` onde `X < Y` viram nova linha com col I = `(X+1)/Y`. Col B (Data Referência) preservada — audit trail. Linhas com parcela malformada (não casa regex, ou `X >= Y`) são puladas silenciosamente.
+- `LockService.getScriptLock()` com timeout 10s.
+
+Spec completo: [../rules/new-invoice.md](../rules/new-invoice.md).
 
 ### Estrutura de `Row` (resposta de `monthData`)
 

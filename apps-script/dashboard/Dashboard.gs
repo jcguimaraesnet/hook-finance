@@ -35,6 +35,8 @@ function doPost(e) {
       return jsonResponse_(updateEntry(body.token, body.row, body.fields));
     case "deleteEntry":
       return jsonResponse_(deleteEntry(body.token, body.row));
+    case "newInvoice":
+      return jsonResponse_(newInvoice_(body.token));
     default:
       return jsonResponse_({ ok: false, error: "unknown_action" });
   }

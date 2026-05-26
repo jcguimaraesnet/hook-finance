@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-05-26
 ---
 
 # Início — visão pessoal (Flutter, direção Bloom)
@@ -23,7 +23,11 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 
 ### Layout (top-to-bottom)
 
-1. **App-bar custom** com `BloomLogo` + label "hook" à esquerda, botões `↻` (refresh) e `⚙` (config) à direita.
+1. **App-bar custom** com `BloomLogo` + label "hook" à esquerda, **menu hambúrguer** (`☰`) à direita. Items:
+   - **Nova fatura** — abre dialog "Criar fatura DD/MM/YYYY? Vai inserir despesas fixas e parcelas pendentes." Confirma → POST `?action=newInvoice` → SnackBar com `$fixedCount fixas + $parcelaCount parcelas`. Ver [../rules/new-invoice.md](../rules/new-invoice.md).
+   - **Atualizar** — invalida providers `monthData`, `previousMonthData`, `historicalSummary`, `lastEntries`. SnackBar "Atualizado".
+   - **Configurações** — `context.push('/settings')`.
+   - **Sair** — `signOut()` no auth provider.
 2. **Saudação** "Olá, Júlio" + título display "Junho, 2026" + `MonthSelector` à direita.
 3. **Card hero**: `BloomDonut` à esquerda + bloco com:
    - Kicker "TOTAL PESSOAL" + valor display completo (sem `compact`).

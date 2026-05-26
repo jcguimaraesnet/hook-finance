@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
 import '../../core/rules/bucket_deltas.dart';
+import '../../core/rules/invoice_closing.dart';
 import '../../core/types.dart';
 import '../../state/auth_provider.dart';
 import '../../state/data_providers.dart';
@@ -32,6 +33,7 @@ class InicioPage extends ConsumerStatefulWidget {
 class _InicioPageState extends ConsumerState<InicioPage> {
   int? _selectedSegment;
   bool _refreshing = false;
+  bool _creatingInvoice = false;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +88,88 @@ class _InicioPageState extends ConsumerState<InicioPage> {
       );
     }
 
+    Future<void> onNovaFatura() async {
+      if (_creatingInvoice) return;
+      final closing = nextInvoiceClosingDate();
+      final messenger = ScaffoldMessenger.of(context);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Nova fatura',
+            style: BloomTypography.display(fontSize: 18, letterSpacing: -0.2),
+          ),
+          content: Text(
+            'Criar fatura de $closing? Vai inserir despesas fixas e parcelas pendentes.',
+            style: const TextStyle(color: BloomColors.ink, fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar', style: TextStyle(color: BloomColors.ink)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: BloomColors.violet,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Criar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      if (!mounted) return;
+
+      setState(() => _creatingInvoice = true);
+      String? successMsg;
+      String? errorMsg;
+      try {
+        final resp = await ref.read(apiProvider).newInvoice();
+        if (resp.ok) {
+          ref.invalidate(monthDataProvider);
+          ref.invalidate(previousMonthDataProvider);
+          ref.invalidate(historicalSummaryProvider);
+          ref.invalidate(lastEntriesProvider);
+          successMsg = 'Fatura ${resp.invoiceClosing ?? closing} criada — '
+              '${resp.fixedCount ?? 0} fixas + ${resp.parcelaCount ?? 0} parcelas';
+        } else {
+          switch (resp.error) {
+            case 'invoice_already_exists':
+              errorMsg = 'Fatura ${resp.invoiceClosing ?? closing} já existe';
+              break;
+            case 'fixed_expenses_failed':
+              errorMsg = 'Erro nas despesas fixas: ${resp.detail ?? ''}';
+              break;
+            case 'lock_timeout':
+              errorMsg = 'Servidor ocupado. Tente em alguns segundos.';
+              break;
+            case 'unauthorized':
+              errorMsg = 'Sessão expirada. Saia e entre de novo.';
+              break;
+            default:
+              errorMsg = 'Falha ao criar fatura: ${resp.error ?? "erro desconhecido"}';
+          }
+        }
+      } catch (e) {
+        errorMsg = 'Falha ao criar fatura: $e';
+      }
+      if (!mounted) return;
+      setState(() => _creatingInvoice = false);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(successMsg ?? errorMsg ?? ''),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: successMsg != null ? BloomColors.ink : BloomColors.bad,
+        ),
+      );
+    }
+
     // Bottom padding zero (apenas safe-area). O conteúdo se estende sob a
     // bottom-nav (extendBody=true). Scroll só fica disponível quando algum
     // item — tipicamente o segundo lançamento — fica parcialmente coberto
@@ -103,7 +187,8 @@ class _InicioPageState extends ConsumerState<InicioPage> {
           children: [
             _TopAppBar(
               onRefresh: onRefresh,
-              refreshing: _refreshing,
+              onNovaFatura: onNovaFatura,
+              busy: _refreshing || _creatingInvoice,
             ),
             const SizedBox(height: 6),
             _Greeting(person: person),
@@ -152,13 +237,84 @@ class _InicioPageState extends ConsumerState<InicioPage> {
   }
 }
 
-class _TopAppBar extends ConsumerWidget {
+class _TopAppBar extends ConsumerStatefulWidget {
   final Future<void> Function() onRefresh;
-  final bool refreshing;
-  const _TopAppBar({required this.onRefresh, required this.refreshing});
+  final Future<void> Function() onNovaFatura;
+  final bool busy;
+  const _TopAppBar({
+    required this.onRefresh,
+    required this.onNovaFatura,
+    required this.busy,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TopAppBar> createState() => _TopAppBarState();
+}
+
+class _TopAppBarState extends ConsumerState<_TopAppBar> {
+  final GlobalKey _menuKey = GlobalKey();
+
+  Future<void> _openMenu() async {
+    final box = _menuKey.currentContext?.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (box == null || overlay == null) return;
+    final pos = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final menuRect = RelativeRect.fromLTRB(
+      pos.dx,
+      pos.dy + box.size.height + 6,
+      overlay.size.width - pos.dx - box.size.width,
+      0,
+    );
+
+    final selected = await showMenu<_MenuAction>(
+      context: context,
+      position: menuRect,
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: BloomColors.border, width: 1),
+      ),
+      items: const [
+        PopupMenuItem(
+          value: _MenuAction.novaFatura,
+          child: _MenuRow(icon: Icons.add_circle_outline, label: 'Nova fatura'),
+        ),
+        PopupMenuItem(
+          value: _MenuAction.refresh,
+          child: _MenuRow(icon: Icons.refresh, label: 'Atualizar'),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: _MenuAction.settings,
+          child: _MenuRow(icon: Icons.settings_outlined, label: 'Configurações'),
+        ),
+        PopupMenuItem(
+          value: _MenuAction.logout,
+          child: _MenuRow(icon: Icons.logout, label: 'Sair'),
+        ),
+      ],
+    );
+    if (selected == null || !mounted) return;
+    switch (selected) {
+      case _MenuAction.novaFatura:
+        await widget.onNovaFatura();
+        break;
+      case _MenuAction.refresh:
+        await widget.onRefresh();
+        break;
+      case _MenuAction.settings:
+        if (mounted) context.push('/settings');
+        break;
+      case _MenuAction.logout:
+        ref.read(authProvider.notifier).signOut();
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
       child: Row(
@@ -173,26 +329,43 @@ class _TopAppBar extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          _IconBtn(
-            icon: Icons.refresh,
-            onTap: onRefresh,
-            tooltip: 'Atualizar',
-            busy: refreshing,
-          ),
-          const SizedBox(width: 8),
-          _IconBtn(
-            icon: Icons.settings_outlined,
-            onTap: () => context.push('/settings'),
-            tooltip: 'Configurações',
-          ),
-          const SizedBox(width: 8),
-          _IconBtn(
-            icon: Icons.logout,
-            onTap: () => ref.read(authProvider.notifier).signOut(),
-            tooltip: 'Sair',
+          KeyedSubtree(
+            key: _menuKey,
+            child: _IconBtn(
+              icon: Icons.menu,
+              onTap: _openMenu,
+              tooltip: 'Menu',
+              busy: widget.busy,
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+enum _MenuAction { novaFatura, refresh, settings, logout }
+
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _MenuRow({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: BloomColors.ink),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(
+            color: BloomColors.ink,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
