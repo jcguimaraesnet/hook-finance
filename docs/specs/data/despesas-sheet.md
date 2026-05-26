@@ -44,7 +44,7 @@ A planilha é o único banco de dados. Nenhum estado vive fora dela (exceto cach
 
 ## Edge cases
 
-- **Linha sem data** (col A vazia): pode aparecer em blocos brancos do "Fixed expenses block". Backend filtra com `if (!d) continue` em loops por mês.
+- **Linha sem data** (col A vazia): aparece em blocos brancos do "Início de fatura" (criados por Nova fatura). Backend filtra em todos os endpoints de leitura — `getMonthData`/`getHistoricalSummary` via `if (!d) continue`, `getLastEntries` via skip explícito de linhas onde col A E descrição estão vazias. Frontend (Flutter) também filtra defensivamente em `MonthDataResponse.fromJson` e `LastEntriesResponse.fromJson`.
 - **Valor negativo:** legítimo (ajustes/estornos como `Ajuda de custo`). Não filtrar.
 - **Rateio em branco + Origem Cartão:** linha aparece em `RateioChart` como `"(sem rateio)"`. Não bate com nenhuma regra de splitForPerson, então não aparece nos PersonCard.
 - **`Cartão` (col H) vazio:** não usado por nenhuma regra de UI; só informativo.

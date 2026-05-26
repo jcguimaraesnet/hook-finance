@@ -92,6 +92,7 @@ class MonthDataResponse {
         month: j['month'] as String?,
         rows: (j['rows'] as List?)
                 ?.map((e) => ExpenseRow.fromJson(e as Map<String, dynamic>))
+                .where((e) => e.data.isNotEmpty || e.descricao.trim().isNotEmpty)
                 .toList() ??
             const [],
       );
@@ -166,6 +167,7 @@ class LastEntriesResponse {
         error: j['error'] as String?,
         entries: (j['entries'] as List?)
                 ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
+                .where((e) => e.data.isNotEmpty || e.descricao.trim().isNotEmpty)
                 .toList() ??
             const [],
       );

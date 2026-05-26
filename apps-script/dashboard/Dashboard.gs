@@ -224,8 +224,13 @@ function getLastEntries(token, n) {
   if (!sheet) return { ok: false, error: "sheet_not_found" };
   const last = sheet.getLastRow();
   if (last < 2) return { ok: true, entries: [] };
-  const count = Math.min(n || 10, last - 1);
-  const values = sheet.getRange(2, 1, count, 10).getValues();
+
+  const requested = n || 10;
+  // Lê um slab maior que `requested` pra ter folga ao pular linhas em branco
+  // (bloco "início de fatura" cria ~5 brancas no topo a cada Nova fatura).
+  // O cap garante que mesmo com várias faturas seguidas conseguimos preencher N.
+  const slabSize = Math.min(requested + 30, last - 1);
+  const values = sheet.getRange(2, 1, slabSize, 10).getValues();
 
   const tz = Session.getScriptTimeZone();
   const fmtDate = function (v) {
@@ -237,19 +242,27 @@ function getLastEntries(token, n) {
     return String(v || "").trim();
   };
 
-  const entries = values.map((r, i) => ({
-    row: i + 2,
-    data: fmtDate(r[0]),
-    dataRef: fmtDateTime(r[1]),
-    descricao: String(r[2] || ""),
-    valor: Number(r[3]) || 0,
-    origem: String(r[4] || ""),
-    categoria: String(r[5] || ""),
-    rateio: String(r[6] || ""),
-    cardLast4: String(r[7] || ""),
-    parcela: String(r[8] || "").trim(),
-    acerto: String(r[9] || ""),
-  }));
+  const entries = [];
+  for (let i = 0; i < values.length && entries.length < requested; i++) {
+    const r = values[i];
+    const data = fmtDate(r[0]);
+    const descricao = String(r[2] || "").trim();
+    // Pula linhas em branco do bloco de Nova fatura (data E descrição vazias).
+    if (!data && !descricao) continue;
+    entries.push({
+      row: i + 2,
+      data: data,
+      dataRef: fmtDateTime(r[1]),
+      descricao: String(r[2] || ""),
+      valor: Number(r[3]) || 0,
+      origem: String(r[4] || ""),
+      categoria: String(r[5] || ""),
+      rateio: String(r[6] || ""),
+      cardLast4: String(r[7] || ""),
+      parcela: String(r[8] || "").trim(),
+      acerto: String(r[9] || ""),
+    });
+  }
 
   return { ok: true, entries: entries };
 }
