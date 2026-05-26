@@ -84,7 +84,7 @@ Mudanças refletem na próxima fatura inserida. Não retroativo.
 
 ## Implementações
 
-- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `loadFixedExpenses_()` (lê/valida aba) e `appendMonthlyFixedIfNeeded_()` (insere bloco). Função one-shot `seedFixedExpenses_()` para popular a aba inicialmente.
+- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `loadFixedExpenses_()` (lê/valida aba) e `appendMonthlyFixedIfNeeded_()` (insere bloco). Função one-shot `seedFixedExpenses()` para popular a aba inicialmente (sem `_` no fim — precisa aparecer no dropdown do editor pra execução manual).
 - **Configuração:** aba `despesas-fixas` na planilha — schema em [../data/despesas-fixas-sheet.md](../data/despesas-fixas-sheet.md).
 - **PWA / Flutter:** N/A (write-only do backend).
 

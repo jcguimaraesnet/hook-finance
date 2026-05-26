@@ -81,7 +81,7 @@ function appendMonthlyFixedIfNeeded_(sheet, invoiceClosing) {
 
 // One-shot — rodar manualmente no editor do Apps Script para popular a aba
 // `despesas-fixas` com a lista atual. Idempotente: aborta se a aba já tem dados.
-function seedFixedExpenses_() {
+function seedFixedExpenses() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const sheet = ss.getSheetByName(FIXED_SHEET_NAME);
   if (!sheet) throw new Error(`crie a aba "${FIXED_SHEET_NAME}" primeiro`);

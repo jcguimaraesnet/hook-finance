@@ -34,7 +34,7 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 ### Escrita
 
 - Edição manual via Google Sheets.
-- Função utilitária `seedFixedExpenses_()` em `apps-script/webhook/FixedExpenses.gs` popula a aba inicialmente. Idempotente — aborta se a aba já tem dados.
+- Função utilitária `seedFixedExpenses()` em `apps-script/webhook/FixedExpenses.gs` popula a aba inicialmente. Idempotente — aborta se a aba já tem dados. (Nome sem `_` no fim para aparecer no dropdown do editor Apps Script.)
 
 ## Edge cases
 
@@ -46,7 +46,7 @@ Antes era constante hard-coded (`FIXED_EXPENSES` em `apps-script/webhook/FixedEx
 
 ## Implementações
 
-- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `loadFixedExpenses_()` lê e valida; `seedFixedExpenses_()` popula one-shot.
+- **Backend (autoritativo):** [apps-script/webhook/FixedExpenses.gs](../../../apps-script/webhook/FixedExpenses.gs) — `loadFixedExpenses_()` lê e valida; `seedFixedExpenses()` popula one-shot.
 - **Constante do nome da aba:** `FIXED_SHEET_NAME` em [apps-script/shared/Constants.gs](../../../apps-script/shared/Constants.gs).
 
 ## Specs relacionadas
