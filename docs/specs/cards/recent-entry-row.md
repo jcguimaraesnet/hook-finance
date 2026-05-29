@@ -63,13 +63,13 @@ Tipo: `BloomTypography.mono`, `fontSize: 10`, `color: BloomColors.muted`.
 
 ### Modo `compactMeta` (telas com largura crítica)
 
-Quando o widget é instanciado com `compactMeta: true`, a 2ª linha é encurtada para `date · cat [· (X / Y)]`:
+Quando o widget é instanciado com `compactMeta: true`, a 2ª linha é encurtada para `date [· (X / Y)]`:
 
 - Hora é removida de `dateRef` (corta a partir do primeiro espaço; `"29/05/2026 18:42"` → `"29/05/2026"`).
-- `split` é omitido — esperado em telas onde o rateio é implícito do contexto (ex.: [../pages/detalhe.md](../pages/detalhe.md), filtrada por pessoa).
+- `cat` e `split` são omitidos — esperado em telas onde ambos são implícitos: rateio do filtro de pessoa, categoria do contexto da página (ex.: [../pages/detalhe.md](../pages/detalhe.md)).
 - Avatar e cores não mudam: o rateio continua codificado visualmente pelo quadradinho.
 
-Default: `compactMeta: false`. Usado por [Início](../pages/inicio.md) e [Lançamento](../pages/lancamento.md) — telas com largura confortável e onde rateio/hora ajudam a scanear.
+Default: `compactMeta: false`. Usado por [Início](../pages/inicio.md) e [Lançamento](../pages/lancamento.md) — telas com largura confortável e onde os campos completos ajudam a scanear.
 
 ### highlightMissing (override)
 

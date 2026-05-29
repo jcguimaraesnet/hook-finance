@@ -39,7 +39,7 @@ class RecentEntryRow extends StatelessWidget {
     final cat = entry.categoria.isEmpty ? '—' : entry.categoria;
     final parcelaSuffix = _parcelaSuffix(entry.parcela);
     final meta = compactMeta
-        ? '$dateRef · $cat$parcelaSuffix'
+        ? '$dateRef$parcelaSuffix'
         : '$dateRef · $cat · $splitLabel$parcelaSuffix';
 
     final row = Row(
