@@ -1,18 +1,18 @@
 ---
 status: stable
-last_updated: 2026-05-08
+last_updated: 2026-05-29
 ---
 
 # Detalhe — despesas pessoais por pessoa
 
-Página que lista despesas de **Cartão pessoal** (não compartilhadas) do mês corrente.
+Página que lista despesas pessoais (não compartilhadas) do mês corrente, com 4 indicadores no topo: total pessoal, cartão pessoal, parcelado atual e parcelado próximo mês.
 
-- **PWA:** todas as pessoas em accordions colapsáveis na mesma página.
+- **PWA:** todas as pessoas em accordions colapsáveis na mesma página. (Congelado — `web/src/`.)
 - **Flutter (Bloom):** drill-down a partir do donut da [Início](inicio.md) — recebe `?person=julio|dani`, mostra apenas a pessoa clicada com toggle Júlio/Dani no topo para trocar.
 
 ## Contexto
 
-Útil para revisar o que cada um gastou no cartão pessoal — separado da despesa compartilhada que vai para o acerto. Não inclui Pix/Contas (essas têm seu lugar em Acerto).
+Útil para revisar o que cada um gastou de forma pessoal — separado da despesa compartilhada que vai para o acerto. A lista usa só Cartão pessoal (atrito de leitura), mas os 4 tiles superiores resumem também o impacto de parcelas em meses futuros.
 
 ## Regras
 
@@ -20,12 +20,16 @@ Página que lista despesas de **Cartão pessoal** (não compartilhadas) do mês 
 
 Lê `monthData(currentMonth)`. Não chama outros endpoints.
 
-### Filtragem
+### Filtragem da lista de lançamentos
 
 - `r.origem === "Cartão"` (só Cartão).
 - `r.rateio !== ""` E `r.rateio !== "Metade"` (exclui sem rateio e compartilhado).
 
-### Agregação
+### Agregação dos tiles superiores (Flutter)
+
+Ver [../rules/personal-summary.md](../rules/personal-summary.md) — define `personalSummaryForPerson(rows, person)` com 4 campos: `totalPessoal`, `cartaoPessoal`, `parceladoAtual`, `parceladoProx`.
+
+### Agregação da lista (PWA legada)
 
 Agrupa por `r.rateio`. Cada grupo:
 
@@ -51,9 +55,13 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 **Flutter (Bloom):** página single-person (a passada via `?person=`):
 
 - Header `ScreenHeader` com kicker "Despesas pessoais" + título "<Person> · <mês>" + `MonthSelector`.
-- Person pills Júlio/Dani — tap troca a query e re-renderiza.
-- Card "Cartão pessoal" com valor display + `% do total` da pessoa (do bucket `pessoal`).
-- Lista de lançamentos `RecentEntryRow` filtrada (mais recente primeiro) ou mensagem "Sem lançamentos pessoais este mês".
+- Person pills Júlio/Dani — tap troca a query e re-renderiza. Cor da pill ativa = `BloomColors.forPerson(p)` (Júlio=menta, Dani=lilás — ver [inicio.md](inicio.md)).
+- **Grid 2×2 de tiles** (mesmo padrão visual de [compart.md](compart.md) — Cards `BloomCard` com kicker uppercase + valor `R$`, sem badge de %):
+  - **Total pessoal** — `summary.totalPessoal`.
+  - **Cartão pessoal** — `summary.cartaoPessoal`.
+  - **Parcelado atual** — `summary.parceladoAtual`.
+  - **Parcelado Próx** — `summary.parceladoProx` (projeção do próximo mês).
+- Lista de lançamentos `RecentEntryRow` filtrada (mais recente primeiro) ou mensagem "Sem lançamentos pessoais este mês". Avatar de cada linha usa cor+símbolo do rateio — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md).
 
 ### Loading / vazio
 
@@ -75,5 +83,7 @@ const ordered = [...PREFERRED_ORDER, ...others.sort()].filter((p) => byPerson[p]
 
 ## Specs relacionadas
 
+- [../rules/personal-summary.md](../rules/personal-summary.md) — fórmulas dos 4 tiles
+- [../cards/recent-entry-row.md](../cards/recent-entry-row.md) — avatar e linha de metadados
 - [../data/despesas-sheet.md](../data/despesas-sheet.md) — cols E (origem), G (rateio), B (dataRef)
 - [../responsive/breakpoints.md](../responsive/breakpoints.md)

@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-12
+last_updated: 2026-05-29
 ---
 
 # Lançamento — lista das últimas entradas + edit modal + novo
@@ -46,7 +46,7 @@ Apenas no Flutter:
 - **Defaults enviados ao backend**: `data` sempre enviada (pós-2026-05-12) — `dataRef` omitido → o Apps Script usa agora no TZ. `categoria` vazia OK. `cardLast4` vazio OK. `parcela` enviado como `"1/N"` quando N>1, senão `""`.
 - **On success**: SnackBar verde "Lançamento criado.", `ref.invalidate(lastEntriesProvider)` + `ref.invalidate(monthDataProvider)`, e `widget.onCancel()` volta pra aba `Lançamentos`.
 
-### Lista de entries
+### Lista de entries (PWA legada)
 
 Cada entry renderiza como um botão (`<button>`):
 
@@ -60,6 +60,10 @@ Cada entry renderiza como um botão (`<button>`):
 - Pill de parcela: cor de destaque (`bg-accent text-accent-fg`). Aparece só se `parcelaTotal(parcela) > 1`. Mostra `e.parcela` verbatim (ex.: `"1/3"`).
 
 Click → abre modal com essa entry.
+
+### Lista de entries (Flutter, Bloom)
+
+Cada entry é um `RecentEntryRow` (widget compartilhado — ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md)). O avatar mostra o **rateio** (não a 1ª letra da descrição) com cor por rateio; quando `entry.parcela` está preenchida, a linha de metadados inclui `· (X / Y)`. `highlightMissing: true` aplica tom vermelho quando `categoria` ou `rateio` estão vazios — sobrepõe a regra de cor por rateio.
 
 ### Paginação (Flutter — pós-2026-05-11)
 

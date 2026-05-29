@@ -1,4 +1,4 @@
-// Linha de lançamento — avatar com inicial + merchant/data·cat·split + valor.
+// Spec: docs/specs/cards/recent-entry-row.md
 
 import 'package:flutter/material.dart';
 import '../../core/format/money.dart';
@@ -25,15 +25,15 @@ class RecentEntryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final missing = highlightMissing &&
         (entry.categoria.isEmpty || entry.rateio.isEmpty);
-    final initial = entry.descricao.isEmpty
-        ? '?'
-        : entry.descricao.characters.first.toUpperCase();
     final tone = missing ? BloomColors.bad : _toneFor(entry.rateio);
     final descColor = missing ? BloomColors.bad : BloomColors.ink;
+    final avatarLabel = _avatarLabel(entry.rateio);
     final splitLabel = _splitLabel(entry.rateio);
 
     final dateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
     final cat = entry.categoria.isEmpty ? '—' : entry.categoria;
+    final parcelaSuffix = _parcelaSuffix(entry.parcela);
+    final meta = '$dateRef · $cat · $splitLabel$parcelaSuffix';
 
     final row = Row(
       children: [
@@ -46,9 +46,9 @@ class RecentEntryRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
-            initial,
+            avatarLabel,
             style: BloomTypography.display(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: tone,
               height: 1,
@@ -72,7 +72,7 @@ class RecentEntryRow extends StatelessWidget {
               ),
               const SizedBox(height: 1),
               Text(
-                '$dateRef · $cat · $splitLabel',
+                meta,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: BloomTypography.mono(
@@ -126,15 +126,32 @@ class RecentEntryRow extends StatelessWidget {
   }
 
   Color _toneFor(String rateio) {
-    if (rateio == 'Metade' || rateio.isEmpty) return BloomColors.violet;
-    if (rateio == 'Dani') return BloomColors.mint;
-    if (rateio == 'Julio') return BloomColors.amber;
-    return BloomColors.sky;
+    if (rateio == 'Metade' || rateio.isEmpty) return BloomColors.muted;
+    if (rateio == 'Dani') return BloomColors.forPerson(Person.dani);
+    if (rateio == 'Julio') return BloomColors.forPerson(Person.julio);
+    return BloomColors.amber;
+  }
+
+  String _avatarLabel(String rateio) {
+    if (rateio == 'Metade') return '½';
+    if (rateio.isEmpty) return '?';
+    return rateio.characters.first.toUpperCase();
   }
 
   String _splitLabel(String rateio) {
     if (rateio == 'Metade') return 'dividido';
     if (rateio.isEmpty) return '—';
     return rateio;
+  }
+
+  String _parcelaSuffix(String parcela) {
+    final s = parcela.trim();
+    if (s.isEmpty || !s.contains('/')) return '';
+    final parts = s.split('/');
+    if (parts.length != 2) return '';
+    final x = int.tryParse(parts[0]);
+    final y = int.tryParse(parts[1]);
+    if (x == null || y == null || y <= 0) return '';
+    return ' · ($x / $y)';
   }
 }

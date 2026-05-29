@@ -41,13 +41,13 @@ class BloomColors {
     stops: [0.0, 0.4, 1.0],
   );
 
-  // Cor associada a cada pessoa.
+  // Spec: docs/specs/pages/inicio.md (seção "Cores por pessoa")
   static Color forPerson(Person p) {
     switch (p) {
       case Person.julio:
-        return violet;
-      case Person.dani:
         return mint;
+      case Person.dani:
+        return violet;
     }
   }
 }

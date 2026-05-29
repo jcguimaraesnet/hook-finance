@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-26
+last_updated: 2026-05-29
 ---
 
 # Início — visão pessoal (Flutter, direção Bloom)
@@ -49,6 +49,15 @@ Substitui as sub-abas `Mês` e `Pessoal` da [Consulta](consulta.md) do PWA, trat
 ### Person switcher
 
 Selectiona a pessoa cuja visão pessoal é exibida (afeta donut + tiles + comparativo + recentes). Persiste em `selectedPersonProvider` (sessão).
+
+### Cores por pessoa
+
+- **Júlio** → `BloomColors.mint` (menta/verde).
+- **Dani** → `BloomColors.violet` (lilás).
+
+Aplicadas via `BloomColors.forPerson(p)` — usadas no avatar do `_PersonTile`, donut central, pill ativa de troca e em qualquer linha de lançamento cujo `rateio` aponte para essa pessoa (ver [../cards/recent-entry-row.md](../cards/recent-entry-row.md)).
+
+**Importante:** cores dos buckets (`Compartilhado=violet`, `Pessoal=mint`, `Contas=sky`) no `_HeroCard` são independentes da pessoa e não trocam.
 
 ## Edge cases
 

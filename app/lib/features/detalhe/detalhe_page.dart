@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/dates.dart';
 import '../../core/format/money.dart';
-import '../../core/rules/bucket_deltas.dart';
-import '../../core/rules/split_for_person.dart';
+import '../../core/rules/personal_summary.dart';
 import '../../core/types.dart';
 import '../../state/data_providers.dart';
 import '../../theme/bloom_colors.dart';
@@ -47,10 +46,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
       ..sort((a, b) =>
           parseBrDate(b.dataRef).compareTo(parseBrDate(a.dataRef)));
 
-    final buckets = bucketsForPerson(rows, _person);
-    final pessoalPct = buckets.total == 0
-        ? 0.0
-        : buckets.pessoal / buckets.total * 100;
+    final summary = personalSummaryForPerson(rows, _person);
 
     return BloomScreen(
       child: SingleChildScrollView(
@@ -75,50 +71,56 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
             const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: BloomCard(
-                padding: const EdgeInsets.all(18),
-                child: loading
-                    ? const SizedBox(
+              child: loading
+                  ? const BloomCard(
+                      padding: EdgeInsets.all(18),
+                      child: SizedBox(
                         height: 60,
                         child: Center(
                           child: CircularProgressIndicator(
                               color: BloomColors.violet),
                         ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('CARTÃO PESSOAL',
-                              style: BloomTypography.kicker()),
-                          const SizedBox(height: 2),
-                          Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                'R\$ ${formatMoney(buckets.pessoal)}',
-                                style: BloomTypography.display(
-                                  fontSize: 30,
-                                  letterSpacing: -0.6,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  '· ${pessoalPct.toStringAsFixed(1).replaceAll('.', ',')}% do total',
-                                  style: BloomTypography.geist(
-                                    fontSize: 11,
-                                    color: BloomColors.muted,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
-              ),
+                    )
+                  : Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _Tile(
+                                label: 'TOTAL PESSOAL',
+                                value: summary.totalPessoal,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Tile(
+                                label: 'CARTÃO PESSOAL',
+                                value: summary.cartaoPessoal,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _Tile(
+                                label: 'PARCELADO ATUAL',
+                                value: summary.parceladoAtual,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Tile(
+                                label: 'PARCELADO PRÓX',
+                                value: summary.parceladoProx,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
             ),
             const SizedBox(height: 14),
             Padding(
@@ -150,11 +152,9 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                     : Column(
                         children: [
                           for (var i = 0; i < pessoalRows.length; i++)
-                            _DetalheRow(
-                              row: pessoalRows[i],
+                            RecentEntryRow(
+                              entry: pessoalRows[i],
                               showDivider: i > 0,
-                              splitForCurrent:
-                                  splitForPerson(pessoalRows[i], _person),
                             ),
                         ],
                       ),
@@ -162,6 +162,45 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final String label;
+  final double value;
+  const _Tile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return BloomCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      borderRadius: BorderRadius.circular(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: BloomTypography.kicker(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'R\$ ${formatMoney(value)}',
+              maxLines: 1,
+              style: BloomTypography.display(
+                fontSize: 18,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -244,22 +283,3 @@ class _ToggleButton extends StatelessWidget {
   }
 }
 
-class _DetalheRow extends StatelessWidget {
-  final ExpenseRow row;
-  final bool showDivider;
-  final double splitForCurrent;
-
-  const _DetalheRow({
-    required this.row,
-    required this.showDivider,
-    required this.splitForCurrent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RecentEntryRow(
-      entry: row,
-      showDivider: showDivider,
-    );
-  }
-}

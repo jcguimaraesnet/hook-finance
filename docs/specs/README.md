@@ -32,6 +32,7 @@ docs/specs/
 │   ├── bucket-deltas.md            % vs. mês anterior por bucket (Flutter Início)
 │   ├── diff-calculation.md         diff Pix vs Contas+Empregados (PersonCard/AcertoCard)
 │   ├── parcela-format.md           "X/Y", parcelaTotal, isParcelado
+│   ├── personal-summary.md         4 tiles (total/cartão/parcelado atual+próx) por pessoa
 │   ├── classifier.md               Jaccard sobre histórico (categoria/rateio)
 │   ├── webhook-parser.md           PURCHASE_RE
 │   ├── invoice-closing-date.md     próximo fechamento + INVOICE_CLOSING_DAY
@@ -43,7 +44,8 @@ docs/specs/
 │   ├── acerto-card.md              Cards de pessoa em Acerto
 │   ├── categoria-table.md          Tabela "Cheio | Compart."
 │   ├── rateio-chart.md             Bar chart por rateio
-│   └── historico-chart.md          Linha 12 meses (mobile=6)
+│   ├── historico-chart.md          Linha 12 meses (mobile=6)
+│   └── recent-entry-row.md         Linha de lançamento (avatar + meta + parcela inline)
 ├── pages/
 │   ├── consulta.md                 PWA: 4 sub-tabs mobile/tablet; sem sub-tabs ≥750px
 │   ├── inicio.md                   Flutter (Bloom): visão pessoal + donut + comparativo
