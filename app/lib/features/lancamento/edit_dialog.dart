@@ -555,34 +555,47 @@ class _DataRefField extends StatelessWidget {
       required String label,
       required VoidCallback? onTap,
     }) {
-      return Expanded(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0ECE2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(label, style: theme.textTheme.bodyMedium),
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0ECE2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
     }
 
+    final dateChip = chip(
+      icon: Icons.calendar_today_outlined,
+      label: dateLabel,
+      onTap: onPickDate,
+    );
+    final timeChip = chip(
+      icon: Icons.access_time,
+      label: timeLabel,
+      onTap: onPickTime,
+    );
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'Data Referência',
@@ -591,20 +604,28 @@ class _DataRefField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            chip(
-              icon: Icons.calendar_today_outlined,
-              label: dateLabel,
-              onTap: onPickDate,
-            ),
-            const SizedBox(width: 8),
-            chip(
-              icon: Icons.access_time,
-              label: timeLabel,
-              onTap: onPickTime,
-            ),
-          ],
+        // Em telas estreitas (ex.: tela de capa do Galaxy Fold) a data completa
+        // não cabe lado a lado com a hora e quebraria em duas linhas — empilha.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 280) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  dateChip,
+                  const SizedBox(height: 8),
+                  timeChip,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: dateChip),
+                const SizedBox(width: 8),
+                Expanded(child: timeChip),
+              ],
+            );
+          },
         ),
       ],
     );

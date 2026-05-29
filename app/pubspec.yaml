@@ -2,7 +2,7 @@ name: hook_finance
 description: "hook-finance Flutter app"
 publish_to: 'none'
 
-version: 1.5.1+11
+version: 1.5.2+12
 
 environment:
   sdk: ^3.11.5
