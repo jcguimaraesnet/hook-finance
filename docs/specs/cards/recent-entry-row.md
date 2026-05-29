@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-30
+last_updated: 2026-05-31
 ---
 
 # RecentEntryRow — linha de lançamento no app
@@ -19,7 +19,7 @@ A regra atual: o avatar passa a representar o **rateio** da linha — quem paga,
 ┌──────────────────────────────────────────────────────────────┐
 │ ┌────┐                                                       │
 │ │ ½  │  Mercado Extra                              R$ 89,90  │
-│ └────┘  29/05/2026 18:42 · Alimentação · dividido · (1 / 3)  │
+│ └────┘  29/05/2026 · Alimentação · (1 / 3)                   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -52,24 +52,19 @@ Cores de `Dani`/`Julio` derivam de `BloomColors.forPerson()` — invertidas em 2
 
 ### Linha de metadados (2ª linha)
 
-Formato padrão: `dateRef · cat · split [· (X / Y)]`
+Formato padrão: `date · cat [· (X / Y)]`
 
-- `dateRef` = `entry.dataRef` se não-vazia, senão `entry.data`.
+- `date` = `_stripTime(entry.dataRef)` se `dataRef` não-vazia, senão `entry.data`. Hora é **sempre** removida (corta a partir do primeiro espaço; `"29/05/2026 18:42"` → `"29/05/2026"`) — em todas as listas o quadradinho já carrega o rateio e a hora não acrescenta info útil no scan.
 - `cat` = `entry.categoria` se não-vazia, senão `—`.
-- `split` = `"dividido"` se `rateio = Metade`, `—` se vazio, senão o próprio `rateio`.
 - `(X / Y)` aparece **apenas** quando `entry.parcela` está preenchida e parseia como `X/Y`. Espaços ao redor de `/` são obrigatórios no display (`"(1 / 3)"`, não `"(1/3)"`). Quando `parcela` é legado sem `/` (ex.: `"3"`), o sufixo não aparece.
 
 Tipo: `BloomTypography.mono`, `fontSize: 10`, `color: BloomColors.muted`.
 
-### Modo `compactMeta` (telas com largura crítica)
+### Flag `hideCategory` (telas com largura crítica)
 
-Quando o widget é instanciado com `compactMeta: true`, a 2ª linha é encurtada para `date [· (X / Y)]`:
+Quando o widget é instanciado com `hideCategory: true`, a categoria é omitida e a 2ª linha vira `date [· (X / Y)]`. Usado em telas onde a categoria não acrescenta info útil — ex.: [Detalhe](../pages/detalhe.md), onde a lista é estreita demais em mobile pra incluir categoria sem estourar o ellipsis.
 
-- Hora é removida de `dateRef` (corta a partir do primeiro espaço; `"29/05/2026 18:42"` → `"29/05/2026"`).
-- `cat` e `split` são omitidos — esperado em telas onde ambos são implícitos: rateio do filtro de pessoa, categoria do contexto da página (ex.: [../pages/detalhe.md](../pages/detalhe.md)).
-- Avatar e cores não mudam: o rateio continua codificado visualmente pelo quadradinho.
-
-Default: `compactMeta: false`. Usado por [Início](../pages/inicio.md) e [Lançamento](../pages/lancamento.md) — telas com largura confortável e onde os campos completos ajudam a scanear.
+Default: `hideCategory: false`. Usado por [Início](../pages/inicio.md) e [Lançamento](../pages/lancamento.md) — onde a categoria é relevante pra distinguir os lançamentos.
 
 ### highlightMissing (override)
 

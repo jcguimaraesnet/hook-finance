@@ -12,9 +12,9 @@ class RecentEntryRow extends StatelessWidget {
   final bool showDivider;
   /// Quando true e o entry tem categoria ou rateio vazios, destaca em vermelho.
   final bool highlightMissing;
-  /// Quando true, suprime a hora de `dataRef` e o `splitLabel` na 2ª linha.
-  /// Usado em telas onde o rateio já é implícito (ex.: Despesas pessoais).
-  final bool compactMeta;
+  /// Quando true, suprime também a categoria da 2ª linha. Usado em telas onde
+  /// a categoria não acrescenta info (ex.: Despesas pessoais, lista estreita).
+  final bool hideCategory;
 
   const RecentEntryRow({
     super.key,
@@ -22,7 +22,7 @@ class RecentEntryRow extends StatelessWidget {
     this.onTap,
     this.showDivider = true,
     this.highlightMissing = false,
-    this.compactMeta = false,
+    this.hideCategory = false,
   });
 
   @override
@@ -32,15 +32,14 @@ class RecentEntryRow extends StatelessWidget {
     final tone = missing ? BloomColors.bad : _toneFor(entry.rateio);
     final descColor = missing ? BloomColors.bad : BloomColors.ink;
     final avatarLabel = _avatarLabel(entry.rateio);
-    final splitLabel = _splitLabel(entry.rateio);
 
     final rawDateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
-    final dateRef = compactMeta ? _stripTime(rawDateRef) : rawDateRef;
+    final dateRef = _stripTime(rawDateRef);
     final cat = entry.categoria.isEmpty ? '—' : entry.categoria;
     final parcelaSuffix = _parcelaSuffix(entry.parcela);
-    final meta = compactMeta
+    final meta = hideCategory
         ? '$dateRef$parcelaSuffix'
-        : '$dateRef · $cat · $splitLabel$parcelaSuffix';
+        : '$dateRef · $cat$parcelaSuffix';
 
     final row = Row(
       children: [
@@ -143,12 +142,6 @@ class RecentEntryRow extends StatelessWidget {
     if (rateio == 'Metade') return '½';
     if (rateio.isEmpty) return '?';
     return rateio.characters.first.toUpperCase();
-  }
-
-  String _splitLabel(String rateio) {
-    if (rateio == 'Metade') return 'dividido';
-    if (rateio.isEmpty) return '—';
-    return rateio;
   }
 
   String _parcelaSuffix(String parcela) {

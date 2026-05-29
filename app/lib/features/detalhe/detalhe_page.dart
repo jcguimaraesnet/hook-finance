@@ -155,7 +155,7 @@ class _DetalhePageState extends ConsumerState<DetalhePage> {
                             RecentEntryRow(
                               entry: pessoalRows[i],
                               showDivider: i > 0,
-                              compactMeta: true,
+                              hideCategory: true,
                             ),
                         ],
                       ),
