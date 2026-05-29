@@ -1,6 +1,6 @@
 ---
 status: stable
-last_updated: 2026-05-29
+last_updated: 2026-05-30
 ---
 
 # RecentEntryRow — linha de lançamento no app
@@ -52,7 +52,7 @@ Cores de `Dani`/`Julio` derivam de `BloomColors.forPerson()` — invertidas em 2
 
 ### Linha de metadados (2ª linha)
 
-Formato: `dateRef · cat · split [· (X / Y)]`
+Formato padrão: `dateRef · cat · split [· (X / Y)]`
 
 - `dateRef` = `entry.dataRef` se não-vazia, senão `entry.data`.
 - `cat` = `entry.categoria` se não-vazia, senão `—`.
@@ -60,6 +60,16 @@ Formato: `dateRef · cat · split [· (X / Y)]`
 - `(X / Y)` aparece **apenas** quando `entry.parcela` está preenchida e parseia como `X/Y`. Espaços ao redor de `/` são obrigatórios no display (`"(1 / 3)"`, não `"(1/3)"`). Quando `parcela` é legado sem `/` (ex.: `"3"`), o sufixo não aparece.
 
 Tipo: `BloomTypography.mono`, `fontSize: 10`, `color: BloomColors.muted`.
+
+### Modo `compactMeta` (telas com largura crítica)
+
+Quando o widget é instanciado com `compactMeta: true`, a 2ª linha é encurtada para `date · cat [· (X / Y)]`:
+
+- Hora é removida de `dateRef` (corta a partir do primeiro espaço; `"29/05/2026 18:42"` → `"29/05/2026"`).
+- `split` é omitido — esperado em telas onde o rateio é implícito do contexto (ex.: [../pages/detalhe.md](../pages/detalhe.md), filtrada por pessoa).
+- Avatar e cores não mudam: o rateio continua codificado visualmente pelo quadradinho.
+
+Default: `compactMeta: false`. Usado por [Início](../pages/inicio.md) e [Lançamento](../pages/lancamento.md) — telas com largura confortável e onde rateio/hora ajudam a scanear.
 
 ### highlightMissing (override)
 

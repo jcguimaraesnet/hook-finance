@@ -12,6 +12,9 @@ class RecentEntryRow extends StatelessWidget {
   final bool showDivider;
   /// Quando true e o entry tem categoria ou rateio vazios, destaca em vermelho.
   final bool highlightMissing;
+  /// Quando true, suprime a hora de `dataRef` e o `splitLabel` na 2ª linha.
+  /// Usado em telas onde o rateio já é implícito (ex.: Despesas pessoais).
+  final bool compactMeta;
 
   const RecentEntryRow({
     super.key,
@@ -19,6 +22,7 @@ class RecentEntryRow extends StatelessWidget {
     this.onTap,
     this.showDivider = true,
     this.highlightMissing = false,
+    this.compactMeta = false,
   });
 
   @override
@@ -30,10 +34,13 @@ class RecentEntryRow extends StatelessWidget {
     final avatarLabel = _avatarLabel(entry.rateio);
     final splitLabel = _splitLabel(entry.rateio);
 
-    final dateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
+    final rawDateRef = entry.dataRef.isNotEmpty ? entry.dataRef : entry.data;
+    final dateRef = compactMeta ? _stripTime(rawDateRef) : rawDateRef;
     final cat = entry.categoria.isEmpty ? '—' : entry.categoria;
     final parcelaSuffix = _parcelaSuffix(entry.parcela);
-    final meta = '$dateRef · $cat · $splitLabel$parcelaSuffix';
+    final meta = compactMeta
+        ? '$dateRef · $cat$parcelaSuffix'
+        : '$dateRef · $cat · $splitLabel$parcelaSuffix';
 
     final row = Row(
       children: [
@@ -153,5 +160,10 @@ class RecentEntryRow extends StatelessWidget {
     final y = int.tryParse(parts[1]);
     if (x == null || y == null || y <= 0) return '';
     return ' · ($x / $y)';
+  }
+
+  String _stripTime(String s) {
+    final i = s.indexOf(' ');
+    return i < 0 ? s : s.substring(0, i);
   }
 }
