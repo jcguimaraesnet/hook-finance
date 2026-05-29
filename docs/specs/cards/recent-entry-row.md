@@ -42,11 +42,13 @@ A cor `tone` é aplicada como `tone.withValues(alpha: 0.13)` no fundo e como cor
 
 | Rateio | `tone` |
 |---|---|
-| `Metade` | `BloomColors.muted` |
+| `Metade` | `BloomColors.neutral` (cinza neutro sem viés violeta) |
 | `Dani` | `BloomColors.violet` (= `forPerson(dani)`) |
 | `Julio` | `BloomColors.mint` (= `forPerson(julio)`) |
 | Outro não-vazio (ex.: `Alzira`) | `BloomColors.amber` |
-| Vazio | `BloomColors.muted` |
+| Vazio | `BloomColors.neutral` |
+
+A cor `neutral` (`#8E8E96`) é usada em vez de `muted` (`#7B7AA8`) propositalmente: `muted` tem viés violeta e ficava visualmente parecido com o lilás da Dani na opacidade 0.13. `neutral` é um cinza puro.
 
 Cores de `Dani`/`Julio` derivam de `BloomColors.forPerson()` — invertidas em 2026-05-29 (ver [../pages/inicio.md](../pages/inicio.md)).
 

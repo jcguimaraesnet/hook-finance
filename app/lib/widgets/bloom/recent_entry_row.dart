@@ -132,7 +132,7 @@ class RecentEntryRow extends StatelessWidget {
   }
 
   Color _toneFor(String rateio) {
-    if (rateio == 'Metade' || rateio.isEmpty) return BloomColors.muted;
+    if (rateio == 'Metade' || rateio.isEmpty) return BloomColors.neutral;
     if (rateio == 'Dani') return BloomColors.forPerson(Person.dani);
     if (rateio == 'Julio') return BloomColors.forPerson(Person.julio);
     return BloomColors.amber;
